@@ -13,4 +13,7 @@ Communicating with the digital caliper:
 -  http://wei48221.blogspot.com/2016/01/using-digital-caliper-for-digital-read_21.html  <br>
 -  https://github.com/MakingStuffChannel/DigitalCalipers/blob/master/DigitalCalipers.ino <br>
 
+<br>
+Note: I use a couple of transistors to convert the 1.5v signals from the caliper to the 3.3v of the ESP32, this results in the signal levels being inverted so if you use some other method you will need to change these in my code.  The circuit diagram I used can be seen in the PICS folder.  To supply the lower voltage to power the caliper I just use a simple voltage divider as they require very little power.<br>
+
 <br><br><img src="/pics/DROproject.jpg" /><br>
