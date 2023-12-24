@@ -14,11 +14,15 @@ Communicating with the digital caliper:
 -  https://github.com/MakingStuffChannel/DigitalCalipers/blob/master/DigitalCalipers.ino <br>
 
 <br>
-Note: I use a couple of transistors to convert the 1.5v signals from the caliper to the 3.3v of the ESP32, this results in the signal levels being inverted so if you use some other method you will need to change this in my code.  The circuit diagram I used can be seen in the PCB folder.  To supply the lower voltage to power the caliper I just use a simple voltage divider as they require very little power.
+Note: I use a couple of transistors to convert the 1.5v signals from the caliper to the 3.3v of the ESP32, this results in the signal levels being inverted so if you use some other method you will need to change this in my code.  The circuit diagram I used can be seen in the PCB folder.  To supply the lower voltage to power the caliper I just use a simple voltage divider as they require very little power.  I originally tried using a level shifter board but I don't think it liked the 1.5v?  I am just using two 1k resistors as a voltage divider to power the calipers and they seem ok with this.
 <br><br>
 
 An interesting thing I was not expecting is you get 2 decimal places even from the very cheap calipers which only display 1, as can be seen in the picture below.<br>
 If just using one caliper then gpio 16 and 17 can be easily used but to find enough GPIO pins to read 3 calipers I had to get a bit creative by removing the onboard 3 colour LED and soldering wires directly on to the ESP32 module.  This is not as difficult as you might think, if you use a small soldering iron tip and thin wire it's pretty easy even for my uncoordinated soldering skills.
+<br>
+
+This sketch is wifi enabled just because I already had the code to do this so why not but this can be disabled by changing a flag in the settings if you do not require it.
+
 <br>
 
 <br><br><img src="/pics/DROproject.jpg" /><br>
