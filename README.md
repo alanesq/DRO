@@ -3,7 +3,7 @@
 A super cheap Digital Readout (DRO) for lathes, milling machines etc. using a esp32 based "cheap yellow display" (AKA ESP32-2432S028R) and cheap eBay digital calipers.<br>
 You can pick up the display modules on Aliexpress for around £12 and calipers around £6 each.
 
-<br><br>
+<br>
 Note: This is a work in progress, whilst it is now just about in a usable state I have yet to install it myself or add the features I require.<br><br>
 
 <br><img src="/pics/DROproject.jpg" /><br>
