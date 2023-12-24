@@ -38,8 +38,8 @@
 
 
 // Settings for main wifi (if not using wifi manager)
-  const char *SSID = "<your wifi ssid>";
-  const char *PWD = "<your wifi password>";  
+  const char *SSID = "Anubis";
+  const char *PWD = "thisworldsucksbad";  
   const int wifiTimeout = 20;          // timeout when connecting to wifi (seconds)
 
 // Settings for the configuration Portal (Wifi Manager)

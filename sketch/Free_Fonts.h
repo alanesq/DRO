@@ -1,11 +1,10 @@
-// Attach this header file to your sketch to use the GFX Free Fonts. You can write
-// sketches without it, but it makes referencing them easier.
+/* -----------------------------------------------------------------------------------------
 
-// This calls up ALL the fonts but they only get loaded if you actually
-// use them in your sketch.
-//
-// No changes are needed to this header file unless new fonts are added to the
-// library "Fonts/GFXFF" folder.
+      standard TFT_eSPI font information - 23dec23
+
+// -----------------------------------------------------------------------------------------
+*/
+
 //
 // To save a lot of typing long names, each font can easily be referenced in the
 // sketch in three ways, either with:
@@ -38,6 +37,8 @@
 //  Setting the font to NULL will select the GLCD font:
 //
 //      tft.setFreeFont(NULL); // Set font to GLCD
+
+#define LOAD_GFXFF
 
 #ifdef LOAD_GFXFF // Only include the fonts if LOAD_GFXFF is defined in User_Setup.h
 
@@ -205,7 +206,7 @@
 #define sFF13 "Mono bold oblique 9"
 #define sFF14 "Mono bold oblique 12"
 #define sFF15 "Mono bold oblique 18"
-#define sFF16 "Mono bold obl. 24" // Full text line is too big for 480 pixel wide screen
+#define sFF16 "Mono bold oblique 24" // Full text line is too big for 480 pixel wide screen
 
 #define sFF17 "Sans 9"
 #define sFF18 "Sans 12"
@@ -261,8 +262,6 @@
 #define FONT6 6
 #define FONT7 7
 #define FONT8 8
-
-#define TT1 1
 
 #define FF0 1
 #define FF1 1

@@ -80,12 +80,15 @@
 
 
     Digital Caliper pinout: 
-          GND (black)  
-          DAT (brown)  
-          CLK (blue) 
-          VCC 3.3V (red)   
-        
+          GND   
+          DAT   
+          CLK  
+          VCC 1.5V  
 
+
+    Colours available  
+          TFT_BLACK,TFT_NAVY,TFT_DARKGREEN,TFT_DARKCYAN,TFT_MAROON,TFT_PURPLE,TFT_OLIVE,TFT_LIGHTGREY,TFT_DARKGREY,TFT_BLACK,TFT_GREEN,TFT_CYAN,
+          TFT_RED,TFT_MAGENTATFT_YELLOW,TFT_WHITE,TFT_ORANGE,TFT_GREENYELLOW,TFT_PINK,TFT_BROWN,TFT_GOLD,TFT_SILVER,TFT_SKYBLUE,TFT_VIOLET
 */
 
 #if (!defined ESP32)
@@ -124,7 +127,7 @@
 
   const char* stitle = "SuperLowBudget-DRO";             // title of this sketch
 
-  const char* sversion = "21Dec23";                      // version of this sketch
+  const char* sversion = "24Dec23";                      // version of this sketch
 
   const bool wifiEnabled = 1;                            // if wifi to be used
 
@@ -136,14 +139,14 @@
   // Digital Caliper GPIO pins              X=16/17, Y=4/5, Z=22/1(Serial)        -1 = not in use
     #define CLOCK_PIN_X 16
     #define DATA_PIN_X  17
-    #define CLOCK_PIN_Y -1
-    #define DATA_PIN_Y  -1
+    #define CLOCK_PIN_Y 4
+    #define DATA_PIN_Y  5
     #define CLOCK_PIN_Z -1
     #define DATA_PIN_Z  -1  
 
 
   // Touchscreen 
-    #define TOUCH_LEFT 200         // positions on screen
+    #define TOUCH_LEFT 200         // positions on screen (may vary between screens?)
     #define TOUCH_RIGHT 3700
     #define TOUCH_TOP 200
     #define TOUCH_BOTTOM 3850
@@ -157,15 +160,14 @@
   const int serialSpeed = 115200;                        // Serial data speed to use
 
   // DRO readings display settings
-      const int DROxpos = 0;                             // position or readings down screen
-      const int DROypos = 50;
-      const int DROzpos = 100;
+      const int DROdisplaySpacing = 10;                   // DRO readout vertical space between displays
       const int DROnoOfDigits = 6;                       // number of digits to display
-      const int DROwidth = 207;                          // width of DRO reading display   i.e. x position of buttons
-      const int DROheight = 150; 
-      const int DRObuttonheight = 33;                      
-      const int DRObuttonWidth = 40;
-      const int DRObuttonFontSize = 1;    
+      const int DROwidth = 200;                          // width of DRO reading display   i.e. x position of buttons
+      const int DROheight = 200; 
+      const int DRObuttonheight = 30;                      
+      const int DRObuttonWidth = 35;                     // buttons around DRO readings
+      const int DROdbuttonPlacement = 70;                // vertical spacing of the DRO buttons (page1)
+      const int checkDROreadings = 400;                  // how often to refresh DRO readings (ms)
   
   #define WDT_TIMEOUT 150                                // timeout of watchdog timer for esp32 (seconds) - Note: emails can take over a min to send
 
@@ -209,12 +211,17 @@
     XPT2046_Touchscreen ts(XPT2046_CS, XPT2046_IRQ);  
 
   // Cheap Yellow Display
-    #include <TFT_eSPI.h>  
-    #include "Free_Fonts.h"                       // extra fonts
+    #include <TFT_eSPI.h>                         // display driver
     #include <TFT_eWidget.h>                      // Widget library
+    #include "Free_Fonts.h"                       // Standard fonts info
+    #include "sevenSeg.h"                         // seven segment style font
     TFT_eSPI tft = TFT_eSPI();
     
   MeterWidget   dro  = MeterWidget(&tft);         // demo meter used at startup
+
+  bool displayRefreshX = 0;    // flag the caliper reading displays to refresh 
+  bool displayRefreshY = 0; 
+  bool displayRefreshZ = 0; 
 
   // store for current dro readings 
     float xReading, yReading, zReading;
@@ -235,7 +242,6 @@
       int page;                    // which screen page it belongs to (0 = show on all pages)
       bool enabled;                // if this button is enabled
       char* label;                 // buttons title
-      uint8_t textSize;
       int16_t x, y;                // location on screen (top left)
       uint16_t width, height;
       uint16_t outlineColour;
@@ -247,42 +253,71 @@
     };
     
     // create button widgets
-      ButtonWidget zeroX = ButtonWidget(&tft);  
+      ButtonWidget zeroX = ButtonWidget(&tft);  // zero
       ButtonWidget zeroY = ButtonWidget(&tft);  
       ButtonWidget zeroZ = ButtonWidget(&tft);  
       ButtonWidget zAll = ButtonWidget(&tft);  
-      ButtonWidget coord1 = ButtonWidget(&tft);  
+
+      ButtonWidget halfX = ButtonWidget(&tft);  // half
+      ButtonWidget halfY = ButtonWidget(&tft);  
+      ButtonWidget halfZ = ButtonWidget(&tft);  
+
+      ButtonWidget coord1 = ButtonWidget(&tft);  // coordinates
       ButtonWidget coord2 = ButtonWidget(&tft);  
       ButtonWidget coord3 = ButtonWidget(&tft);  
-      ButtonWidget but4 = ButtonWidget(&tft);  
+
+      ButtonWidget but4 = ButtonWidget(&tft);    // misc
       ButtonWidget but5 = ButtonWidget(&tft); 
       ButtonWidget but6 = ButtonWidget(&tft); 
 
     // forward declarations for pressed button procedures
-      void zeroXpressed();     // zero display
+      void zeroXpressed();     // zero
       void zeroYpressed();
       void zeroZpressed();
       void zAllpressed();
+
+      void halfXpressed();     // half
+      void halfYpressed();
+      void halfZpressed();      
+
       void coord1pressed();    // change coordinate system 
       void coord2pressed();
       void coord3pressed();
+
       void button4Pressed();   // misc
       void button5Pressed();
       void button6Pressed();
 
+    const int buttonSpacing = 6;        // spacings used when placing the buttons on display
     
-    // define the buttons
+    // -define the buttons (see buttonStruct above)
       buttonStruct screenButtons[] {
-        {1, 1, "zX", DRObuttonFontSize, DROwidth, DROxpos + 5, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLUE, &zeroX, &zeroXpressed},
-        {1, 1, "zY", DRObuttonFontSize, DROwidth, DROypos + 5, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLUE, &zeroY, &zeroYpressed},
-        {1, 1, "zZ", DRObuttonFontSize, DROwidth, DROzpos + 5, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLUE, &zeroZ, &zeroZpressed},
-        {1, 1, "zAll", DRObuttonFontSize, DROwidth - DRObuttonWidth - 4, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLUE, &zAll, &zAllpressed},
-        {1, 1, "C1", DRObuttonFontSize, 0, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLUE, &coord1, &coord1pressed},
-        {1, 1, "C2", DRObuttonFontSize, (DRObuttonWidth + 8), DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLUE, &coord2, &coord2pressed},
-        {1, 1, "C3", DRObuttonFontSize, (DRObuttonWidth + 8) * 2, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLUE, &coord3, &coord3pressed},
-        {1, 1, "Page 2", 2, 5, 190, 125, 45, TFT_WHITE, 1, TFT_GREEN, TFT_BLUE, &but4, &button4Pressed},
-        {2, 1, "Page 1", 2, 5, 190, 125, 45, TFT_WHITE, 1, TFT_GREEN, TFT_BLUE, &but5, &button5Pressed},
-        {2, 1, "Reboot", 2, 155, 190, 125, 45, TFT_WHITE, 1, TFT_ORANGE, TFT_BLUE, &but6, &button6Pressed}
+
+        // page, enabled, title, x, y, width, height, border colour, burder thickness, fill colour, pressed colour, button, procedure
+
+        // Zero buttons
+        {1, 1, "Z", DROwidth, 0, DRObuttonWidth, DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroX, &zeroXpressed},
+        {1, 1, "Z", DROwidth, DROdbuttonPlacement * 1, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroY, &zeroYpressed},
+        {1, 1, "Z", DROwidth, DROdbuttonPlacement * 2, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroZ, &zeroZpressed},
+        {1, 1, "Z", DROwidth, DROheight, DRObuttonWidth * 2 + buttonSpacing,  DRObuttonheight, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zAll, &zAllpressed},
+
+        // half buttons
+        {1, 1, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, 0, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfX, &halfXpressed},
+        {1, 1, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, DROdbuttonPlacement * 1, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfY, &halfYpressed},
+        {1, 1, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, DROdbuttonPlacement * 2, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfZ, &halfZpressed},
+        
+        // Coordinate select buttons
+        {1, 1, "C1", 0, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord1, &coord1pressed},
+        {1, 1, "C2", (DRObuttonWidth + buttonSpacing) * 1, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord2, &coord2pressed},
+        {1, 1, "C3", (DRObuttonWidth + buttonSpacing) * 2, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord3, &coord3pressed},
+
+        // Page select buttons
+        {1, 1, "P2", DROwidth + ( (DRObuttonWidth + buttonSpacing) * 2), 0, DRObuttonWidth, DRObuttonheight * 3 - buttonSpacing, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &but4, &button4Pressed},
+        {2, 1, "Page1", 20, 140, 100, DRObuttonheight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &but5, &button5Pressed},
+
+        // misc buttons
+        {2, 1, "Reboot", 200, 140, 100, DRObuttonheight, TFT_WHITE, 1, TFT_RED, TFT_BLACK, &but6, &button6Pressed}
+
       };
       uint8_t buttonCount = sizeof(screenButtons) / sizeof(screenButtons[0]);    // number of buttons created
 
@@ -357,16 +392,19 @@ void setup() {
   // Cheap Yellow Display
   tft.init();
   tft.setRotation(1);           // set display to landscape
-  tft.fillScreen(TFT_BLACK);    // Clear the screen before writing to it
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  tft.setTextSize(1);
-  tft.setFreeFont(FSB9);        // 9, 12, 18 or 24
-  tft.drawString(String(stitle), 5, 10);   
-  tft.drawString(String(sversion), 210, 25);   
+  tft.fillScreen(TFT_BLACK);    // Clear the screen
+  tft.setFreeFont(FM9);        // standard Free Mono font - available sizes: 9, 12, 18 or 24
+  tft.setTextSize(1);           // 1 or 2
+  const int sSpacing = 22;      // line spacing
+  tft.setTextColor(TFT_GREEN, TFT_BLACK);
+  tft.drawString(String(stitle), 5, 0);   
+  tft.drawString(String(sversion), 220, sSpacing);  
+  tft.setTextColor(TFT_WHITE, TFT_BLACK); 
+  tft.drawString("See: github.com/alanesq/DRO", 5, sSpacing * 2); 
 
   // display a meter    see: https://github.com/Bodmer/TFT_eWidget/blob/main/examples/Meters/Analogue_meters/Analogue_meters.ino
     dro.setZones(75, 100, 50, 75, 25, 50, 0, 25);   
-    dro.analogMeter(40, 90, 2.0, "DRO", "0", "1.0", "2.0", "3.0", "4.0"); 
+    dro.analogMeter(40, 95, 100.0, "STARTUP", "0", "25", "50", "75", "100"); 
 
   // reserve memory for the log to reduce stack fragmentation (yes, I use Strings - deal with it ;-)
     for (int i=0; i < LogNumber; i++) { 
@@ -385,9 +423,11 @@ void setup() {
   // wifi stuff
 
     if (wifiEnabled) {
-      tft.setTextColor(TFT_WHITE, TFT_BLACK);
-      tft.drawString("Starting wifi ...", 5, 45);                // Left Aligned  
-      dro.updateNeedle(1.0, 30);                                 // move dial 
+      // update screen
+        tft.setTextColor(TFT_WHITE, TFT_BLACK);
+        tft.drawString("Starting wifi ...", 5, sSpacing * 3);   
+        dro.updateNeedle(25, 20);                                // move dial to 25
+
       startWifiManager();                                        // Connect to wifi using wifi manager (see wifi.h)
       //startWifi();                                             // Connect to wifi using fixed details (see wifi.h)
 
@@ -420,22 +460,23 @@ void setup() {
 
       // start web server
         if (serialDebug) Serial.println("Starting web server");  
-        dro.updateNeedle(2.0, 30);                                       // move dial 
-        server.begin();
+      // update screen   
+        tft.setTextColor(TFT_WHITE, TFT_BLACK);
+        tft.drawString("Starting web server ...", 5, sSpacing * 3);      // Left Aligned  
+        dro.updateNeedle(50, 20);                                        // move dial to 50
+
+      server.begin();
 
       // Stop wifi going to sleep (if enabled it can cause wifi to drop out randomly especially on esp8266 boards)
-        #if defined ESP8266
-          WiFi.setSleepMode(WIFI_NONE_SLEEP);
-        #elif defined ESP32
           WiFi.setSleep(false);
-        #endif
    
       // Finished connecting to network
         statusLed1.off();                                              // turn status led off
         log_system_message("Started, ip=" + WiFi.localIP().toString());
-        tft.setTextColor(TFT_WHITE, TFT_BLACK);
-        tft.drawString("Wifi started, ip=" + WiFi.localIP().toString() + "      ", 5, 45);      // Left Aligned  
-        dro.updateNeedle(3.0, 30);                                     // move dial 
+        // update screen
+          tft.setTextColor(TFT_WHITE, TFT_BLACK);        
+          tft.drawString("IP = " + WiFi.localIP().toString() + "      ", 5, sSpacing * 3);    
+          dro.updateNeedle(75, 20);  
     }    // wifi stuff
 
     #if (defined ESP32)  
@@ -460,12 +501,14 @@ void setup() {
 
   // initialise buttons
     for (uint8_t b = 0; b < buttonCount; b++) {
-      screenButtons[b].btn->initButtonUL(screenButtons[b].x, screenButtons[b].y, screenButtons[b].width, screenButtons[b].height, screenButtons[b].outlineColour, screenButtons[b].fillColour, screenButtons[b].textColour, screenButtons[b].label, screenButtons[b].textSize);
+      screenButtons[b].btn->initButtonUL(screenButtons[b].x, screenButtons[b].y, screenButtons[b].width, screenButtons[b].height, screenButtons[b].outlineColour, screenButtons[b].fillColour, screenButtons[b].textColour, screenButtons[b].label, 1);
       //screenButtons[b].btn->setPressAction(screenButtons[b].action);
     }
   
-  dro.updateNeedle(4.0, 30);                                  // move dial 
-  delay(3000);
+  // update screen    
+    dro.updateNeedle(100, 20);                                 // move dial to 100
+
+  if (wifiEnabled) delay(2000);                                // give time to see ip address
   drawScreen(1);     // draw the screen
 }
 
@@ -488,21 +531,65 @@ void loop(){
     }
 
 
-  // Digital Caliper - X
-    static repeatTimer caliperTimer;                      // set up a repeat timer 
-    if (caliperTimer.check(300)) {                        // repeat at set interval (ms)  
-      if (!waitPinState(CLOCK_PIN_X, HIGH)) goto failedReadX;   // wait for gpio pin to change
-      unsigned long tmpTime=micros();
-      if (!waitPinState(CLOCK_PIN_X, LOW)) goto failedReadX;
-      if((micros()-tmpTime)>500) {
-        float tRead = readCaliper(CLOCK_PIN_X, DATA_PIN_X);     // read data from caliper
-        if (tRead == 9999) goto failedReadX;                    // 9999 = failed to read caliper data
-        xReading = tRead;                                 // store result in global variable
-        displayReadings();                                // display caliper readings 
+  // Digital Caliper - X                                     // Note: I have kept the three caliper codes seperate here in case any require custom code
+    if (DATA_PIN_X != -1) {                                  // if caliper is present 
+      static repeatTimer caliperTimerX;                      // set up a repeat timer 
+      if (caliperTimerX.check(checkDROreadings)) {           // repeat at set interval (ms)  
+        if (!waitPinState(CLOCK_PIN_X, HIGH)) goto failedReadX;   // wait for gpio pin to change
+        unsigned long tmpTime=micros();
+        if (!waitPinState(CLOCK_PIN_X, LOW)) goto failedReadX;
+        if((micros()-tmpTime)>500) {
+          float tRead = readCaliper(CLOCK_PIN_X, DATA_PIN_X);  // read data from caliper
+          if (tRead == 9999) goto failedReadX;                 // 9999 = failed to read caliper data
+          if (tRead != xReading || displayRefreshX == 1) {     // if reading has changed or flag to refresh is set update display
+            xReading = tRead;                                  // store result in global variable
+            displayReadings();                                 // display caliper readings 
+            displayRefreshX = 0;
+          }
+        }
       }
     }
-    failedReadX:                                          // jump to here if read fails 
+    failedReadX:                                             // jump to here if read fails     
 
+  // Digital Caliper - Y
+    if (DATA_PIN_Y != -1) {                                  // if caliper is present
+      static repeatTimer caliperTimerY;                      // set up a repeat timer 
+      if (caliperTimerY.check(checkDROreadings + 7)) {       // repeat at set interval (ms)  
+        if (!waitPinState(CLOCK_PIN_Y, HIGH)) goto failedReadY;   // wait for gpio pin to change
+        unsigned long tmpTime=micros();
+        if (!waitPinState(CLOCK_PIN_Y, LOW)) goto failedReadY;
+        if((micros()-tmpTime)>500) {
+          float tRead = readCaliper(CLOCK_PIN_Y, DATA_PIN_Y); // read data from caliper
+          if (tRead == 9999) goto failedReadY;                // 9999 = failed to read caliper data
+          if (tRead != yReading|| displayRefreshY == 1) {     // if reading has changed or flag to refresh is set update display
+            yReading = tRead;                                 // store result in global variable
+            displayReadings();                                // display caliper readings 
+            displayRefreshY = 0;
+          }
+        }
+      }
+    }
+    failedReadY:                                             // jump to here if read fails 
+
+  // Digital Caliper - Z
+    if (DATA_PIN_Z != -1) {                                  // if caliper is present
+      static repeatTimer caliperTimerZ;                      // set up a repeat timer 
+      if (caliperTimerZ.check(checkDROreadings + 13)) {      // repeat at set interval (ms)  
+        if (!waitPinState(CLOCK_PIN_Z, HIGH)) goto failedReadZ;   // wait for gpio pin to change
+        unsigned long tmpTime=micros();
+        if (!waitPinState(CLOCK_PIN_Z, LOW)) goto failedReadZ;
+        if((micros()-tmpTime)>500) {
+          float tRead = readCaliper(CLOCK_PIN_Z, DATA_PIN_Z); // read data from caliper
+          if (tRead == 9999) goto failedReadY;                // 9999 = failed to read caliper data
+          if (tRead != zReading|| displayRefreshZ == 1) {     // if reading has changed or flag to refresh is set update display
+            zReading = tRead;                                 // store result in global variable
+            displayReadings();                                // display caliper readings 
+            displayRefreshZ = 0;
+          }
+        }
+      }   
+    }
+    failedReadZ:                                             // jump to here if read fails  
 
     // Periodically change the LED status to indicate all is well
       static repeatTimer ledTimer;                          // set up a repeat timer (see standard.h)
@@ -795,6 +882,8 @@ void actionScreenTouch(TS_Point p) {
   // check if a button has been pressed
     for (uint8_t b = 0; b < buttonCount; b++) {
       if (screenButtons[b].enabled == 1 && screenButtons[b].page == displyingPage && screenButtons[b].btn->contains(x, y)) {
+          tft.setFreeFont(FM9);         // standard Free Mono font - available sizes: 9, 12, 18 or 24
+          tft.setTextSize(2);        
           screenButtons[b].btn->drawSmoothButton(true);
           delay(500);
           screenButtons[b].btn->drawSmoothButton(false);
@@ -838,21 +927,31 @@ void actionScreenTouch(TS_Point p) {
 // ----------------------------------------------------------------
 //                     -draw the screen
 // ----------------------------------------------------------------
+// screen = page number to show
+
 void drawScreen(int screen) {
 
   if (serialDebug) Serial.println("Displaying page " + String(screen));
-  displyingPage = screen;     // set current page
+  displyingPage = screen;       // set current page
 
-  tft.fillScreen(TFT_BLACK);  // clear screen
+  tft.fillScreen(TFT_BLACK);    // clear screen
+  
+  // NOTE: If this font is changed it also needs to be changed in 'actionScreenTouch()'
+    tft.setFreeFont(FM9);         // standard Free Mono font - available sizes: 9, 12, 18 or 24
+    tft.setTextSize(2);
 
   // draw the buttons
     for (uint8_t b = 0; b < buttonCount; b++) {
       if (screenButtons[b].enabled == 1) {   
-         if( screenButtons[b].page == screen || screenButtons[b].page == 0) {        // 0 = show on all pages
-            screenButtons[b].btn->drawSmoothButton(false, 3, TFT_BLACK);             // 3 is outline width, TFT_BLACK is the surrounding background colour for anti-aliasing   
+         if( screenButtons[b].page == screen || screenButtons[b].page == 0) {       // 0 = show on all pages
+            screenButtons[b].btn->drawSmoothButton(false, screenButtons[b].outlineThickness, TFT_BLACK);      
          }
       }
     } 
+
+  displayRefreshX = 1;    // flag the caliper reading displays to refresh 
+  displayRefreshY = 1;
+  displayRefreshZ = 1;
 
 }
 
@@ -884,17 +983,17 @@ bool waitPinState(int pin, bool state) {
 float readCaliper(int clockPin, int dataPin) {
 
   int sign = 1;         // if the reading is negative
-  int inches = 0;       // flag if data is in inches (0 = mm)
+  int inches = 0;       // flag if data is in inches (0 = mm) -  NOTE: this doesn't seem to work (always 1)?
   long value = 0;       // reading from caliper  
-
   for(int i=0;i<24;i++) {                                 // read the data bits 
     if (!waitPinState(clockPin, HIGH)) return 9999;       // wait for gpio pin state to change
     if (!waitPinState(clockPin, LOW)) return 9999;
     if(digitalRead(dataPin)==LOW) {
-      if(i<20) value|=(1<<i);
-      if(i==20) sign=-1;
-      if(i==23) inches=1; 
-    }
+      // 1 received
+        if(i<20) value|=(1<<i);
+        if(i==20) sign=-1;
+        if(i==23) inches=1;    
+    } 
   }
   return (value*sign)/100.0;
 }
@@ -906,47 +1005,51 @@ float readCaliper(int clockPin, int dataPin) {
 void displayReadings() {
 
     // create sprint argument  (in the format "%07.2f")
-      String spa = "%0" + String(DROnoOfDigits + 1) + ".2f";
+      String spa = "%0" + String(DROnoOfDigits + 1) + ".2f";    // https://alvinalexander.com/programming/printf-format-cheat-sheet/
+   
+    // font size
+      if (displyingPage == 1) tft.setFreeFont(&sevenSeg35pt7b);         // seven segment style font from sevenSeg.h  
+      else tft.setFreeFont(&sevenSeg16pt7b);
 
     // Cheap Yellow Display
-      tft.setTextColor(TFT_WHITE, TFT_BLACK);
-      tft.setFreeFont(FSB24);               // 9, 12, 18 or 24 
+      tft.setTextColor(TFT_RED, TFT_BLACK);
       tft.setTextSize(1);
-      tft.setTextPadding(DROwidth);         // this clears any previous text
-      char buff[21];
+      tft.setTextPadding(DROwidth);           // this clears the previous text (it should anyway)
+
+      char buff[30];
 
     // x
       if (DATA_PIN_X != -1) {
-        spa = "X:" + spa;
         sprintf(buff, spa.c_str(), xReading - xAdj[currentCoord]);
-        //(xReading >= 0.0) ? tft.setTextColor(TFT_WHITE, TFT_BLACK) : tft.setTextColor(TFT_RED, TFT_BLACK);
-        if (strlen(buff) == DROnoOfDigits+3) tft.drawString(buff, 0, DROxpos);    
+        if (strlen(buff) == DROnoOfDigits+1) tft.drawString(buff, 0, 0);    
         else if (serialDebug) Serial.println("Invalid reading from X: " + String(buff));
       }
 
     // y
       if (DATA_PIN_Y != -1) {
-        spa = "Y:" + spa;
         sprintf(buff, spa.c_str(), yReading - yAdj[currentCoord]);
-        //(yReading >= 0.0) ? tft.setTextColor(TFT_WHITE, TFT_BLACK) : tft.setTextColor(TFT_RED, TFT_BLACK);
-        if (strlen(buff) == DROnoOfDigits+3) tft.drawString(buff, 0, DROypos);    
+        if (strlen(buff) == DROnoOfDigits+1) tft.drawString(buff, 0, tft.fontHeight() );    
         else if (serialDebug) Serial.println("Invalid reading from Y: " + String(buff));
       }
 
     // z
       if (DATA_PIN_Z != -1) {
-        spa = "Z:" + spa;
         sprintf(buff, spa.c_str(), zReading - zAdj[currentCoord]);
-        //(zReading >= 0.0) ? tft.setTextColor(TFT_WHITE, TFT_BLACK) : tft.setTextColor(TFT_RED, TFT_BLACK);
-        if (strlen(buff) == DROnoOfDigits+3) tft.drawString(buff, 0, DROzpos);    
+        if (strlen(buff) == DROnoOfDigits+1) tft.drawString(buff, 0, tft.fontHeight() * 2 );    
         else if (serialDebug) Serial.println("Invalid reading from Z: " + String(buff));
-      }           
+      }   
+   
+    tft.setFreeFont(FM12);        // switch back to standard Free Mono font - available sizes: 9, 12, 18 or 24   
+    tft.setTextPadding(0);        // clear the padding setting
       
-    // current coordinate system
-      tft.setTextPadding(DRObuttonWidth); 
-      sprintf(buff, "C%d", currentCoord + 1);
-      tft.setFreeFont(FSB18);               // 9, 12, 18 or 24 
-      tft.drawString(buff, DROwidth, DROheight);   
+    // Show current coordinate system (if showing page 1)
+      if (displyingPage == 1) {
+        sprintf(buff, "C%d", currentCoord + 1);
+        tft.setFreeFont(FM12);         // standard Free Mono font - available sizes: 9, 12, 18 or 24
+        tft.setTextSize(1);            // 1 or 2  
+        tft.setTextColor(TFT_MAROON, TFT_BLACK);
+        tft.drawString(buff, ( (DRObuttonWidth + buttonSpacing) * 3), DROheight + 5);   
+      }
 
     tft.setTextPadding(0);        // turn off text padding
 }
@@ -958,54 +1061,72 @@ void displayReadings() {
 
 
 void zeroXpressed() { 
-  if (serialDebug) Serial.println("button: zeroX");
+  log_system_message("button: zeroX");
   xAdj[currentCoord] = xReading;    // zero X
 }
 
 void zeroYpressed() { 
-  if (serialDebug) Serial.println("button: zeroY");
+  log_system_message("button: zeroY");
   yAdj[currentCoord] = yReading;    // zero Y
 }
 
 void zeroZpressed() { 
-  if (serialDebug) Serial.println("button: zeroZ");
+  log_system_message("button: zeroZ");
   zAdj[currentCoord] = zReading;    // zero Z
 }
 
 void zAllpressed() { 
-  if (serialDebug) Serial.println("button: zAll");
+  log_system_message("button: zAll");
   xAdj[currentCoord] = xReading;    // zero X
   yAdj[currentCoord] = yReading;    // zero Y
   zAdj[currentCoord] = zReading;    // zero Z
 }
 
+void halfXpressed() { 
+  log_system_message("button: halfX");
+  float t = (xReading - xAdj[currentCoord]) / 2.0;  // half of current displayed reading
+  xAdj[currentCoord] = xAdj[currentCoord] + t;      
+}
+
+void halfYpressed() { 
+  log_system_message("button: halfY");
+  float t = (yReading - yAdj[currentCoord]) / 2.0;  // half of current displayed reading
+  yAdj[currentCoord] = yAdj[currentCoord] + t;   
+}
+
+void halfZpressed() { 
+  log_system_message("button: halfZ");
+  float t = (zReading - zAdj[currentCoord]) / 2.0;  // half of current displayed reading
+  yAdj[currentCoord] = zAdj[currentCoord] + t;   
+}
+
 void coord1pressed() { 
-  if (serialDebug) Serial.println("button: C1");
+  log_system_message("button: C1");
   currentCoord = 0;
 }
 
 void coord2pressed() { 
-  if (serialDebug) Serial.println("button: C2");
+  log_system_message("button: C2");
   currentCoord = 1;
 }
 
 void coord3pressed() { 
-  if (serialDebug) Serial.println("button: C3");
+  log_system_message("button: C3");
   currentCoord = 2;
 }
 
 void button4Pressed() { 
-  if (serialDebug) Serial.println("button: screen 2");
+  log_system_message("button: screen 2");
   drawScreen(2);      // switch to page 2
 }
 
 void button5Pressed() { 
-  if (serialDebug) Serial.println("button: screen 1");
+  log_system_message("button: screen 1");
   drawScreen(1);
 }
 
 void button6Pressed() { 
-  if (serialDebug) Serial.println("button: reboot");
+  log_system_message("button: reboot");
   delay(500);          // give time to send the above html
   ESP.restart();
   delay(5000);         // restart fails without this delay  
@@ -1033,8 +1154,18 @@ void handleTest(){
   // ---------------------------- test section here ------------------------------
 
 
-// test x zero
-  xAdj[currentCoord] = xReading;
+// // test x zero
+//   xAdj[currentCoord] = xReading;
+
+
+// simulate half x button press
+  halfXpressed(); 
+
+
+// switch pages
+  if (displyingPage == 1) drawScreen(2);  
+  else  drawScreen(1);  
+
 
 
 /*
@@ -1070,4 +1201,3 @@ void handleTest(){
 
 
 // --------------------------- E N D -----------------------------
-
