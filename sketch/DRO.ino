@@ -44,7 +44,7 @@
   GPIO Pins - https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/blob/main/PINS.md
 
     Ribbon cable (soldered down one side of the esp32 module, LED removed)
-    Note: If using Z then the serial port can not be used whilst caliper is connected and make sure 'SerialEnabled' is set to 0 (you can still update sketch via OTA)
+    Note: If using Z then the serial port can not be used whilst caliper is connected and make sure 'serialDebug' is set to 0 (you can still update sketch via OTA)
         3.3v      (from nearby connector)
         gpio 4                  Caliper X clock
         gnd       (from nearby connector)
