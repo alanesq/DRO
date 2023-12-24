@@ -43,17 +43,18 @@
 
   GPIO Pins - https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/blob/main/PINS.md
 
-      Ribbon cable:
-        3.3v
-        gpio 4
-        gnd
-        gpio 0
-        gpio 16   
-        gpio 17   
-        gpio 5
-        gpio 3    Rx
-        gpio 1    Tx
-        gpio 22
+    Ribbon cable (soldered down one side of the esp32 module, LED removed)
+    Note: If using Z then the serial port can not be used whilst caliper is connected and make sure 'SerialEnabled' is set to 0 (you can still update sketch via OTA)
+        3.3v      (from nearby connector)
+        gpio 4                  Caliper X clock
+        gnd       (from nearby connector)
+        gpio 0    (Not sure if this pin can be used)
+        gpio 16                 Caliper X data
+        gpio 17                 Caliper Y clock
+        gpio 5                  Caliper Y data
+        gpio 3    (Serial Rx)    
+        gpio 1    (Serial Tx)   Caliper Z clock
+        gpio 22                 Caliper Z data
 
 
       35 - On connector P3 - Input only - 
@@ -137,10 +138,10 @@
 
 
   // Digital Caliper GPIO pins              X=16/17, Y=4/5, Z=22/1(Serial)        -1 = not in use
-    #define CLOCK_PIN_X 16
-    #define DATA_PIN_X  17
-    #define CLOCK_PIN_Y 4
-    #define DATA_PIN_Y  5
+    #define CLOCK_PIN_X 4
+    #define DATA_PIN_X  16
+    #define CLOCK_PIN_Y -1
+    #define DATA_PIN_Y  -1
     #define CLOCK_PIN_Z -1
     #define DATA_PIN_Z  -1  
 
