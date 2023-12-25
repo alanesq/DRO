@@ -8,6 +8,8 @@ Note: This is a work in progress, whilst it is now just about in a usable state 
 
 <img src="/pics/DROproject.jpg" />
 
+--------------------------------------
+
 Misc info:
 
 Cheap Yellow Display:
@@ -30,3 +32,13 @@ https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.ht
 
 This sketch is wifi enabled just because I already had the code to do this so why not but this can be disabled by changing a flag in the settings if you do not require it.
 
+--------------------------------------
+
+Features:
+- Simulate pressing the screen with: http://x.x.x.x/touch?x=100&y=50
+- Restart esp32 with: http://x.x.x.x/reboot
+- Check it is live with: http://x.x.x.x/ping
+- Log of activity: http://x.x.x.x/log
+- Testing code: see 'handleTest' at bottom of page, access with http://x.x.x.x/test
+- Update via OTA: http://x.x.x.x/ota
+      
