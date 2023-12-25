@@ -1,6 +1,6 @@
 /**************************************************************************************************
  *
- *      Wifi / NTP Connections - has the option to use WifiManager - 20Nov23
+ *      Wifi / NTP Connections - has the option to use WifiManager - 25Dec23
  *
  *      part of the BasicWebserver sketch - https://github.com/alanesq/BasicWebserver
  *
@@ -103,15 +103,27 @@
 // ----------------------------------------------------------------
 //                 -wifi initialise  (using wifi manager)
 // ----------------------------------------------------------------
-// called from main SETUP
+// 'startWifiManager' is called from main SETUP
+
+// Called when AP is started (i.e. failed to connect to wifi)
+void configModeCallback(WiFiManager *myWiFiManager) {
+  if (serialDebug) {
+    Serial.println("Failed to connect to wifi - Access Port starting");
+    Serial.print("Config SSID: ");
+    Serial.println(myWiFiManager->getConfigPortalSSID());
+    Serial.print("Config IP Address: ");
+    Serial.println(WiFi.softAPIP());    
+  }
+}
 
 void startWifiManager() {
 
   //WiFiManager, Local intialization. Once its business is done, there is no need to keep it around
     WiFiManager wm;
-    // wm.resetSettings();                             // wipe stored settings
-    wm.setConfigPortalTimeout(120);                  // set timeout for config portal
-    bool res = wm.autoConnect(AP_SSID, AP_PASS);     // password protected ap
+    // wm.resetSettings();                            // wipe stored settings
+    wm.setConfigPortalTimeout(120);                   // set timeout for config portal
+    wm.setAPCallback(configModeCallback);             // function called when AP is started (i.e. failed to connect to wifi)
+    bool res = wm.autoConnect(AP_SSID, AP_PASS);      // password protected ap
     WiFi.setAutoReconnect(0);
 
   // connect to wifi

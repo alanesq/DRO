@@ -4,7 +4,7 @@
  *
  *                 Tested in Arduino IDE 2.2.1 with board managers ESP32 2.0.14 & ESP8266 3.1.2
  *
- *                   Included files: email.h, standard.h, ota.h, oled.h, neopixel.h & wifi.h
+ *                   Included files: standard.h, ota.h, sevenSeg.h, Free_Fonts.h, buttons.h & wifi.h
  *
  *
  *
@@ -43,8 +43,8 @@
 
   GPIO Pins - https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/blob/main/PINS.md
 
-    Ribbon cable (soldered down one side of the esp32 module, LED removed)
-    Note: If using Z then the serial port can not be used whilst caliper is connected and make sure 'serialDebug' is set to 0 (you can still update sketch via OTA)
+      Ribbon cable (soldered down one side of the esp32 module, LED removed)
+      Note: If using Z then the serial port can not be used whilst caliper is connected and make sure 'serialDebug' is set to 0 (you can still update sketch via OTA)
         3.3v      (from nearby connector)
         gpio 4                  Caliper X clock
         gnd       (from nearby connector)
@@ -90,6 +90,16 @@
     Colours available  
           TFT_BLACK,TFT_NAVY,TFT_DARKGREEN,TFT_DARKCYAN,TFT_MAROON,TFT_PURPLE,TFT_OLIVE,TFT_LIGHTGREY,TFT_DARKGREY,TFT_BLACK,TFT_GREEN,TFT_CYAN,
           TFT_RED,TFT_MAGENTATFT_YELLOW,TFT_WHITE,TFT_ORANGE,TFT_GREENYELLOW,TFT_PINK,TFT_BROWN,TFT_GOLD,TFT_SILVER,TFT_SKYBLUE,TFT_VIOLET
+
+
+    Features:
+      Simulate pressing the screen with: http://x.x.x.x/touch?x=100&y=50
+      Restart esp32 with: http://x.x.x.x/reboot
+      Check it is live with: http://x.x.x.x/ping
+      Log of activity: http://x.x.x.x/log
+      Testing code: see 'handleTest' at bottom of page, access with http://x.x.x.x/test
+      Update via OTA: http://x.x.x.x/ota
+
 */
 
 #if (!defined ESP32)
@@ -118,6 +128,7 @@
     void handlePing();
     void settingsEeprom(bool eDirection);
     void handleTest();
+    void drawScreen(int);      
 
 
 // ---------------------------------------------------------------
@@ -128,20 +139,26 @@
 
   const char* stitle = "SuperLowBudget-DRO";             // title of this sketch
 
-  const char* sversion = "24Dec23";                      // version of this sketch
+  const char* sversion = "25Dec23";                      // version of this sketch
 
   const bool wifiEnabled = 1;                            // if wifi to be used
+  
+  const bool serialDebug = 1;                            // provide debug info on serial port  (disable if using Tx or Rx gpio pins for caliper)
+  const int serialSpeed = 115200;                        // Serial data speed to use  
 
   // Display
+    #define SCREEN_ROTATION 1
     #define SCREEN_WIDTH 320
     #define SCREEN_HEIGHT 240
 
 
-  // Digital Caliper GPIO pins              X=16/17, Y=4/5, Z=22/1(Serial)        -1 = not in use
-    #define CLOCK_PIN_X 4
-    #define DATA_PIN_X  16
-    #define CLOCK_PIN_Y -1
-    #define DATA_PIN_Y  -1
+  // Digital Caliper GPIO pins   ( -1 = not in use )
+    #define CLOCK_PIN_X 16
+    #define DATA_PIN_X  17
+    
+    #define CLOCK_PIN_Y 4
+    #define DATA_PIN_Y  5
+    
     #define CLOCK_PIN_Z -1
     #define DATA_PIN_Z  -1  
 
@@ -156,30 +173,31 @@
     #define XPT2046_MISO 39
     #define XPT2046_CLK 25
     #define XPT2046_CS 33        
+    
+  const int checkDROreadings = 200;                      // how often to refresh DRO readings (ms)  
 
-  const bool serialDebug = 1;                            // provide debug info on serial port
-  const int serialSpeed = 115200;                        // Serial data speed to use
+  // Page 1 - DRO screen size/position settings 
+      const int DROdisplaySpacing = 10;                  // DRO reading vertical space between displays
+      const int DROnoOfDigits = 6;                       // number of digits to display in caliper readings
+      const int DROwidth = 200;                          // width of DRO reading display   i.e. x position of zero buttons  
+      const int DROheight = 200;                         // Height of the DRO reading display for placement of lower buttons  
+      const int DRObuttonheight = 30;                    // buttons around DRO readings              
+      const int DRObuttonWidth = 35;                     
+      const int DROdbuttonPlacement = 70;                // vertical spacing of the DRO buttons  
 
-  // DRO readings display settings
-      const int DROdisplaySpacing = 10;                   // DRO readout vertical space between displays
-      const int DROnoOfDigits = 6;                       // number of digits to display
-      const int DROwidth = 200;                          // width of DRO reading display   i.e. x position of buttons
-      const int DROheight = 200; 
-      const int DRObuttonheight = 30;                      
-      const int DRObuttonWidth = 35;                     // buttons around DRO readings
-      const int DROdbuttonPlacement = 70;                // vertical spacing of the DRO buttons (page1)
-      const int checkDROreadings = 400;                  // how often to refresh DRO readings (ms)
-  
-  #define WDT_TIMEOUT 150                                // timeout of watchdog timer for esp32 (seconds) - Note: emails can take over a min to send
+  //page 2
 
-  #define ENABLE_EEPROM 0                                // if some settings are to be stored in eeprom
-  // Note on esp32 this should really be replaced with preferences.h - see: by https://randomnerdtutorials.com/esp32-save-data-permanently-preferences/
 
-  #define ENABLE_OLED_MENU 0                             // Enable OLED / rotary encoder based menu
+  // page 3 - numeric keypad
+      const int keyWidth = 45;
+      const int keyHeight = 35;
+      const int keySpacing = 12;
+      const int keyX = 155;                               // position on screen (top left)
+      const int keyY = 60;
+      
+  #define WDT_TIMEOUT 60                                 // timeout of watchdog timer for esp32 (seconds) - i.e. auto restart if it stops responding
 
-  #define ENABLE_EMAIL 0                                 // Enable E-mail support
-
-  #define ENABLE_NEOPIXEL 0                              // Enable Neopixel support
+  #define ENABLE_EEPROM 0                                // if some settings are to be stored in eeprom  (not used in this sketch)
 
   #define ENABLE_OTA 1                                   // Enable Over The Air updates (OTA)
   const String OTAPassword = "password";                 // Password to enable OTA service (supplied as - http://<ip address>?pwd=xxxx )
@@ -235,7 +253,7 @@
   
   // screen buttons
 
-    int displyingPage = 1;        // which screen page is being displayed
+    int displayingPage = 1;        // which screen page is being displayed
     typedef void (*buttonActionCallback)(void);   
     
     // struct to create a button
@@ -253,71 +271,91 @@
       buttonActionCallback action;  // procedure called when button pressed
     };
     
-    // create button widgets
-      ButtonWidget zeroX = ButtonWidget(&tft);  // zero
-      ButtonWidget zeroY = ButtonWidget(&tft);  
-      ButtonWidget zeroZ = ButtonWidget(&tft);  
-      ButtonWidget zAll = ButtonWidget(&tft);  
+    // create the screen buttons
 
-      ButtonWidget halfX = ButtonWidget(&tft);  // half
-      ButtonWidget halfY = ButtonWidget(&tft);  
-      ButtonWidget halfZ = ButtonWidget(&tft);  
+      // page 1
+        ButtonWidget zeroX = ButtonWidget(&tft);  // zero
+        ButtonWidget zeroY = ButtonWidget(&tft);  
+        ButtonWidget zeroZ = ButtonWidget(&tft);  
+        ButtonWidget zAll = ButtonWidget(&tft);  
 
-      ButtonWidget coord1 = ButtonWidget(&tft);  // coordinates
-      ButtonWidget coord2 = ButtonWidget(&tft);  
-      ButtonWidget coord3 = ButtonWidget(&tft);  
+        ButtonWidget halfX = ButtonWidget(&tft);  // half
+        ButtonWidget halfY = ButtonWidget(&tft);  
+        ButtonWidget halfZ = ButtonWidget(&tft);  
 
-      ButtonWidget but4 = ButtonWidget(&tft);    // misc
-      ButtonWidget but5 = ButtonWidget(&tft); 
-      ButtonWidget but6 = ButtonWidget(&tft); 
+        ButtonWidget coord1 = ButtonWidget(&tft);  // coordinates
+        ButtonWidget coord2 = ButtonWidget(&tft);  
+        ButtonWidget coord3 = ButtonWidget(&tft);  
 
-    // forward declarations for pressed button procedures
-      void zeroXpressed();     // zero
-      void zeroYpressed();
-      void zeroZpressed();
-      void zAllpressed();
+        ButtonWidget but4 = ButtonWidget(&tft);    // misc
 
-      void halfXpressed();     // half
-      void halfYpressed();
-      void halfZpressed();      
+      // page 2
+        ButtonWidget but5 = ButtonWidget(&tft); 
+        ButtonWidget but6 = ButtonWidget(&tft); 
 
-      void coord1pressed();    // change coordinate system 
-      void coord2pressed();
-      void coord3pressed();
+      // page 3
+        // number keypad
+          String keyEnteredNumber = "";      // the number entered on the keypad
+          ButtonWidget key1 = ButtonWidget(&tft); 
+          ButtonWidget key2 = ButtonWidget(&tft); 
+          ButtonWidget key3 = ButtonWidget(&tft); 
+          ButtonWidget key4 = ButtonWidget(&tft); 
+          ButtonWidget key5 = ButtonWidget(&tft); 
+          ButtonWidget key6 = ButtonWidget(&tft); 
+          ButtonWidget key7 = ButtonWidget(&tft); 
+          ButtonWidget key8 = ButtonWidget(&tft); 
+          ButtonWidget key9 = ButtonWidget(&tft); 
+          ButtonWidget key0 = ButtonWidget(&tft); 
+          ButtonWidget keyEnter = ButtonWidget(&tft); 
 
-      void button4Pressed();   // misc
-      void button5Pressed();
-      void button6Pressed();
+    // load the procedures which are triggered when a button is pressed
+      #include "buttons.h"      
 
     const int buttonSpacing = 6;        // spacings used when placing the buttons on display
     
     // -define the buttons (see buttonStruct above)
-      buttonStruct screenButtons[] {
+      buttonStruct screenButtons[] {               
 
-        // page, enabled, title, x, y, width, height, border colour, burder thickness, fill colour, pressed colour, button, procedure
+        // page, enabled, title, x, y, width, height, border colour, burder thickness, fill colour, pressed colour, button, procedure to run when button is pressed
 
-        // Zero buttons
-        {1, 1, "Z", DROwidth, 0, DRObuttonWidth, DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroX, &zeroXpressed},
-        {1, 1, "Z", DROwidth, DROdbuttonPlacement * 1, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroY, &zeroYpressed},
-        {1, 1, "Z", DROwidth, DROdbuttonPlacement * 2, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroZ, &zeroZpressed},
-        {1, 1, "Z", DROwidth, DROheight, DRObuttonWidth * 2 + buttonSpacing,  DRObuttonheight, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zAll, &zAllpressed},
+        // Page 1
+          // Zero buttons
+          {1, 1, "Z", DROwidth, 0, DRObuttonWidth, DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroX, &zeroXpressed},
+          {1, 1, "Z", DROwidth, DROdbuttonPlacement * 1, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroY, &zeroYpressed},
+          {1, 1, "Z", DROwidth, DROdbuttonPlacement * 2, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroZ, &zeroZpressed},
+          {1, 1, "Z", DROwidth, DROheight, DRObuttonWidth * 2 + buttonSpacing,  DRObuttonheight, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zAll, &zAllpressed},
 
-        // half buttons
-        {1, 1, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, 0, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfX, &halfXpressed},
-        {1, 1, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, DROdbuttonPlacement * 1, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfY, &halfYpressed},
-        {1, 1, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, DROdbuttonPlacement * 2, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfZ, &halfZpressed},
-        
-        // Coordinate select buttons
-        {1, 1, "C1", 0, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord1, &coord1pressed},
-        {1, 1, "C2", (DRObuttonWidth + buttonSpacing) * 1, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord2, &coord2pressed},
-        {1, 1, "C3", (DRObuttonWidth + buttonSpacing) * 2, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord3, &coord3pressed},
+          // half buttons
+          {1, 1, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, 0, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfX, &halfXpressed},
+          {1, 1, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, DROdbuttonPlacement * 1, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfY, &halfYpressed},
+          {1, 1, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, DROdbuttonPlacement * 2, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfZ, &halfZpressed},
+          
+          // Coordinate select buttons
+          {1, 1, "C1", 0, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord1, &coord1pressed},
+          {1, 1, "C2", (DRObuttonWidth + buttonSpacing) * 1, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord2, &coord2pressed},
+          {1, 1, "C3", (DRObuttonWidth + buttonSpacing) * 2, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord3, &coord3pressed},
 
-        // Page select buttons
-        {1, 1, "P2", DROwidth + ( (DRObuttonWidth + buttonSpacing) * 2), 0, DRObuttonWidth, DRObuttonheight * 3 - buttonSpacing, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &but4, &button4Pressed},
-        {2, 1, "Page1", 20, 140, 100, DRObuttonheight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &but5, &button5Pressed},
+          // Misc
+          {1, 1, "P2", DROwidth + ( (DRObuttonWidth + buttonSpacing) * 2), 0, DRObuttonWidth, DRObuttonheight * 3 - buttonSpacing, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &but4, &button4Pressed},
 
-        // misc buttons
-        {2, 1, "Reboot", 200, 140, 100, DRObuttonheight, TFT_WHITE, 1, TFT_RED, TFT_BLACK, &but6, &button6Pressed}
+        // page 2
+          {2, 1, "Page1", 20, 140, 100, DRObuttonheight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &but5, &button5Pressed},
+
+          // Misc
+          {2, 1, "Reboot", 200, 140, 100, DRObuttonheight, TFT_WHITE, 1, TFT_RED, TFT_BLACK, &but6, &button6Pressed},
+
+        // page 3 (keypad)
+          {3, 1, "1", keyX + 0 * (keyWidth + keySpacing), keyY + 2 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key1, &buttonKey1Pressed},
+          {3, 1, "2", keyX + 1 * (keyWidth + keySpacing), keyY + 2 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key2, &buttonKey2Pressed},
+          {3, 1, "3", keyX + 2 * (keyWidth + keySpacing), keyY + 2 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key3, &buttonKey3Pressed},
+          {3, 1, "4", keyX + 0 * (keyWidth + keySpacing), keyY + 1 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key4, &buttonKey4Pressed},
+          {3, 1, "5", keyX + 1 * (keyWidth + keySpacing), keyY + 1 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key5, &buttonKey5Pressed},
+          {3, 1, "6", keyX + 2 * (keyWidth + keySpacing), keyY + 1 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key6, &buttonKey6Pressed},
+          {3, 1, "7", keyX + 0 * (keyWidth + keySpacing), keyY + 0 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key7, &buttonKey7Pressed},
+          {3, 1, "8", keyX + 1 * (keyWidth + keySpacing), keyY + 0 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key8, &buttonKey8Pressed},
+          {3, 1, "9", keyX + 2 * (keyWidth + keySpacing), keyY + 0 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key9, &buttonKey9Pressed},
+          {3, 1, "0", keyX + 0 * (keyWidth + keySpacing), keyY + 3 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key0, &buttonKey0Pressed},
+          {3, 1, "ENTER", keyX + 1 * (keyWidth + keySpacing), keyY + 3 * (keyHeight + keySpacing), keyWidth * 2 + keySpacing, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &keyEnter, &buttonKeyEnterPressed},
 
       };
       uint8_t buttonCount = sizeof(screenButtons) / sizeof(screenButtons[0]);    // number of buttons created
@@ -341,24 +379,11 @@ Led statusLed1(onboardLED, LOW);        // set up onboard LED - see standard.h
 Button button1(onboardButton, HIGH);    // set up the onboard 'flash' button - see standard.h
 
 #if ENABLE_EEPROM
-  #include <EEPROM.h>                   // for storing settings in eeprom
+  #include <EEPROM.h>                   // for storing settings in eeprom (not used at present)
 #endif
 
 #if ENABLE_OTA
   #include "ota.h"                      // Over The Air updates (OTA)
-#endif
-
-#if ENABLE_NEOPIXEL
-  #include "neopixel.h"                 // Neopixels
-#endif
-
-#if ENABLE_OLED_MENU
-  #include "oled.h"                     // OLED display - i2c version SSD1306
-#endif
-
-#if ENABLE_EMAIL
-    #define _SenderName "ESP"           // name of email sender (no spaces)
-    #include "email.h"
 #endif
 
 
@@ -392,7 +417,7 @@ void setup() {
 
   // Cheap Yellow Display
   tft.init();
-  tft.setRotation(1);           // set display to landscape
+  tft.setRotation(SCREEN_ROTATION);           // set display to landscape
   tft.fillScreen(TFT_BLACK);    // Clear the screen
   tft.setFreeFont(FM9);        // standard Free Mono font - available sizes: 9, 12, 18 or 24
   tft.setTextSize(1);           // 1 or 2
@@ -454,6 +479,7 @@ void setup() {
         server.on("/log", handleLogpage);        // system log (in standard.h)
         server.on("/test", handleTest);          // testing page
         server.on("/reboot", handleReboot);      // reboot the esp
+        server.on("/touch", handleTouch);        // for simulating a press on the touchscreen
         //server.onNotFound(handleNotFound);       // invalid page requested
         #if ENABLE_OTA
           server.on("/ota", handleOTA);          // ota updates web page
@@ -490,7 +516,7 @@ void setup() {
   // Start the SPI for the touch screen and init the TS library
     mySpi.begin(XPT2046_CLK, XPT2046_MISO, XPT2046_MOSI, XPT2046_CS);
     ts.begin(mySpi);
-    ts.setRotation(1);  
+    ts.setRotation(SCREEN_ROTATION);  
 
   // caliper gpio pins
     pinMode(CLOCK_PIN_X, INPUT);
@@ -882,7 +908,7 @@ void actionScreenTouch(TS_Point p) {
 
   // check if a button has been pressed
     for (uint8_t b = 0; b < buttonCount; b++) {
-      if (screenButtons[b].enabled == 1 && screenButtons[b].page == displyingPage && screenButtons[b].btn->contains(x, y)) {
+      if (screenButtons[b].enabled == 1 && screenButtons[b].page == displayingPage && screenButtons[b].btn->contains(x, y)) {
           tft.setFreeFont(FM9);         // standard Free Mono font - available sizes: 9, 12, 18 or 24
           tft.setTextSize(2);        
           screenButtons[b].btn->drawSmoothButton(true);
@@ -933,7 +959,7 @@ void actionScreenTouch(TS_Point p) {
 void drawScreen(int screen) {
 
   if (serialDebug) Serial.println("Displaying page " + String(screen));
-  displyingPage = screen;       // set current page
+  displayingPage = screen;      // set current page
 
   tft.fillScreen(TFT_BLACK);    // clear screen
   
@@ -1009,13 +1035,14 @@ void displayReadings() {
       String spa = "%0" + String(DROnoOfDigits + 1) + ".2f";    // https://alvinalexander.com/programming/printf-format-cheat-sheet/
    
     // font size
-      if (displyingPage == 1) tft.setFreeFont(&sevenSeg35pt7b);         // seven segment style font from sevenSeg.h  
+      if (displayingPage == 1) tft.setFreeFont(&sevenSeg35pt7b);         // seven segment style font from sevenSeg.h  
       else tft.setFreeFont(&sevenSeg16pt7b);
 
     // Cheap Yellow Display
       tft.setTextColor(TFT_RED, TFT_BLACK);
       tft.setTextSize(1);
-      tft.setTextPadding(DROwidth);           // this clears the previous text (it should anyway)
+      //tft.setTextPadding(DROwidth);           // this clears the previous text (it should anyway)
+      tft.setTextPadding( tft.textWidth("8") * DROnoOfDigits );           // this clears the previous text
 
       char buff[30];
 
@@ -1044,7 +1071,7 @@ void displayReadings() {
     tft.setTextPadding(0);        // clear the padding setting
       
     // Show current coordinate system (if showing page 1)
-      if (displyingPage == 1) {
+      if (displayingPage == 1) {
         sprintf(buff, "C%d", currentCoord + 1);
         tft.setFreeFont(FM12);         // standard Free Mono font - available sizes: 9, 12, 18 or 24
         tft.setTextSize(1);            // 1 or 2  
@@ -1056,82 +1083,57 @@ void displayReadings() {
 }
 
 
-//      ********************************************************************
+// ----------------------------------------------------------------
+// -simulate press of touch screen     i.e. http://x.x.x.x/touch?x=310&y=10
+// ----------------------------------------------------------------
 
-//                                   button actions
+void handleTouch() {
 
+  WiFiClient client = server.client();          // open link with client
 
-void zeroXpressed() { 
-  log_system_message("button: zeroX");
-  xAdj[currentCoord] = xReading;    // zero X
+  // read x and y requested
+    int x=-1, y=-1;
+
+    if (server.hasArg("x")) {
+      String Tvalue = server.arg("x");   // read value
+      if (Tvalue != NULL) {
+        int val = Tvalue.toInt();     
+        if  (val >= 0 && val <= SCREEN_WIDTH) x = val;
+      }
+    }
+
+    if (server.hasArg("y")) {
+      String Tvalue = server.arg("y");   // read value
+      if (Tvalue != NULL) {
+        int val = Tvalue.toInt();     
+        if  (val >= 0 && val <= SCREEN_HEIGHT) y = val;
+      }    
+    }
+
+  // log page request including clients IP address
+    IPAddress cip = client.remoteIP();
+    String clientIP = decodeIP(cip.toString());   // check for known IP addresses
+    log_system_message("Simulate touchscreen press requeste by " + clientIP + ": x=" + String(x) + ", y=" + String(y));    
+
+  // simulate screen press (screen is 320 x 240)
+    if (x >= 0 && y >= 0) {
+      // draw circle on screen showing location
+        const int radius = 4;
+        tft.drawCircle(x, y, radius, TFT_RED);    
+        tft.fillCircle(x, y, radius - 1, TFT_YELLOW);
+      // map from screen to touch coordinates
+        x = map(x, 0, 320, TOUCH_LEFT, TOUCH_RIGHT);
+        y = map(y, 0, 320, TOUCH_TOP, TOUCH_BOTTOM);    
+      // send click
+        TS_Point click = TS_Point(x, y, 3000);
+        actionScreenTouch(click);
+    }
+
+  String message = "ok";
+  server.send(200, "text/plain", message);   // send reply as plain text    
 }
 
-void zeroYpressed() { 
-  log_system_message("button: zeroY");
-  yAdj[currentCoord] = yReading;    // zero Y
-}
 
-void zeroZpressed() { 
-  log_system_message("button: zeroZ");
-  zAdj[currentCoord] = zReading;    // zero Z
-}
-
-void zAllpressed() { 
-  log_system_message("button: zAll");
-  xAdj[currentCoord] = xReading;    // zero X
-  yAdj[currentCoord] = yReading;    // zero Y
-  zAdj[currentCoord] = zReading;    // zero Z
-}
-
-void halfXpressed() { 
-  log_system_message("button: halfX");
-  float t = (xReading - xAdj[currentCoord]) / 2.0;  // half of current displayed reading
-  xAdj[currentCoord] = xAdj[currentCoord] + t;      
-}
-
-void halfYpressed() { 
-  log_system_message("button: halfY");
-  float t = (yReading - yAdj[currentCoord]) / 2.0;  // half of current displayed reading
-  yAdj[currentCoord] = yAdj[currentCoord] + t;   
-}
-
-void halfZpressed() { 
-  log_system_message("button: halfZ");
-  float t = (zReading - zAdj[currentCoord]) / 2.0;  // half of current displayed reading
-  yAdj[currentCoord] = zAdj[currentCoord] + t;   
-}
-
-void coord1pressed() { 
-  log_system_message("button: C1");
-  currentCoord = 0;
-}
-
-void coord2pressed() { 
-  log_system_message("button: C2");
-  currentCoord = 1;
-}
-
-void coord3pressed() { 
-  log_system_message("button: C3");
-  currentCoord = 2;
-}
-
-void button4Pressed() { 
-  log_system_message("button: screen 2");
-  drawScreen(2);      // switch to page 2
-}
-
-void button5Pressed() { 
-  log_system_message("button: screen 1");
-  drawScreen(1);
-}
-
-void button6Pressed() { 
-  log_system_message("button: reboot");
-  delay(500);          // give time to send the above html
-  ESP.restart();
-  delay(5000);         // restart fails without this delay  
-}
 
 
 // ----------------------------------------------------------------
@@ -1151,21 +1153,25 @@ void handleTest(){
   webheader(client);                 // add the standard html header
   client.println("<br><H2>TEST PAGE</H2><br>");
 
+  
+
 
   // ---------------------------- test section here ------------------------------
 
 
-// // test x zero
+// // test x zeroing
 //   xAdj[currentCoord] = xReading;
 
 
-// simulate half x button press
-  halfXpressed(); 
+// // simulate half x button press
+//   halfXpressed(); 
 
 
-// switch pages
-  if (displyingPage == 1) drawScreen(2);  
-  else  drawScreen(1);  
+// // switch pages
+//   if (displayingPage < 3) drawScreen(displayingPage + 1);  
+//   else  drawScreen(1);  
+//   displayKeypadNo(4);
+//   displayKeypadNo(2);
 
 
 
