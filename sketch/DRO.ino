@@ -1,11 +1,15 @@
 /*******************************************************************************************************************
  *
- *                        DRO for milling machine using a CheapYellowDisplay and cheap digital calipers
+ *                                                 SuperLowBudget-DRO
+ *                                                 ------------------
  *
- *                 Tested in Arduino IDE 2.2.1 with board managers ESP32 2.0.14 & ESP8266 3.1.2
+ *              DRO for milling machine/lathe etc. using a CheapYellowDisplay and cheap digital calipers
+ *                                      See: https://github.com/alanesq/DRO
+ *
+ *
+ *                     Tested in Arduino IDE 2.2.1 with board managers ESP32 2.0.14 & ESP8266 3.1.2
  *
  *                   Included files: standard.h, ota.h, sevenSeg.h, Free_Fonts.h, buttons.h & wifi.h
- *
  *
  *
  *      Note:  To add ESP8266/32 ability to the Arduino IDE enter the below two lines in to FILE/PREFERENCES/BOARDS MANAGER
@@ -13,58 +17,49 @@
  *                                            https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
  *             You can then add them in BOARDS MANAGER (search for esp8266 or ESP32)
  *
- *      First time the ESP starts it will create an access point "ESPPortal" which you need to connect to in order to enter your wifi details.
- *             default password = "12345678"   (change this in wifi.h)
+ *      First time the ESP starts it will create an access point "ESPDRO" which you need to connect to in order to enter your wifi details.
+ *             default password = "password"   (change this in wifi.h)
  *             see: https://randomnerdtutorials.com/wifimanager-with-esp8266-autoconnect-custom-parameter-and-manage-your-ssid-and-password
  *
- *      Much of the sketch is the code from other people's work which I have combined together, I believe I have links
- *      to all the sources but let me know if I have missed anyone.
  *
- *                                                                                      Created by: https://alanesq.github.io/
- *
- *        Distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
- *        implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *            Distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+ *                   implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
  ********************************************************************************************************************
 
-  2 Channel DRO using cheap digital calipers and a ESP32-2432S028R  (Cheap Yellow Display)
+  3 Channel DRO using cheap digital calipers and a ESP32-2432S028R  (Cheap Yellow Display)
+  see: https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display
 
-                                                                                    17Dec23
   
   Libraries used:     https://github.com/PaulStoffregen/XPT2046_Touchscreen
                       https://github.com/Bodmer/TFT_eSPI
                       https://github.com/Bodmer/TFT_eWidget
-                      SPI
-                      WiFiManager - see:  https://github.com/tzapu/WiFiManager
+                      https://github.com/tzapu/WiFiManager
 
 
-  Ref:  https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/
+    Ribbon cable (soldered to one side of the esp32 module, 3 colour LED removed)
+    https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/blob/main/PINS.md
+    Note: If using Z then the serial port can not be used and make sure 'serialDebug' is set to 0 (Note: you can still update sketch via OTA)
+      3.3v      (from nearby connector)
+      gpio 4                  Caliper X clock
+      gnd       (from nearby connector)
+      gpio 0    (Not sure if this pin can be used)
+      gpio 16                 Caliper X data
+      gpio 17                 Caliper Y clock
+      gpio 5                  Caliper Y data
+      gpio 3    (Serial Rx)    
+      gpio 1    (Serial Tx)   Caliper Z clock
+      gpio 22                 Caliper Z data
 
-
-  GPIO Pins - https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/blob/main/PINS.md
-
-      Ribbon cable (soldered down one side of the esp32 module, LED removed)
-      Note: If using Z then the serial port can not be used whilst caliper is connected and make sure 'serialDebug' is set to 0 (you can still update sketch via OTA)
-        3.3v      (from nearby connector)
-        gpio 4                  Caliper X clock
-        gnd       (from nearby connector)
-        gpio 0    (Not sure if this pin can be used)
-        gpio 16                 Caliper X data
-        gpio 17                 Caliper Y clock
-        gpio 5                  Caliper Y data
-        gpio 3    (Serial Rx)    
-        gpio 1    (Serial Tx)   Caliper Z clock
-        gpio 22                 Caliper Z data
-
-
-      35 - On connector P3 - Input only - 
-      22 - On connector CN1 -
-      27 - On connector CN1 -
-      04 - onboard LED -
-      16 - onboard LED -
-      17 - onboard LED -
-      05, 18, 19, 23 - SD card -
-      34 - Light sensor - 
+    Other possible GPIO pins to use
+      35 - On connector P3 - Input only
+      22 - On connector CN1
+      27 - On connector CN1
+      04 - onboard LED
+      16 - onboard LED
+      17 - onboard LED
+      05, 18, 19, 23 - SD card
+      34 - Light sensor 
       00 - Onboard button
 
 
@@ -82,40 +77,37 @@
 
     Digital Caliper pinout: 
           GND   
-          DAT   
-          CLK  
-          VCC 1.5V  
+          DATA
+          CLOCK 
+          VCC 1.5V  (I use a simple voltage divider of 100ohm resistors to supply 1.65v which should be ok)
 
 
-    Colours available  
+    Colours available to use: 
           TFT_BLACK,TFT_NAVY,TFT_DARKGREEN,TFT_DARKCYAN,TFT_MAROON,TFT_PURPLE,TFT_OLIVE,TFT_LIGHTGREY,TFT_DARKGREY,TFT_BLACK,TFT_GREEN,TFT_CYAN,
           TFT_RED,TFT_MAGENTATFT_YELLOW,TFT_WHITE,TFT_ORANGE,TFT_GREENYELLOW,TFT_PINK,TFT_BROWN,TFT_GOLD,TFT_SILVER,TFT_SKYBLUE,TFT_VIOLET
 
 
-    Features:
+    Wifi features:
       Simulate pressing the screen with: http://x.x.x.x/touch?x=100&y=50
-      Restart esp32 with: http://x.x.x.x/reboot
-      Check it is live with: http://x.x.x.x/ping
+      Restart the esp32 with: http://x.x.x.x/reboot
+      Check if it is live with: http://x.x.x.x/ping
       Log of activity: http://x.x.x.x/log
-      Testing code: see 'handleTest' at bottom of page, access with http://x.x.x.x/test
-      Update via OTA: http://x.x.x.x/ota
+      Testing code: see 'handleTest()' at bottom of page, access with http://x.x.x.x/test
+      Update via OTA: http://x.x.x.x/ota      (default password is 'password')
 
 */
 
 #if (!defined ESP32)
-  #error This code is for ESP32 only
+  #error This code is for the ESP32 based 'Cheap Yellow Display' only
 #endif
 
-// watchdog timer
+// watchdog timer  
   #if (defined ESP32)  
     #include <esp_task_wdt.h>             // watchdog timer   - see: https://iotassistant.io/esp32/enable-hardware-watchdog-timer-esp32-arduino-ide/
   #endif
     
     
 // ---------------------------------------------------------------
-
-
-// Required by PlatformIO
 
   #include <Arduino.h>                      // required by PlatformIO
   #include <WiFi.h>
@@ -133,18 +125,21 @@
 
 // ---------------------------------------------------------------
 //                          -SETTINGS
-// ---------------------------------------------------------------
-// ESP32 gpio pins: https://linuxhint.com/esp32-pinout-reference/
-    
+// ---------------------------------------------------------------   
 
   const char* stitle = "SuperLowBudget-DRO";             // title of this sketch
 
-  const char* sversion = "25Dec23";                      // version of this sketch
+  const char* sversion = "26Dec23";                      // version of this sketch
 
   const bool wifiEnabled = 1;                            // if wifi to be used
   
   const bool serialDebug = 1;                            // provide debug info on serial port  (disable if using Tx or Rx gpio pins for caliper)
   const int serialSpeed = 115200;                        // Serial data speed to use  
+  
+  const bool invertCaliperDataSignals = 1;               // If using transistors on the data and clock pins the signals will be inverted so set this to 1
+  
+  const int checkDROreadings = 200;                      // how often to refresh DRO readings (ms)  
+  
 
   // Display
     #define SCREEN_ROTATION 1
@@ -174,26 +169,27 @@
     #define XPT2046_CLK 25
     #define XPT2046_CS 33        
     
-  const int checkDROreadings = 200;                      // how often to refresh DRO readings (ms)  
 
-  // Page 1 - DRO screen size/position settings 
-      const int DROdisplaySpacing = 10;                  // DRO reading vertical space between displays
-      const int DROnoOfDigits = 6;                       // number of digits to display in caliper readings
-      const int DROwidth = 200;                          // width of DRO reading display   i.e. x position of zero buttons  
-      const int DROheight = 200;                         // Height of the DRO reading display for placement of lower buttons  
-      const int DRObuttonheight = 30;                    // buttons around DRO readings              
-      const int DRObuttonWidth = 35;                     
-      const int DROdbuttonPlacement = 70;                // vertical spacing of the DRO buttons  
+  // Menu/screen settings
+  
+    // Page 1 - DRO screen size/position settings 
+        const int DROdisplaySpacing = 10;                  // DRO reading vertical space between displays
+        const int DROnoOfDigits = 6;                       // number of digits to display in caliper readings
+        const int DROwidth = 200;                          // width of DRO reading display   i.e. x position of zero buttons  
+        const int DROheight = 200;                         // Height of the DRO reading display for placement of lower buttons  
+        const int DRObuttonheight = 30;                    // buttons around DRO readings              
+        const int DRObuttonWidth = 35;                     
+        const int DROdbuttonPlacement = 70;                // vertical spacing of the DRO buttons  
 
-  //page 2
+    //page 2
 
 
-  // page 3 - numeric keypad
-      const int keyWidth = 45;
-      const int keyHeight = 35;
-      const int keySpacing = 12;
-      const int keyX = 155;                               // position on screen (top left)
-      const int keyY = 60;
+    // page 3 - numeric keypad
+        const int keyWidth = 45;
+        const int keyHeight = 35;
+        const int keySpacing = 12;
+        const int keyX = 155;                               // position on screen (top left)
+        const int keyY = 60;
       
   #define WDT_TIMEOUT 60                                 // timeout of watchdog timer for esp32 (seconds) - i.e. auto restart if it stops responding
 
@@ -205,11 +201,11 @@
   const char* HomeLink = "/";                            // Where home button on web pages links to (usually "/")
   const uint16_t ServerPort = 80;                        // ip port to serve web pages on (usually 80)
 
-  int dataRefresh = 2;                                   // Refresh rate of the updating data on web page (seconds)
+  int dataRefresh = 2;                                   // Refresh rate of the updating data on main web page (seconds)
 
   const byte LogNumber = 30;                             // number of entries in the system log
 
-  const byte onboardLED = 25;                             // indicator LED pin - 2 or 16 on esp8266 nodemcu, 3 on esp8266-01, 2 on ESP32, 22 on esp32 lolin lite, 25 on the HiLetGo
+  const byte onboardLED = 25;                            // indicator LED pin?
 
   const byte onboardButton = 0;                          // onboard button gpio (FLASH)
 
@@ -220,9 +216,9 @@
   unsigned long wifiBackupRetryTime = 300;               // how often to try to reconnect to main wifi when using backup (seconds) - when using wifi2.h
 
   
-// ---------------------------------------------------------------
+  // -------------------------------- display ------------------------------------ 
 
-// display
+  
     #include <SPI.h>
     #include <XPT2046_Touchscreen.h>
 
@@ -238,21 +234,24 @@
     
   MeterWidget   dro  = MeterWidget(&tft);         // demo meter used at startup
 
-  bool displayRefreshX = 0;    // flag the caliper reading displays to refresh 
+  bool displayRefreshX = 0;    // flag the caliper reading displays to refresh on the screen
   bool displayRefreshY = 0; 
   bool displayRefreshZ = 0; 
 
-  // store for current dro readings 
+  // store for the current dro readings 
     float xReading, yReading, zReading;
 
-  // adjustment for calipers (for the 3 coordinate systems)
+  // zero adjustments for calipers (for the 3 coordinate systems)
     float xAdj[3] = {0};
     float yAdj[3] = {0};
     float zAdj[3] = {0};
     int currentCoord = 0;     // current one in use
   
-  // screen buttons
-
+  
+  
+  // ---------------------------- screen buttons ---------------------------------
+  
+  
     int displayingPage = 1;        // which screen page is being displayed
     typedef void (*buttonActionCallback)(void);   
     
@@ -308,59 +307,63 @@
           ButtonWidget key0 = ButtonWidget(&tft); 
           ButtonWidget keyEnter = ButtonWidget(&tft); 
 
-    // load the procedures which are triggered when a button is pressed
-      #include "buttons.h"      
 
-    const int buttonSpacing = 6;        // spacings used when placing the buttons on display
+  // ------------------------- -define the button widgets -------------------------
+
+    #include "buttons.h"             // the procedures which are triggered when a button is pressed
+
+    const int buttonSpacing = 6;     // spacing used when placing the buttons on display
     
-    // -define the buttons (see buttonStruct above)
       buttonStruct screenButtons[] {               
 
-        // page, enabled, title, x, y, width, height, border colour, burder thickness, fill colour, pressed colour, button, procedure to run when button is pressed
+      // Page 1
+      // page, enabled, title, x, y, width, height, border colour, burder thickness, fill colour, pressed colour, button, procedure to run when button is pressed
 
-        // Page 1
-          // Zero buttons
-          {1, 1, "Z", DROwidth, 0, DRObuttonWidth, DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroX, &zeroXpressed},
-          {1, 1, "Z", DROwidth, DROdbuttonPlacement * 1, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroY, &zeroYpressed},
-          {1, 1, "Z", DROwidth, DROdbuttonPlacement * 2, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroZ, &zeroZpressed},
-          {1, 1, "Z", DROwidth, DROheight, DRObuttonWidth * 2 + buttonSpacing,  DRObuttonheight, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zAll, &zAllpressed},
+        // Zero buttons
+        {1, 1, "Z", DROwidth, 0, DRObuttonWidth, DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroX, &zeroXpressed},
+        {1, 1, "Z", DROwidth, DROdbuttonPlacement * 1, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroY, &zeroYpressed},
+        {1, 1, "Z", DROwidth, DROdbuttonPlacement * 2, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroZ, &zeroZpressed},
+        {1, 1, "Z", DROwidth, DROheight, DRObuttonWidth * 2 + buttonSpacing,  DRObuttonheight, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zAll, &zAllpressed},
 
-          // half buttons
-          {1, 1, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, 0, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfX, &halfXpressed},
-          {1, 1, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, DROdbuttonPlacement * 1, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfY, &halfYpressed},
-          {1, 1, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, DROdbuttonPlacement * 2, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfZ, &halfZpressed},
-          
-          // Coordinate select buttons
-          {1, 1, "C1", 0, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord1, &coord1pressed},
-          {1, 1, "C2", (DRObuttonWidth + buttonSpacing) * 1, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord2, &coord2pressed},
-          {1, 1, "C3", (DRObuttonWidth + buttonSpacing) * 2, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord3, &coord3pressed},
+        // half buttons
+        {1, 1, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, 0, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfX, &halfXpressed},
+        {1, 1, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, DROdbuttonPlacement * 1, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfY, &halfYpressed},
+        {1, 1, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, DROdbuttonPlacement * 2, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfZ, &halfZpressed},
+        
+        // Coordinate select buttons
+        {1, 1, "C1", 0, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord1, &coord1pressed},
+        {1, 1, "C2", (DRObuttonWidth + buttonSpacing) * 1, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord2, &coord2pressed},
+        {1, 1, "C3", (DRObuttonWidth + buttonSpacing) * 2, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord3, &coord3pressed},
 
-          // Misc
-          {1, 1, "P2", DROwidth + ( (DRObuttonWidth + buttonSpacing) * 2), 0, DRObuttonWidth, DRObuttonheight * 3 - buttonSpacing, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &but4, &button4Pressed},
+        // Misc
+        {1, 1, "P2", DROwidth + ( (DRObuttonWidth + buttonSpacing) * 2), 0, DRObuttonWidth, DRObuttonheight * 3 - buttonSpacing, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &but4, &button4Pressed},
 
-        // page 2
-          {2, 1, "Page1", 20, 140, 100, DRObuttonheight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &but5, &button5Pressed},
+      // page 2
+        {2, 1, "Page1", 20, 140, 100, DRObuttonheight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &but5, &button5Pressed},
 
-          // Misc
-          {2, 1, "Reboot", 200, 140, 100, DRObuttonheight, TFT_WHITE, 1, TFT_RED, TFT_BLACK, &but6, &button6Pressed},
+        // Misc
+        {2, 1, "Reboot", 200, 140, 100, DRObuttonheight, TFT_WHITE, 1, TFT_RED, TFT_BLACK, &but6, &button6Pressed},
 
-        // page 3 (keypad)
-          {3, 1, "1", keyX + 0 * (keyWidth + keySpacing), keyY + 2 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key1, &buttonKey1Pressed},
-          {3, 1, "2", keyX + 1 * (keyWidth + keySpacing), keyY + 2 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key2, &buttonKey2Pressed},
-          {3, 1, "3", keyX + 2 * (keyWidth + keySpacing), keyY + 2 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key3, &buttonKey3Pressed},
-          {3, 1, "4", keyX + 0 * (keyWidth + keySpacing), keyY + 1 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key4, &buttonKey4Pressed},
-          {3, 1, "5", keyX + 1 * (keyWidth + keySpacing), keyY + 1 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key5, &buttonKey5Pressed},
-          {3, 1, "6", keyX + 2 * (keyWidth + keySpacing), keyY + 1 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key6, &buttonKey6Pressed},
-          {3, 1, "7", keyX + 0 * (keyWidth + keySpacing), keyY + 0 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key7, &buttonKey7Pressed},
-          {3, 1, "8", keyX + 1 * (keyWidth + keySpacing), keyY + 0 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key8, &buttonKey8Pressed},
-          {3, 1, "9", keyX + 2 * (keyWidth + keySpacing), keyY + 0 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key9, &buttonKey9Pressed},
-          {3, 1, "0", keyX + 0 * (keyWidth + keySpacing), keyY + 3 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key0, &buttonKey0Pressed},
-          {3, 1, "ENTER", keyX + 1 * (keyWidth + keySpacing), keyY + 3 * (keyHeight + keySpacing), keyWidth * 2 + keySpacing, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &keyEnter, &buttonKeyEnterPressed},
+      // page 3 (keypad)
+        {3, 1, "1", keyX + 0 * (keyWidth + keySpacing), keyY + 2 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key1, &buttonKey1Pressed},
+        {3, 1, "2", keyX + 1 * (keyWidth + keySpacing), keyY + 2 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key2, &buttonKey2Pressed},
+        {3, 1, "3", keyX + 2 * (keyWidth + keySpacing), keyY + 2 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key3, &buttonKey3Pressed},
+        {3, 1, "4", keyX + 0 * (keyWidth + keySpacing), keyY + 1 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key4, &buttonKey4Pressed},
+        {3, 1, "5", keyX + 1 * (keyWidth + keySpacing), keyY + 1 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key5, &buttonKey5Pressed},
+        {3, 1, "6", keyX + 2 * (keyWidth + keySpacing), keyY + 1 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key6, &buttonKey6Pressed},
+        {3, 1, "7", keyX + 0 * (keyWidth + keySpacing), keyY + 0 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key7, &buttonKey7Pressed},
+        {3, 1, "8", keyX + 1 * (keyWidth + keySpacing), keyY + 0 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key8, &buttonKey8Pressed},
+        {3, 1, "9", keyX + 2 * (keyWidth + keySpacing), keyY + 0 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key9, &buttonKey9Pressed},
+        {3, 1, "0", keyX + 0 * (keyWidth + keySpacing), keyY + 3 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key0, &buttonKey0Pressed},
+        {3, 1, "ENTER", keyX + 1 * (keyWidth + keySpacing), keyY + 3 * (keyHeight + keySpacing), keyWidth * 2 + keySpacing, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &keyEnter, &buttonKeyEnterPressed},
 
-      };
-      uint8_t buttonCount = sizeof(screenButtons) / sizeof(screenButtons[0]);    // number of buttons created
+    };
+    uint8_t buttonCount = sizeof(screenButtons) / sizeof(*screenButtons);     // number of buttons created
 
-
+    
+  // -----------------------------------------------------------------------------
+    
+    
 // caliper data
   int sign;         // if the reading is negative
   int inches;       // flag if data is in inches (0 = mm)
@@ -529,7 +532,8 @@ void setup() {
   // initialise buttons
     for (uint8_t b = 0; b < buttonCount; b++) {
       screenButtons[b].btn->initButtonUL(screenButtons[b].x, screenButtons[b].y, screenButtons[b].width, screenButtons[b].height, screenButtons[b].outlineColour, screenButtons[b].fillColour, screenButtons[b].textColour, screenButtons[b].label, 1);
-      //screenButtons[b].btn->setPressAction(screenButtons[b].action);
+      screenButtons[b].btn->setPressAction(screenButtons[b].action);
+      //screenButtons[b].btn->setReleasAction(xxxx);
     }
   
   // update screen    
@@ -557,17 +561,16 @@ void loop(){
       }
     }
 
-
   // Digital Caliper - X                                     // Note: I have kept the three caliper codes seperate here in case any require custom code
     if (DATA_PIN_X != -1) {                                  // if caliper is present 
-      static repeatTimer caliperTimerX;                      // set up a repeat timer 
-      if (caliperTimerX.check(checkDROreadings)) {           // repeat at set interval (ms)  
-        if (!waitPinState(CLOCK_PIN_X, HIGH)) goto failedReadX;   // wait for gpio pin to change
+      static repeatTimer caliperTimerX;                      // set up a repeat timer  (see standard.h)
+      if (caliperTimerX.check(checkDROreadings)) {           // repeat at set interval (ms)
+        float tRead = 1.0;  
+        if (!waitPinState(CLOCK_PIN_X, HIGH)) tRead = 8888.88;   // wait for gpio pin to change (8888.88 signifies failed)
         unsigned long tmpTime=micros();
-        if (!waitPinState(CLOCK_PIN_X, LOW)) goto failedReadX;
-        if((micros()-tmpTime)>500) {
-          float tRead = readCaliper(CLOCK_PIN_X, DATA_PIN_X);  // read data from caliper
-          if (tRead == 9999) goto failedReadX;                 // 9999 = failed to read caliper data
+        if (!waitPinState(CLOCK_PIN_X, LOW)) tRead = 8888.88;
+        if((micros()-tmpTime) > 500) {
+          if (tRead == 1.0) tRead = readCaliper(CLOCK_PIN_X, DATA_PIN_X);  // read data from caliper 
           if (tRead != xReading || displayRefreshX == 1) {     // if reading has changed or flag to refresh is set update display
             xReading = tRead;                                  // store result in global variable
             displayReadings();                                 // display caliper readings 
@@ -575,48 +578,45 @@ void loop(){
           }
         }
       }
-    }
-    failedReadX:                                             // jump to here if read fails     
+    } 
 
-  // Digital Caliper - Y
-    if (DATA_PIN_Y != -1) {                                  // if caliper is present
+  // Digital Caliper - Y      
+    if (DATA_PIN_Y != -1) {                                  // if caliper is present 
       static repeatTimer caliperTimerY;                      // set up a repeat timer 
-      if (caliperTimerY.check(checkDROreadings + 7)) {       // repeat at set interval (ms)  
-        if (!waitPinState(CLOCK_PIN_Y, HIGH)) goto failedReadY;   // wait for gpio pin to change
+      if (caliperTimerY.check(checkDROreadings)) {           // repeat at set interval (ms)
+        float tRead = 1.0;  
+        if (!waitPinState(CLOCK_PIN_Y, HIGH)) tRead = 8888.88;   // wait for gpio pin to change (8888.88 signifies failed)
         unsigned long tmpTime=micros();
-        if (!waitPinState(CLOCK_PIN_Y, LOW)) goto failedReadY;
-        if((micros()-tmpTime)>500) {
-          float tRead = readCaliper(CLOCK_PIN_Y, DATA_PIN_Y); // read data from caliper
-          if (tRead == 9999) goto failedReadY;                // 9999 = failed to read caliper data
-          if (tRead != yReading|| displayRefreshY == 1) {     // if reading has changed or flag to refresh is set update display
-            yReading = tRead;                                 // store result in global variable
-            displayReadings();                                // display caliper readings 
+        if (!waitPinState(CLOCK_PIN_Y, LOW)) tRead = 8888.88;
+        if((micros()-tmpTime) > 500) {
+          if (tRead == 1.0) tRead = readCaliper(CLOCK_PIN_Y, DATA_PIN_Y);  // read data from caliper 
+          if (tRead != yReading || displayRefreshY == 1) {     // if reading has changed or flag to refresh is set update display
+            xReading = tRead;                                  // store result in global variable
+            displayReadings();                                 // display caliper readings 
             displayRefreshY = 0;
           }
         }
       }
-    }
-    failedReadY:                                             // jump to here if read fails 
+    } 
 
-  // Digital Caliper - Z
-    if (DATA_PIN_Z != -1) {                                  // if caliper is present
+  // Digital Caliper - Z 
+    if (DATA_PIN_Z != -1) {                                  // if caliper is present 
       static repeatTimer caliperTimerZ;                      // set up a repeat timer 
-      if (caliperTimerZ.check(checkDROreadings + 13)) {      // repeat at set interval (ms)  
-        if (!waitPinState(CLOCK_PIN_Z, HIGH)) goto failedReadZ;   // wait for gpio pin to change
+      if (caliperTimerZ.check(checkDROreadings)) {           // repeat at set interval (ms)
+        float tRead = 1.0;  
+        if (!waitPinState(CLOCK_PIN_Z, HIGH)) tRead = 8888.88;   // wait for gpio pin to change (8888.88 signifies failed)
         unsigned long tmpTime=micros();
-        if (!waitPinState(CLOCK_PIN_Z, LOW)) goto failedReadZ;
-        if((micros()-tmpTime)>500) {
-          float tRead = readCaliper(CLOCK_PIN_Z, DATA_PIN_Z); // read data from caliper
-          if (tRead == 9999) goto failedReadY;                // 9999 = failed to read caliper data
-          if (tRead != zReading|| displayRefreshZ == 1) {     // if reading has changed or flag to refresh is set update display
-            zReading = tRead;                                 // store result in global variable
-            displayReadings();                                // display caliper readings 
+        if (!waitPinState(CLOCK_PIN_Z, LOW)) tRead = 8888.88;
+        if((micros()-tmpTime) > 500) {
+          if (tRead == 1.0) tRead = readCaliper(CLOCK_PIN_Z, DATA_PIN_Z);  // read data from caliper 
+          if (tRead != zReading || displayRefreshZ == 1) {     // if reading has changed or flag to refresh is set update display
+            xReading = tRead;                                  // store result in global variable
+            displayReadings();                                 // display caliper readings 
             displayRefreshZ = 0;
           }
         }
-      }   
-    }
-    failedReadZ:                                             // jump to here if read fails  
+      }
+    }     
 
     // Periodically change the LED status to indicate all is well
       static repeatTimer ledTimer;                          // set up a repeat timer (see standard.h)
@@ -908,16 +908,23 @@ void actionScreenTouch(TS_Point p) {
 
   // check if a button has been pressed
     for (uint8_t b = 0; b < buttonCount; b++) {
-      if (screenButtons[b].enabled == 1 && screenButtons[b].page == displayingPage && screenButtons[b].btn->contains(x, y)) {
+      if (screenButtons[b].enabled == 1 && ( screenButtons[b].page == displayingPage || screenButtons[b].page == 0) && screenButtons[b].btn->contains(x, y)) {
+        // button pressed
           tft.setFreeFont(FM9);         // standard Free Mono font - available sizes: 9, 12, 18 or 24
           tft.setTextSize(2);        
           screenButtons[b].btn->drawSmoothButton(true);
-          delay(500);
-          screenButtons[b].btn->drawSmoothButton(false);
           if (serialDebug) Serial.println("button " + String(screenButtons[b].label) + " pressed!");
           screenButtons[b].btn->press(true);
-          //screenButtons[b].btn->pressAction();          
-          screenButtons[b].action();   // call the buttons procedure 
+          screenButtons[b].btn->pressAction();          
+          //screenButtons[b].action();   // call the buttons procedure directly
+      } else {
+        // button is not pressed
+          screenButtons[b].btn->press(false);  // flag button released
+          if ( (screenButtons[b].page == displayingPage|| screenButtons[b].page == 0) && screenButtons[b].enabled == 1 ) { 
+            tft.setFreeFont(FM9);         // standard Free Mono font - available sizes: 9, 12, 18 or 24
+            tft.setTextSize(2);                    
+            screenButtons[b].btn->drawSmoothButton(false);      // draw button
+          }
       }
     }      
 
@@ -1004,18 +1011,22 @@ bool waitPinState(int pin, bool state) {
 // ----------------------------------------------------------------
 //                       -read caliper data
 // ----------------------------------------------------------------
-// Note - Using transistors inverts the signal levels          returns 9999 if failed to get data
+// Note - Using transistors inverts the signal levels          returns 8888.88 if failed to get data
 // see: http://wei48221.blogspot.com/2016/01/using-digital-caliper-for-digital-read_21.html
 
 float readCaliper(int clockPin, int dataPin) {
+
+  // data levels on data and clock pins 
+    const bool pin0 = invertCaliperDataSignals;
+    const bool pin1 = !invertCaliperDataSignals;
 
   int sign = 1;         // if the reading is negative
   int inches = 0;       // flag if data is in inches (0 = mm) -  NOTE: this doesn't seem to work (always 1)?
   long value = 0;       // reading from caliper  
   for(int i=0;i<24;i++) {                                 // read the data bits 
-    if (!waitPinState(clockPin, HIGH)) return 9999;       // wait for gpio pin state to change
-    if (!waitPinState(clockPin, LOW)) return 9999;
-    if(digitalRead(dataPin)==LOW) {
+    if (!waitPinState(clockPin, pin0)) return 8888.88;       // wait for gpio pin state to change
+    if (!waitPinState(clockPin, pin1)) return 8888.88;
+    if(digitalRead(dataPin) == pin1) {
       // 1 received
         if(i<20) value|=(1<<i);
         if(i==20) sign=-1;
@@ -1122,8 +1133,8 @@ void handleTouch() {
         tft.drawCircle(x, y, radius, TFT_RED);    
         tft.fillCircle(x, y, radius - 1, TFT_YELLOW);
       // map from screen to touch coordinates
-        x = map(x, 0, 320, TOUCH_LEFT, TOUCH_RIGHT);
-        y = map(y, 0, 320, TOUCH_TOP, TOUCH_BOTTOM);    
+        x = map(x, 0, SCREEN_WIDTH, TOUCH_LEFT, TOUCH_RIGHT);
+        y = map(y, 0, SCREEN_HEIGHT, TOUCH_TOP, TOUCH_BOTTOM);    
       // send click
         TS_Point click = TS_Point(x, y, 3000);
         actionScreenTouch(click);
@@ -1159,7 +1170,7 @@ void handleTest(){
   // ---------------------------- test section here ------------------------------
 
 
-// // test x zeroing
+// // test x zero
 //   xAdj[currentCoord] = xReading;
 
 
@@ -1167,33 +1178,31 @@ void handleTest(){
 //   halfXpressed(); 
 
 
-// // switch pages
+// // switch between pages
 //   if (displayingPage < 3) drawScreen(displayingPage + 1);  
 //   else  drawScreen(1);  
 //   displayKeypadNo(4);
 //   displayKeypadNo(2);
 
 
+// // demo of how to request a web page
+//   // request web page
+//     String page = "http://192.168.1.166/ping";   // url to request
+//     //String page = "http://192.168.1.176:84/rover.asp?action=devE11on";   // url to request
+//     String response;                             // reply will be stored here
+//     int httpCode = requestWebPage(&page, &response);
+//   // display the reply
+//     client.println("Web page requested: '" + page + "' - http code: " + String(httpCode));
+//     client.print("<xmp>'");     // enables the html code to be displayed
+//     client.print(response);
+//     client.println("'</xmp>");
+//   // test the reply
+//     response.toLowerCase();                    // convert all text in the reply to lower case
+//     int tPos = response.indexOf("closed");     // search for text in the reply - see https://www.arduino.cc/en/Tutorial/BuiltInExamples
+//     if (tPos != -1) {
+//       client.println("rusult contains 'closed' at position " + String(tPos) + "<br>");
+//     }
 
-/*
-// demo of how to request a web page
-  // request web page
-    String page = "http://192.168.1.166/ping";   // url to request
-    //String page = "http://192.168.1.176:84/rover.asp?action=devE11on";   // url to request
-    String response;                             // reply will be stored here
-    int httpCode = requestWebPage(&page, &response);
-  // display the reply
-    client.println("Web page requested: '" + page + "' - http code: " + String(httpCode));
-    client.print("<xmp>'");     // enables the html code to be displayed
-    client.print(response);
-    client.println("'</xmp>");
-  // test the reply
-    response.toLowerCase();                    // convert all text in the reply to lower case
-    int tPos = response.indexOf("closed");     // search for text in the reply - see https://www.arduino.cc/en/Tutorial/BuiltInExamples
-    if (tPos != -1) {
-      client.println("rusult contains 'closed' at position " + String(tPos) + "<br>");
-    }
-*/
 
 
 

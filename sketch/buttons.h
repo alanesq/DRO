@@ -30,9 +30,9 @@ void zeroZpressed() {
 
 void zAllpressed() { 
   log_system_message("button: zAll");
-  xAdj[currentCoord] = xReading;    // zero X
-  yAdj[currentCoord] = yReading;    // zero Y
-  zAdj[currentCoord] = zReading;    // zero Z
+  xAdj[currentCoord] = xReading;    // zero X, Y and Z
+  yAdj[currentCoord] = yReading;     
+  zAdj[currentCoord] = zReading;     
 }
 
 
@@ -46,13 +46,13 @@ void halfXpressed() {
 
 void halfYpressed() { 
   log_system_message("button: halfY");
-  float t = (yReading - yAdj[currentCoord]) / 2.0;  // half of current displayed reading
+  float t = (yReading - yAdj[currentCoord]) / 2.0;   
   yAdj[currentCoord] = yAdj[currentCoord] + t;   
 }
 
 void halfZpressed() { 
   log_system_message("button: halfZ");
-  float t = (zReading - zAdj[currentCoord]) / 2.0;  // half of current displayed reading
+  float t = (zReading - zAdj[currentCoord]) / 2.0;   
   yAdj[currentCoord] = zAdj[currentCoord] + t;   
 }
 
@@ -62,16 +62,19 @@ void halfZpressed() {
 void coord1pressed() { 
   log_system_message("button: C1");
   currentCoord = 0;
+  displayRefreshX = 1;    // make sure the display updates
 }
 
 void coord2pressed() { 
   log_system_message("button: C2");
   currentCoord = 1;
+  displayRefreshX = 1;    
 }
 
 void coord3pressed() { 
   log_system_message("button: C3");
   currentCoord = 2;
+  displayRefreshX = 1;   
 }
 
 
