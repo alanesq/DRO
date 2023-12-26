@@ -1,29 +1,25 @@
 /*******************************************************************************************************************
  *
- *                                                 SuperLowBudget-DRO
- *                                                 ------------------
+ *                                              SuperLowBudget-DRO
+ *                                              ------------------
  *
- *              DRO for milling machine/lathe etc. using a CheapYellowDisplay and cheap digital calipers
- *                                      See: https://github.com/alanesq/DRO
- *
- *
- *                     Tested in Arduino IDE 2.2.1 with board managers ESP32 2.0.14 & ESP8266 3.1.2
- *
- *                   Included files: standard.h, ota.h, sevenSeg.h, Free_Fonts.h, buttons.h & wifi.h
+ *          3 Channel DRO using cheap digital calipers and a ESP32-2432S028R  (Cheap Yellow Display)
+ *                     see: https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display
+ *                                      https://github.com/alanesq/DRO
  *
  *
- *      Note:  To add ESP8266/32 ability to the Arduino IDE enter the below two lines in to FILE/PREFERENCES/BOARDS MANAGER
- *                                            http://arduino.esp8266.com/stable/package_esp8266com_index.json
- *                                            https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
- *             You can then add them in BOARDS MANAGER (search for esp8266 or ESP32)
+ *                        Tested in Arduino IDE 2.2.1 with board managers ESP32 2.0.14
+ *                      Libraries: TFT_eSPI 2.5.34, TFT_eWidget 0.0.5, WifiManager 2.0.16, 
  *
- *      First time the ESP starts it will create an access point "ESPDRO" which you need to connect to in order to enter your wifi details.
- *             default password = "password"   (change this in wifi.h)
- *             see: https://randomnerdtutorials.com/wifimanager-with-esp8266-autoconnect-custom-parameter-and-manage-your-ssid-and-password
+ *                 Included files: standard.h, ota.h, sevenSeg.h, Free_Fonts.h, buttons.h & wifi.h
+ *
+ *   First time the ESP starts it will create an access point "ESPDRO" which you need to connect to in order to enter your wifi details.
+ *    default password = "password"   (change this in wifi.h)
+ *    see: https://randomnerdtutorials.com/wifimanager-with-esp8266-autoconnect-custom-parameter-and-manage-your-ssid-and-password
  *
  *
- *            Distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
- *                   implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *             Distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+ *                    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
  ********************************************************************************************************************
 
