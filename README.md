@@ -12,6 +12,9 @@ Note: This is a work in progress, whilst it is now just about in a usable state 
 
 Misc info:
 
+If you get the error "class TFT_eSPI' has no member named 'getTouch'"<br>
+  edit User_Setup.h in the TFT_eSPI library folder and add the line:   #define TOUCH_CS PIN_D2      // Chip select pin (T_CS) of touch screen 
+
 Cheap Yellow Display:
 - https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/
   
