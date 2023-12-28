@@ -54,4 +54,5 @@ Features:
 --------------------------------------
 
 <img src="/PCB/circuit.png" />
+Note: Because I am using GPIO0 which isn't ideal as it is attached to the onboard button do not install the pullup resistor and user a lower value resistor on the input.  This seems to work fine although it can stop the hardware reset working when programming the CYD.
 
