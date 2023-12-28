@@ -38,8 +38,7 @@ https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.ht
 
 This sketch is wifi enabled just because I already had the code to do this so why not but this can be disabled by changing a flag in the settings if you do not require it.
 
-If you have a 3D printer this is a very nice little case for the CYD: https://www.printables.com/model/685845-enclosure-for-cheap-yellow-display-esp32-2432s028r
-<br>I filed a slot on one side to let a small ribbon cable come through carrying the GPIO signals.
+If you have a 3D printer this is a case I have modified to be large enough to contain all the electronics: https://github.com/alanesq/DRO/tree/main/case
 
 --------------------------------------
 
