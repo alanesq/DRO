@@ -28,7 +28,7 @@ An interesting thing I was not expecting is you get 2 decimal places even from t
 
 If just using one caliper then gpio 16 and 17 can be easily used but to find enough GPIO pins to read 3 calipers I had to get a bit creative by removing the onboard 3 colour LED and soldering wires directly on to the ESP32 module.  This is not as difficult as you might think, if you use a small soldering iron tip and thin wire it's pretty easy even for my uncoordinated soldering skills.
 The wiring is not as complex as it might look, it is just a simple transistor on each data pin to convert from 1.5v up to 3.3v for the esp32 to be able to read, I use my CNC router to create the circuit boards but this could be easily built on some strip board etc. <br>
-Note: the transistors to convert the 1.5v signals from the caliper results in the signal levels being inverted so if you use some other method you will need to change 'invertCaliperDataSignals' to 0.  The circuit diagram I used can be seen in the PCB folder along with the files I used to create the circuit boards.  To supply the lower voltage to power the caliper I just use a simple voltage divider 
+Note: the transistors to convert the 1.5v signals from the caliper results in the signal levels being inverted so if you use some other method you will need to change 'invertCaliperDataSignals' to 0.  The circuit diagram I used can be seen in the PCB folder along with the files I used to create the circuit boards (Fritzing and CNC router).  To supply the lower voltage to power the caliper I just use a simple voltage divider 
 as they require very little power.  I originally tried using a level shifter board but I don't think it liked the 1.5v?  I am just using two 100 ohm resistors as a voltage divider to power the calipers and they seem ok with this.<br><br>
 
 I am using the cheapest calipers I can find and they seem to work surprisingly well although you only get 160mm of travel.  You can buy calipers 200mm but these tend to be around £15, I have one on order and will post info. here when I receive it.  
@@ -62,8 +62,9 @@ Misc bits of information:
 
 In an attempt to try and make the calipers more robust I have put some insulation tape over the vircuit board (between the circuit and the slider) as I think the bare circuit board is very volnurable to damp entering and corroding the board.
 See pic here:    [https://github.com/alanesq/DRO/pics/caliperMod.jpg](https://github.com/alanesq/DRO/blob/main/pics/caliperMod.jpg)
+It may also be an idea to coat the rest of the circuit board in some kind of conformal coating (clear nail varnish?) and maybe some kind of dust seal around the slider where it enters the reader?
 
-I have found that some of my plug in USB power supplies upset the calipers resulting in the readings being random or steadily increasing for no reason.  I suspect a decent sized capacitor on the power feed to the CYD is a good idea.
+I have found that some of my plug in USB power supplies upset the calipers resulting in the readings being random or steadily increasing for no reason.  I suspect a decent sized capacitor on the power feed to the CYD will be a very good idea.
 
 If you are planning to try my sketch let me know first (alanesq@disroot.org) as I will probably have a more recent version I can upload for you.
 
