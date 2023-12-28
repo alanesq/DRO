@@ -50,4 +50,8 @@ Features:
 - Log of activity: http://x.x.x.x/log
 - Testing code: see 'handleTest' at bottom of page, access with http://x.x.x.x/test
 - Update via OTA: http://x.x.x.x/ota
-      
+
+--------------------------------------
+
+<img src="/PCB/circuit.png" />
+
