@@ -61,7 +61,7 @@ Note: Because I am using GPIO0 which isn't ideal as it is attached to the onboar
 Misc bits of information:
 
 In an attempt to try and make the calipers more robust I have put some insulation tape over the vircuit board (between the circuit and the slider) as I think the bare circuit board is very volnurable to damp entering and corroding the board.
-See pic here:    https://github.com/alanesq/DRO/pics/caliperMod.jpg
+See pic here:    [https://github.com/alanesq/DRO/pics/caliperMod.jpg](https://github.com/alanesq/DRO/blob/main/pics/caliperMod.jpg)
 
 I have found that some of my plug in USB power supplies upset the calipers resulting in the readings being random or steadily increasing for no reason.  I suspect a decent sized capacitor on the power feed to the CYD is a good idea.
 
