@@ -32,14 +32,14 @@ The wiring is not as complex as it might look, it is just a simple transistor on
 Note: the transistors to convert the 1.5v signals from the caliper results in the signal levels being inverted so if you use some other method you will need to change 'invertCaliperDataSignals' to 0.  The circuit diagram I used can be seen in the PCB folder along with the files I used to create the circuit boards (Fritzing and CNC router).  To supply the lower voltage to power the caliper I just use a simple voltage divider 
 as they require very little power.  I originally tried using a level shifter board but I don't think it liked the 1.5v?  I am just using two 100 ohm resistors as a voltage divider to power the calipers and they seem ok with this.<br><br>
 
-I am using the cheapest calipers I can find and they seem to work surprisingly well although you only get 160mm of travel.  You can buy calipers 200mm but these tend to be around £15, I have one on order and will post info. here when I receive it.  
-I have also ordered some custom circuit boards which should allow for much longer travel and will post here how this goes.
+As stated above, I have also ordered some custom circuit boards which should allow for much longer travel and will post here how this goes.
 <br>https://www.youtube.com/watch?v=JYnit_PSSMY                  
 https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.html       
 
-This sketch is wifi enabled just because I already had the code to do this so why not but this can be disabled by changing a flag in the settings if you do not require it.
+This sketch is wifi enabled just because I already had the code to do this so why not but this can be disabled by changing a flag in the settings if you do not require it.  It is mainly useful for OTA updates but it would be easy to add features to this later.
 
 If you have a 3D printer this is a case I have modified to be large enough to contain all the electronics: https://github.com/alanesq/DRO/tree/main/case
+It prints without support (face down) and takes around 2hrs on my printer.
 
 --------------------------------------
 
