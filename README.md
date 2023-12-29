@@ -43,7 +43,7 @@ It prints without support (face down) and takes around 2hrs on my printer.
 
 --------------------------------------
 
-Features:
+Wifi Features:
 - Simulate pressing the screen with: http://x.x.x.x/touch?x=100&y=50
 - Restart esp32 with: http://x.x.x.x/reboot
 - Check it is live with: http://x.x.x.x/ping
@@ -54,15 +54,17 @@ Features:
 --------------------------------------
 
 <img src="/PCB/circuit.png" />
-Note: Because I am using GPIO0 which isn't ideal as it is attached to the onboard button do not install the pullup resistor and user a lower value resistor on the input.  This seems to work fine although it can stop the hardware reset working when programming the CYD.
+Note: Because I am using GPIO0 which isn't ideal as it is attached to the onboard button but if you do not install the pullup resistor and use a lower value resistor on the input, this seems to work fine (although it can stop the hardware reset working when programming the CYD).
+<br>There are connections for GPIO1 and 3 which are the serial pins but could be used as general GPIO if required (it can be programmed by OTA so this would not be a big problem).
 
 --------------------------------------
 
 Misc bits of information:
 
-In an attempt to try and make the calipers more robust I have put some insulation tape over the vircuit board (between the circuit and the slider) as I think the bare circuit board is very volnurable to damp entering and corroding the board.
+In an attempt to try and make the calipers more robust I have put some insulation tape over the circuit board (where the slider runs along it) as I think the bare circuit board is very volnurable to damp entering and corroding the board.
 See pic here:    [https://github.com/alanesq/DRO/pics/caliperMod.jpg](https://github.com/alanesq/DRO/blob/main/pics/caliperMod.jpg)
 It may also be an idea to coat the rest of the circuit board in some kind of conformal coating (clear nail varnish?) and maybe some kind of dust seal around the slider where it enters the reader?
+<br>One advantage of having the remote display is it will make it easier to fit the calipers out of harms way as you do not need to see the display on them.
 
 I have found that some of my plug in USB power supplies upset the calipers resulting in the readings being random or steadily increasing for no reason.  I suspect a decent sized capacitor on the power feed to the CYD will be a very good idea.
 
