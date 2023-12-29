@@ -70,7 +70,7 @@ It may also be an idea to coat the rest of the circuit board in some kind of con
 I have found that some of my plug in USB power supplies upset the calipers resulting in the readings being random or steadily increasing for no reason.  I suspect a decent sized capacitor on the power feed to the CYD will be a very good idea.
 
 At present it is set up to have 5 display pages, buttons can be created and assigned to the pages in the "define the button widgets" section of the sketch.  The caliper readings are displayed on all pages but there are two sizes available (this size is set in "displayReadings").  Button actions are defined in the "buttons.h" file.
-<br>Custom actions for the pages can be added to the "rawScreen" procedure e.g. see "if page 3 show number entered on keypad".
+<br>Custom actions for the pages can be added to the "pageSpecificOperations()" procedure e.g. see "if page 3 show number entered on keypad".
 
 If you are planning to try my sketch let me know first (alanesq@disroot.org) as I will probably have a more recent version I can upload for you.
 
