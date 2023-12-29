@@ -108,6 +108,7 @@
   void settingsEeprom(bool eDirection);
   void handleTest();
   void drawScreen(int);      
+  void displayReadings();
 
 
 // ---------------------------------------------------------------
@@ -127,7 +128,6 @@
   
   const int checkDROreadings = 20;                       // how often to refresh DRO readings (ms)  
   const int checkTouchScreen = 80;                       // how often to check touchscreen for a press (ms)
-  const int minTimeBetweenPress = 600;                   // minimum time between touchscreen button presses (ms)
 
   // Display
     #define SCREEN_ROTATION 1
@@ -214,10 +214,6 @@
     TFT_eSPI tft = TFT_eSPI();
       
     MeterWidget dro  = MeterWidget(&tft);         // demo meter used at startup
-
-    bool displayRefreshX = 0;                     // if set caliper reading display is refreshed on the screen even if no change
-    bool displayRefreshY = 0; 
-    bool displayRefreshZ = 0; 
 
     float xReading, yReading, zReading;            // store for the current dro readings 
     unsigned long lastTouch = 0;                   // last time touchscreen button was pressed
@@ -361,6 +357,7 @@
 
 //int _TEMPVARIABLE_ = 1;                 // Temporary variable used in demo radio buttons on root web page
 unsigned long wifiBackupRetryTime = 300;  // not used but here to keep compatibility with my standard wifi.h file
+bool sTouched = 0;                        // flag if a button is curently pressed on the screen
 
 bool OTAEnabled = 0;                    // flag to show if OTA has been enabled (via supply of password on http://x.x.x.x/ota)
 int wifiok = 0;                         // flag if wifi connection is ok 
@@ -525,41 +522,37 @@ void setup() {
 //   -LOOP     LOOP     LOOP     LOOP     LOOP     LOOP     LOOP
 // ----------------------------------------------------------------
 
-void loop(){
+void loop() {
 
-  if(wifiEnabled) server.handleClient();                // service any web page requests
+  if(wifiEnabled) server.handleClient();                    // service any web page requests
 
   // Touch screen
-    static bool wasTouched = 0;                         // flag if a button was pressed previously
-    static repeatTimer touchTimer;                      // set up a repeat timer 
-    if (touchTimer.check(checkTouchScreen)) {           // repeat at set interval (ms)  
-      if (wasTouched) {                                 // if a button has been released
-        drawScreen(displayingPage);                     // re-draw the screen
-        wasTouched = 0;
-        lastTouch = millis();
-      }
-      if (ts.touched() && millis() - lastTouch > minTimeBetweenPress) {      // if a button has been pressed and long enough since last time
-        TS_Point p = ts.getPoint();
-        actionScreenTouch(p);
-        wasTouched = 1;
-        lastTouch = millis();
+    static repeatTimer touchTimer;                          // set up a repeat timer 
+    if (touchTimer.check(checkTouchScreen)) {               // repeat at set interval  
+      bool st = ts.touched();                               // if screen is pressed
+      if (st && !sTouched) {                                // if touchscreen has been pressed
+        actionScreenTouch(ts.getPoint());  
+        sTouched = 1;
+      } 
+      if (!st && sTouched) {                                // if touchscreen has been released
+        actionScreenRelease(ts.getPoint());   
+        sTouched = 0;
       }
     }
 
   // Digital Caliper - X                                     // Note: I have kept the three caliper codes seperate here in case any require custom code
     if (DATA_PIN_X != -1) {                                  // if caliper is present 
       static repeatTimer caliperTimerX;                      // set up a repeat timer  (see standard.h)
-      if (caliperTimerX.check(checkDROreadings)) {           // repeat at set interval (ms)
+      if (caliperTimerX.check(checkDROreadings)) {           // repeat at set interval  
         float tRead = 1.0;  
         if (!waitPinState(CLOCK_PIN_X, HIGH)) tRead = 8888.88;   // wait for gpio pin to change (8888.88 signifies failed)
         unsigned long tmpTime=micros();
         if (!waitPinState(CLOCK_PIN_X, LOW)) tRead = 8888.88;
         if((micros()-tmpTime) > 500) {
           if (tRead == 1.0) tRead = readCaliper(CLOCK_PIN_X, DATA_PIN_X);  // read data from caliper 
-          if (tRead != xReading || displayRefreshX == 1) {     // if reading has changed or flag to refresh is set update display
-            xReading = tRead;                                  // store result in global variable
-            displayReadings();                                 // display caliper readings 
-            displayRefreshX = 0;
+          if (tRead != xReading) {     // if reading has changed or flag to refresh is set update display
+            xReading = tRead;                                // store result in global variable
+            displayReadings();                               // display caliper readings 
           }
         }
       }
@@ -575,10 +568,9 @@ void loop(){
         if (!waitPinState(CLOCK_PIN_Y, LOW)) tRead = 8888.88;
         if((micros()-tmpTime) > 500) {
           if (tRead == 1.0) tRead = readCaliper(CLOCK_PIN_Y, DATA_PIN_Y);  // read data from caliper 
-          if (tRead != yReading || displayRefreshY == 1) {     // if reading has changed or flag to refresh is set update display
-            yReading = tRead;                                  // store result in global variable
-            displayReadings();                                 // display caliper readings 
-            displayRefreshY = 0;
+          if (tRead != yReading) {     // if reading has changed or flag to refresh is set update display
+            yReading = tRead;                                // store result in global variable
+            displayReadings();                               // display caliper readings 
           }
         }
       }
@@ -594,10 +586,9 @@ void loop(){
         if (!waitPinState(CLOCK_PIN_Z, LOW)) tRead = 8888.88;
         if((micros()-tmpTime) > 500) {
           if (tRead == 1.0) tRead = readCaliper(CLOCK_PIN_Z, DATA_PIN_Z);  // read data from caliper 
-          if (tRead != zReading || displayRefreshZ == 1) {     // if reading has changed or flag to refresh is set update display
-            zReading = tRead;                                  // store result in global variable
-            displayReadings();                                 // display caliper readings 
-            displayRefreshZ = 0;
+          if (tRead != zReading) {     // if reading has changed or flag to refresh is set update display
+            zReading = tRead;                                   // store result in global variable
+            displayReadings();                                  // display caliper readings 
           }
         }
       }
@@ -869,6 +860,46 @@ void settingsEeprom(bool eDirection) {
 
 
 // ----------------------------------------------------------------
+//                -additional page specific items
+// ----------------------------------------------------------------
+
+void pageSpecificOperations() {
+
+  // if page 3 update number entered on keypad
+    if (displayingPage == 3) {
+      tft.setFreeFont(&sevenSeg16pt7b);      
+      tft.setTextColor(TFT_RED, TFT_BLACK);
+      tft.setTextSize(1);
+      tft.setTextPadding( tft.textWidth("8") * DROnoOfDigits );  
+      tft.drawString(keyEnteredNumber, keyX, keyY - 30 );    
+    }    
+
+}
+
+
+// ----------------------------------------------------------------
+//                -Touch screen has been released
+// ----------------------------------------------------------------
+
+void actionScreenRelease(TS_Point p) {
+
+  tft.setFreeFont(FM9);         // standard Free Mono font - available sizes: 9, 12, 18 or 24
+  tft.setTextSize(2);  
+
+  if (serialDebug) Serial.println("button released");
+
+  // flag all buttons released and re-draw them
+    for (uint8_t b = 0; b < buttonCount; b++) {
+      screenButtons[b].btn->press(false);  // flag button released
+      if (screenButtons[b].enabled == 1 && ( screenButtons[b].page == displayingPage || screenButtons[b].page == 0) ) {
+        screenButtons[b].btn->press(false);      
+        screenButtons[b].btn->drawSmoothButton(false);      // draw button
+      }
+    }
+}
+
+
+// ----------------------------------------------------------------
 //                -Touch screen has been pressed
 // ----------------------------------------------------------------
 
@@ -883,28 +914,24 @@ void actionScreenTouch(TS_Point p) {
     if (serialDebug) Serial.println("Touch data: " + String(p.x) + "," + String(p.y) + "," + String(x) + "," + String(y));    
 
   // check if a button has been pressed
+    tft.setFreeFont(FM9);         // standard Free Mono font - available sizes: 9, 12, 18 or 24
+    tft.setTextSize(2);        
     for (uint8_t b = 0; b < buttonCount; b++) {
       if (screenButtons[b].enabled == 1 && ( screenButtons[b].page == displayingPage || screenButtons[b].page == 0) && screenButtons[b].btn->contains(x, y)) {
-        // button pressed
-          tft.setFreeFont(FM9);         // standard Free Mono font - available sizes: 9, 12, 18 or 24
-          tft.setTextSize(2);        
+        // button is pressed
           screenButtons[b].btn->drawSmoothButton(true);
           if (serialDebug) Serial.println("button " + String(screenButtons[b].label) + " pressed!");
           screenButtons[b].btn->press(true);
-          screenButtons[b].btn->pressAction();          
-          //screenButtons[b].action();   // call the buttons procedure directly
-      } else {
-        // button is not pressed
-          screenButtons[b].btn->press(false);  // flag button released
-          tft.setFreeFont(FM9);         // standard Free Mono font - available sizes: 9, 12, 18 or 24
-          tft.setTextSize(2);                          
-          if ( (screenButtons[b].page == displayingPage|| screenButtons[b].page == 0) && screenButtons[b].enabled == 1 ) {     
-            screenButtons[b].btn->drawSmoothButton(false);      // draw button
-          }
-      }
-    }      
+          screenButtons[b].btn->pressAction();     
+          lastTouch = millis();          // flag time last button was pressed   
+          break;                         // exit for loop   
+      } 
+    }
 
-  // draw data on screen
+  pageSpecificOperations();              // draw any page specific items
+  displayReadings();                     // redraw DRO readings
+
+  // draw data on screen if showpress is enabled
     if (showPress) {
       //tft.fillScreen(TFT_BLACK);
       tft.setTextColor(TFT_WHITE, TFT_BLACK);
@@ -930,6 +957,7 @@ void actionScreenTouch(TS_Point p) {
     Serial.print(p.y);
     Serial.println();  
   }
+
 }
 
 
@@ -955,26 +983,13 @@ void drawScreen(int screen) {
       if (screenButtons[b].enabled == 1) {   
          if( screenButtons[b].page == screen || screenButtons[b].page == 0) {       // 0 = show on all pages
             screenButtons[b].btn->drawSmoothButton(false, screenButtons[b].outlineThickness, TFT_BLACK);      
+            //screenButtons[b].btn->press(0);     // flag as not pressed
          }
       }
     } 
-
-  // flag the caliper reading displays to refresh 
-    displayRefreshX = 1; 
-    displayRefreshY = 1;
-    displayRefreshZ = 1;
-
-  // if page 3 show number entered on keypad
-    if (screen == 3) {
-      tft.setFreeFont(&sevenSeg16pt7b);      
-      tft.setTextColor(TFT_RED, TFT_BLACK);
-      tft.setTextSize(1);
-      tft.setTextPadding( tft.textWidth("8") * DROnoOfDigits );  
-      tft.drawString(keyEnteredNumber, keyX, keyY - 30 );    
-    }
-
-  // prevent button being imediately triggered in next screen
-    lastTouch = millis();
+  
+  pageSpecificOperations();   // draw any page specific items
+  displayReadings();          // display DRO readings
 }
 
 
