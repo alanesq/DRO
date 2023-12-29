@@ -55,7 +55,7 @@ Note: the transistors to convert the 1.5v signals from the caliper results in th
 as they require very little power.  I originally tried using a level shifter board but I don't think it liked the 1.5v?  I am just using two 100 ohm resistors as a voltage divider to power the calipers and they seem ok with this.<br><br>
 
 <img src="/PCB/circuit.png" />
-Note: Because I am using GPIO0 which isn't ideal as it is attached to the onboard button but if you do not install the pullup resistor and use a lower value resistor on the input, this seems to work fine (although it can stop the hardware reset working when programming the CYD).
+Note: I am using GPIO0 which isn't ideal as it is also attached to the onboard button, but if you do not install the pullup resistor and use a lower value resistor on the input this seems to work fine (although it can stop the hardware reset working when programming the CYD).
 <br>There are connections for GPIO1 and 3 which are the serial pins but could be used as general GPIO if required (it can be programmed by OTA so this would not be a big problem).
 
 --------------------------------------
