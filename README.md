@@ -27,12 +27,7 @@ Communicating with the digital caliper:
 <br>
 An interesting thing I was not expecting is you get 2 decimal places even from the very cheap calipers which only display 1, as can be seen in the picture above.<br>
 
-If just using one caliper then gpio 16 and 17 can be easily used but to find enough GPIO pins to read 3 calipers I had to get a bit creative by removing the onboard 3 colour LED and soldering wires directly on to the ESP32 module.  This is not as difficult as you might think, if you use a small soldering iron tip and thin wire it's pretty easy even for my uncoordinated soldering skills.
-The wiring is not as complex as it might look, it is just a simple transistor on each data pin to convert from 1.5v up to 3.3v for the esp32 to be able to read, I use my CNC router to create the circuit boards but this could be easily built on some strip board etc. <br>
-Note: the transistors to convert the 1.5v signals from the caliper results in the signal levels being inverted so if you use some other method you will need to change 'invertCaliperDataSignals' to 0.  The circuit diagram I used can be seen in the PCB folder along with the files I used to create the circuit boards (Fritzing and CNC router).  To supply the lower voltage to power the caliper I just use a simple voltage divider 
-as they require very little power.  I originally tried using a level shifter board but I don't think it liked the 1.5v?  I am just using two 100 ohm resistors as a voltage divider to power the calipers and they seem ok with this.<br><br>
-
-As stated above, I have also ordered some custom circuit boards which should allow for much longer travel and will post here how this goes.
+<br>As stated above, I have also ordered some custom circuit boards which should allow for much longer travel and will post here how this goes.
 <br>https://www.youtube.com/watch?v=JYnit_PSSMY                  
 https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.html       
 
@@ -52,6 +47,12 @@ Wifi Features:
 - Update via OTA: http://x.x.x.x/ota
 
 --------------------------------------
+
+If just using one caliper then gpio 16 and 17 can be easily used but to find enough GPIO pins to read 3 calipers I had to get a bit creative by removing the onboard 3 colour LED and soldering wires directly on to the ESP32 module.  This is not as difficult as you might think, if you use a small soldering iron tip and thin wire it's pretty easy even for my uncoordinated soldering skills.
+<br>I soldered a 10 wire ribbon cable to one side of the ESP32 module then run this to my custom PCB.
+The wiring is not as complex as it might look, it is just a simple transistor on each data pin to convert from 1.5v up to 3.3v for the esp32 to be able to read, I use my CNC router to create the circuit boards but this could be easily built on some strip board etc. <br>
+Note: the transistors to convert the 1.5v signals from the caliper results in the signal levels being inverted so if you use some other method you will need to change 'invertCaliperDataSignals' to 0.  The circuit diagram I used can be seen in the PCB folder along with the files I used to create the circuit boards (Fritzing and CNC router).  To supply the lower voltage to power the caliper I just use a simple voltage divider 
+as they require very little power.  I originally tried using a level shifter board but I don't think it liked the 1.5v?  I am just using two 100 ohm resistors as a voltage divider to power the calipers and they seem ok with this.<br><br>
 
 <img src="/PCB/circuit.png" />
 Note: Because I am using GPIO0 which isn't ideal as it is attached to the onboard button but if you do not install the pullup resistor and use a lower value resistor on the input, this seems to work fine (although it can stop the hardware reset working when programming the CYD).
