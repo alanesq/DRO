@@ -65,7 +65,7 @@ See pic here:    [https://github.com/alanesq/DRO/pics/caliperMod.jpg](https://gi
 It may also be an idea to coat the rest of the circuit board in some kind of conformal coating (clear nail varnish?) and maybe some kind of dust seal around the slider where it enters the reader?
 <br>One advantage of having the remote display is it will make it easier to fit the calipers out of harms way as you do not need to see the display on them.
 
-I have found that some of my plug in USB power supplies upset the calipers resulting in the readings being random or steadily increasing for no reason.  I suspect a decent sized capacitor on the power feed to the CYD will be a very good idea.
+I have found that many USB power supplies upset the calipers resulting in the readings being random or steadily increasing for no reason.  I am guessing the switching frequency of the switch mode power supply is the cause, in the end I used a linear power supply rather than a switch mode one although someone who knows more about this stuff than I may be able to suggest a filter which would stop this (please let me know).  Another option would be to power the calipers from a battery. 
 
 At present it is set up to have 5 display pages, buttons can be created and assigned to the pages in the "define the button widgets" section of the sketch.  The caliper readings are displayed on all pages but there are two sizes available (this size is set in "displayReadings").  Button actions are defined in the "buttons.h" file.
 
