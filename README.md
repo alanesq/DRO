@@ -22,7 +22,7 @@ Communicating with the digital caliper
 An interesting thing I was not expecting is you get 2 decimal places even from the very cheap calipers which only display 1, as can be seen in the picture above.<br>
 
 As stated above, I have also ordered some custom circuit boards which should allow for much longer travel and will post here how this goes.
-[youtube](https://www.youtube.com/watch?v=JYnit_PSSMY)   [pcbway link](https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.html)
+[youtube](https://www.youtube.com/watch?v=JYnit_PSSMY) , [pcbway link](https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.html)
 
 This sketch is wifi enabled just because I already had the code to do this so why not but this can be disabled by changing a flag in the settings if you do not require it.  It is mainly useful for OTA updates but it would be easy to add features to this later.
 
