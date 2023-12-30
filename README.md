@@ -11,6 +11,8 @@ The cheap calipers only have a range of 150mm although longer 200mm are availabl
 
 You can of course buy better quality calipers if you do not trust these cheap ones to be accurate or you can buy similar items from China which are actually designed to be used as a DRO but it soon starts to get expensive.
 
+To see how to take them apart, what is inside them etc. you can see [Big Clive taking one apart](https://www.youtube.com/watch?v=fKSSY1gzCEs)
+
 An interesting thing I was not expecting is you get two decimal places from these very cheap calipers even from the only display one on their LCD, as can be seen in the picture above.
 
 Note: This is a work in progress, whilst it is now in a usable state I have yet to install it myself or add the features I require.
