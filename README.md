@@ -4,10 +4,14 @@ My homemade DRO consists of an ESP32-based "cheap yellow display," which costs a
 
 <img src="/pics/DROproject.jpg"/>
 
-I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available from China were still going to be several hundred pounds each, which I just couldn’t justify spending. Therefore, I decided to see if I can create my own as inexpensively as possible.
-I think it safe to say that I achieved this goal! 
+I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available from China were still going to be several hundred pounds each, which I just couldn’t justify spending. Therefore, I decided to see if I can create my own as inexpensively as possible. I think it safe to say that I achieved this goal! 
 
 The cheap calipers only have a range of 150mm although longer 200mm are available but around twice the price, this is probably enough for my requirements although I have now ordered some circuit boards to try which promise to extend this range to 650mm (although this does blow my budget somewhat ;-).
+[youtube](https://www.youtube.com/watch?v=JYnit_PSSMY) , [pcbway link](https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.html)
+
+You can of course buy better quality calipers if you do not trust these cheap ones to be accurate or you can buy similar items from China which are actually designed to be used as a DRO but it soon starts to get expensive.
+
+An interesting thing I was not expecting is you get two decimal places from these very cheap calipers even from the only display one on their LCD, as can be seen in the picture above.
 
 Note: This is a work in progress, whilst it is now in a usable state I have yet to install it myself or add the features I require.
 
@@ -19,19 +23,13 @@ Communicating with the digital caliper
 - [wei48221](http://wei48221.blogspot.com/2016/01/using-digital-caliper-for-digital-read_21.html)
 - [makingstuffchannel](https://github.com/MakingStuffChannel/DigitalCalipers/blob/master/DigitalCalipers.ino)
 
-An interesting thing I was not expecting is you get 2 decimal places even from the very cheap calipers which only display 1, as can be seen in the picture above.<br>
+This sketch is wifi enabled just because I already had the code to do this so why not, this is turned off by default but can be turned on via the DROs menu.  You can enable wifi at startup by changing a flag in the settings section.  It is mainly useful for OTA updates but it would be easy to add features to this later.
 
-As stated above, I have also ordered some custom circuit boards which should allow for much longer travel and will post here how this goes.
-[youtube](https://www.youtube.com/watch?v=JYnit_PSSMY) , [pcbway link](https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.html)
-
-This sketch is wifi enabled just because I already had the code to do this so why not but this can be disabled by changing a flag in the settings if you do not require it.  It is mainly useful for OTA updates but it would be easy to add features to this later.
-
-If you have a 3D printer this is a case I have modified to be large enough to contain all the electronics: https://github.com/alanesq/DRO/tree/main/case
-It prints without support (face down) and takes around 2hrs on my printer.
+If you have a 3D printer this is a case I have modified to be large enough to contain all the electronics: [custom case](https://github.com/alanesq/DRO/tree/main/case)
 
 --------------------------------------
 
-Wifi Features:
+Current Wifi Features:
 - Simulate pressing the screen with: http://x.x.x.x/touch?x=100&y=50
 - Restart esp32 with: http://x.x.x.x/reboot
 - Check it is live with: http://x.x.x.x/ping
