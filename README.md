@@ -57,7 +57,7 @@ There are connections for GPIO1 and 3 which are the serial pins but could be use
 
 ## Adnl information:
 
-In an attempt to try and make the calipers more robust I have put some insulation tape over the circuit board (where the slider runs along it) as I think the bare circuit board is very volnurable to damp entering and corroding the board.
+In an attempt to try and make the calipers more robust I have put some insulation tape over the circuit board (where the slider runs along it) as I think the bare circuit board is very vulnerable to damp entering and corroding the board.
 See pic here:    [https://github.com/alanesq/DRO/pics/caliperMod.jpg](https://github.com/alanesq/DRO/blob/main/pics/caliperMod.jpg)
 It may also be an idea to coat the rest of the circuit board in some kind of conformal coating (clear nail varnish?) and maybe some kind of dust seal around the slider where it enters the reader?
 <br>One advantage of having the remote display is it will make it easier to fit the calipers out of harms way as you do not need to see the display on them.
