@@ -67,3 +67,7 @@ I have found that some of my plug in USB power supplies upset the calipers resul
 At present it is set up to have 5 display pages, buttons can be created and assigned to the pages in the "define the button widgets" section of the sketch.  The caliper readings are displayed on all pages but there are two sizes available (this size is set in "displayReadings").  Button actions are defined in the "buttons.h" file.
 
 Custom actions for the pages can be added to the "pageSpecificOperations()" procedure e.g. see "if page 3 show number entered on keypad".
+
+## Contact
+If you use this sketch please let me know how you get on  - alanesq@disroot.org
+
