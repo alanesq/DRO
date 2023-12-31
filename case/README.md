@@ -9,6 +9,7 @@ This way the case can be removed easily leaving the interface and all its cables
 The case can print with no supports if printed top side down
 It takes around 2hrs on my printer
 
-The case here is modified from a case created by mdkendall:  https://www.printables.com/model/685845-enclosure-for-sunton-esp32-2432s028r-cheap-yellow-
+[The case here is based on this one created by mdkendall](https://www.printables.com/model/685845-enclosure-for-sunton-esp32-2432s028r-cheap-yellow-)
 
+--------------------
 https://github.com/alanesq/DRO - alanesq@disroot.org
