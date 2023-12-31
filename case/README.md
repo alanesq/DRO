@@ -1,4 +1,6 @@
-#3D printable case for the DRO project - https://github.com/alanesq/DRO
+#3D printable case for the DRO project
+
+<img src="case.png" />
 
 The idea behind this case is the interface circuit board is attached to a surface (via pillars)
 and then this case screws on to the base over the top of this circuit board
@@ -9,3 +11,4 @@ It takes around 2hrs on my printer
 
 The case here is modified from a case created by mdkendall:  https://www.printables.com/model/685845-enclosure-for-sunton-esp32-2432s028r-cheap-yellow-
 
+https://github.com/alanesq/DRO - alanesq@disroot.org
