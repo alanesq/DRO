@@ -9,7 +9,7 @@ My homemade DRO consists of an ESP32-based "cheap yellow display," which costs a
 
 I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available from China were still going to be several hundred pounds each, which I just couldn’t justify spending. Therefore, I decided to see if I can create my own as inexpensively as possible. I think it safe to say that I achieved this goal! 
 
-The cheap calipers only have a range of 150mm although longer 200mm are available but around twice the price, this is probably enough for my requirements although I have now ordered some circuit boards to try which promise to extend this range to 650mm (although this does blow my budget somewhat ;-).
+The cheap calipers only have a range of 150mm although longer 200mm or even 300mm are available on eBay but they are more expensive, this is probably enough for my requirements although I have now ordered some circuit boards to try which promise to extend this range to 650mm (although this does blow my budget somewhat ;-).
 [youtube](https://www.youtube.com/watch?v=JYnit_PSSMY) , [pcbway link](https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.html)
 
 You can of course buy better quality calipers if you do not trust these cheap ones to be accurate or you can buy similar items from China which are actually designed to be used as a DRO but it soon starts to get expensive.
