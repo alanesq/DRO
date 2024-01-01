@@ -59,12 +59,11 @@ There are connections for GPIO1 and 3 which are the serial pins but could be use
 
 ## Adnl information:
 
-In an attempt to try and make the calipers more robust I have put some insulation tape over the circuit board (where the slider runs along it) as I think the bare circuit board is very vulnerable to damp entering and corroding the board.
-See pic here:    [https://github.com/alanesq/DRO/pics/caliperMod.jpg](https://github.com/alanesq/DRO/blob/main/pics/caliperMod.jpg)
-It may also be an idea to coat the rest of the circuit board in some kind of conformal coating (clear nail varnish?) and maybe some kind of dust seal around the slider where it enters the reader?
+In an attempt to try and make the calipers more robust I have put some insulation tape over the circuit board (where the slider runs along it) as I think the bare circuit board is very vulnerable to damp entering and corroding the board.  [Picture](https://github.com/alanesq/DRO/blob/main/pics/caliperMod.jpg) <br>
+It may also be an idea to coat the rest of the circuit board in some kind of conformal coating (clear nail varnish?) and maybe some kind of dust seal around the slider where it enters the reader (I believe some come with one fitted).
 <br>One advantage of having the remote display is it will make it easier to fit the calipers out of harms way as you do not need to see the display on them.
 
-I have found that many USB power supplies upset the calipers resulting in the readings being random or steadily increasing for no reason.  I am guessing the switching frequency of the switch mode power supply is the cause, in the end I used a linear power supply rather than a switch mode one although someone who knows more about this stuff than I may be able to suggest a filter which would stop this (please let me know).  Another option would be to power the calipers from a battery. 
+I have found that many USB power supplies upset the calipers resulting in the readings being very random or steadily increasing for no apparent reason, I am guessing the switching frequency of the switch mode power supply is the cause of this issue.  In the end I built a linear power supply rather than use a switch mode one although someone who knows more about this stuff than I may be able to suggest a filter which would prevent this (please let me know).  Using a higher voltage power supply and then a LM7805 may be an option or power the calipers from a battery as they use very little power or maybe just don't use very cheap USB power supplies (an option I have not explored ;-)
 
 At present it is set up to have 5 display pages, buttons can be created and assigned to the pages in the "define the button widgets" section of the sketch.  The caliper readings are displayed on all pages but there are two sizes available (this size is set in "displayReadings").  Button actions are defined in the "buttons.h" file.
 
