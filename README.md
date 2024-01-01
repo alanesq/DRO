@@ -1,38 +1,36 @@
 # DRO - A super cheap Digital Readout (DRO) for lathes, milling machines etc. 
 
-My homemade DRO consists of an ESP32-based "cheap yellow display," which costs around £12, and a pair of digital calipers that cost £5 each. The remaining expenses include wiring, a few resistors, transistors etc.. As a result, building a two-axis DRO will set you back less than £30 (around $40).
+My homemade DRO consists of an ESP32-based "cheap yellow display" which costs around £12, a pair of digital calipers that cost £5 each plus a few transistors, wiring etc... As a result, building a two-axis DRO can set you back less than £30 (around $40).
 
 <table><tr>
   <td><img src="/pics/DROproject.jpg" /></td>
   <td><img src="/pics/DROonMill.jpg" /></td>
 </tr></table> 
 
-I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available from China were still going to be several hundred pounds each, which I just couldn’t justify spending. Therefore, I decided to see if I can create my own as inexpensively as possible. I think it safe to say that I achieved this goal! 
+I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available was still going to cost me several hundred pounds, which I just couldn’t justify spending.  I also suspected that the cheapest DRO on the market would probably fail after a short time anyway.  Therefore, I decided to see if I can create my own as inexpensively as possible. I think it safe to say that I have achieved this goal! 
 
-The cheap calipers only have a range of 150mm although longer 200mm or even 300mm are available on eBay but they are more expensive, this is probably enough for my requirements although I have now ordered some circuit boards to try which promise to extend this range to 650mm (although this does blow my budget somewhat ;-).
-[youtube](https://www.youtube.com/watch?v=JYnit_PSSMY) , [pcbway link](https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.html)
+The cheap calipers only have a range of 150mm although longer 200mm or even 300mm are available on eBay for under £20, this is probably enough for my requirements although I have now ordered some circuit boards designed by "Limi DIY" to try, these promise to extend this range to 650mm.  These are pretty expensive by the standards of this project but still not too bad although I have yet to find out if they work ok for me. <br>
+[YouTube video-extending the range](https://www.youtube.com/watch?v=JYnit_PSSMY) - [PCBway order link](https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.html)
 
-You can of course buy better quality calipers if you do not trust these cheap ones to be accurate or you can buy similar items from China which are actually designed to be used as a DRO but it soon starts to get expensive.
-
-To see how to take them apart, what is inside them etc. you can see [Big Clive taking one apart](https://www.youtube.com/watch?v=fKSSY1gzCEs)
-
-An interesting thing I was not expecting is you get two decimal places from these very cheap calipers even from the only display one on their LCD, as can be seen in the picture above.
+You can of course buy better quality calipers if you do not trust these cheap ones to be accurate or you can buy similar items from China which are actually designed to be used as a DRO but it soon starts to get expensive.  These cheap calipers really are amazing for the price, they are almost being given away.  Big Clive has made a nice video showing what is inside them and how to take them apart:
+[Big Clive](https://www.youtube.com/watch?v=fKSSY1gzCEs) <br>
+One interesting thing I was not expecting is you get two decimal places from these very cheap calipers even from the only display one on their LCD, as can be seen in the picture above.
 
 Note: This is a work in progress, whilst it is now in a usable state I have yet to install it myself or add the features I require.
 
 ## Misc info:
-[Cheap Yellow Display](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display)
+[Cheap Yellow Display Information](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display)
   
 Communicating with the digital caliper
 - [electronoobs](http://electronoobs.com/eng_arduino_tut93.php)
 - [wei48221](http://wei48221.blogspot.com/2016/01/using-digital-caliper-for-digital-read_21.html)
 - [makingstuffchannel](https://github.com/MakingStuffChannel/DigitalCalipers/blob/master/DigitalCalipers.ino)
 
-This sketch is wifi enabled just because I already had the code to do this so why not, this is turned off by default but can be turned on via the DROs menu.  You can enable wifi at startup by changing a flag in the settings section.  It is mainly useful for OTA updates but it would be easy to add features to this later.
+This sketch is wifi enabled just because I already had the code to do this so why not, this is turned off by default but can be turned on via the DROs menu.  You can enable wifi at startup by changing a flag in the settings section.  It is mainly useful for OTA updates but offers the option to add features at a later date. <br>
+At present the display has zero buttons for each axis along with a divide by zero button plus buttons to switch to different display pages.  There is plenty of scope to add lots of other features later, I have an idea that it may be nice to have the option to enter a list of points via the web page then have the DRO guide me to each point? <br>
+On page 3 of the display there is a number entry keypad which at present is not used, it stores the entered number in to a float and a String.
 
 If you have a 3D printer this is a case I have modified to be large enough to contain all the electronics: [custom case](https://github.com/alanesq/DRO/tree/main/case)
-
---------------------------------------
 
 Current Wifi Features:
 - Simulate pressing the screen with: http://x.x.x.x/touch?x=100&y=50
@@ -47,11 +45,9 @@ Current Wifi Features:
 If just using one caliper then gpio 16 and 17 can be easily used but to find enough GPIO pins to read 3 calipers I had to get a bit creative by removing the onboard 3 colour LED and soldering wires directly on to the ESP32 module.  This is not as difficult as you might think, if you use a small soldering iron tip and thin wire it's pretty easy even for my uncoordinated soldering skills.
 [GPIO pins to use](https://github.com/alanesq/DRO/blob/main/pics/CYD-gpioPins.jpg)
 
-I soldered a 10 wire ribbon cable to one side of the ESP32 module then run this to my custom PCB.
-The wiring is not as complex as it might look, it is just a simple transistor on each data pin to convert from 1.5v up to 3.3v for the esp32 to be able to read, I use my CNC router to create the circuit boards but this could be easily built on some strip board etc. 
-
+I soldered a 10 wire ribbon cable to one side of the ESP32 module then run this to my custom PCB. <br>
+The wiring is not as complex as it might look, it is just a simple transistor on each data pin to convert from 1.5v up to 3.3v for the esp32 to be able to read, I use my CNC router to create the circuit boards but this could be easily built on some strip board etc.  I tried using a level shifter board at first but I don't think it worked very well with the 1.5v levels. <br>
 Note: the transistors to convert the 1.5v signals from the caliper results in the signal levels being inverted so if you use some other method you will need to change 'invertCaliperDataSignals' to 0.  The circuit diagram I used can be seen in the PCB folder along with the files I used to create the circuit boards (Fritzing and CNC router).  To supply the lower voltage to power the caliper I just use a simple voltage divider 
-as they require very little power.  I originally tried using a level shifter board but I don't think it liked the 1.5v?  I am just using two 100 ohm resistors as a voltage divider to power the calipers and they seem ok with this.
 
 <img src="/PCB/circuit.png" />
 
@@ -73,6 +69,8 @@ I have found that many USB power supplies upset the calipers resulting in the re
 At present it is set up to have 5 display pages, buttons can be created and assigned to the pages in the "define the button widgets" section of the sketch.  The caliper readings are displayed on all pages but there are two sizes available (this size is set in "displayReadings").  Button actions are defined in the "buttons.h" file.
 
 Custom actions for the pages can be added to the "pageSpecificOperations()" procedure e.g. see "if page 3 show number entered on keypad".
+
+One possible issue I anticipate is that the calipers often have a random reading when first powered on, this could be a problem if it is close to the limit of the caliper if you then move it past this limit (the limit looks to be 999.99mm on mine).  It can of course be solved simply by pressing the zero button on the caliper but this is something I may look in to later.  I believe the caliper can be zeroed by taking one of the data pins to ground but this would require extra circuitry.
 
 ## Contact
 If you use this sketch please let me know how you get on  - alanesq@disroot.org
