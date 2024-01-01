@@ -45,7 +45,7 @@ Current Wifi Features:
 If just using one caliper then gpio 16 and 17 can be easily used but to find enough GPIO pins to read 3 calipers I had to get a bit creative by removing the onboard 3 colour LED and soldering wires directly on to the ESP32 module.  This is not as difficult as you might think, if you use a small soldering iron tip and thin wire it's pretty easy even for my uncoordinated soldering skills.
 [GPIO pins to use](https://github.com/alanesq/DRO/blob/main/pics/CYD-gpioPins.jpg)
 
-I soldered a 10 wire ribbon cable to one side of the ESP32 module then run this to my custom PCB. <br>
+I soldered a 10 wire ribbon cable to one side of the ESP32 module then run this to my custom PCB.    [Image](https://github.com/alanesq/DRO/blob/main/PCB/ribbonCablePins.jpeg) <br>
 The wiring is not as complex as it might look, it is just a simple transistor on each data pin to convert from 1.5v up to 3.3v for the esp32 to be able to read, I use my CNC router to create the circuit boards but this could be easily built on some strip board etc.  I tried using a level shifter board at first but I don't think it worked very well with the 1.5v levels. <br>
 Note: the transistors to convert the 1.5v signals from the caliper results in the signal levels being inverted so if you use some other method you will need to change 'invertCaliperDataSignals' to 0.  The circuit diagram I used can be seen in the PCB folder along with the files I used to create the circuit boards (Fritzing and CNC router).  To supply the lower voltage to power the caliper I just use a simple voltage divider 
 
