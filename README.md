@@ -14,6 +14,7 @@ The cheap calipers only have a range of 150mm although longer 200mm or even 300m
 
 You can of course buy better quality calipers if you do not trust these cheap ones to be accurate or you can buy similar items from China which are actually designed to be used as a DRO but it soon starts to get expensive.  These cheap calipers really are amazing for the price, they are almost being given away.  Big Clive has made a nice video showing what is inside them and how to take them apart:
 [Big Clive](https://www.youtube.com/watch?v=fKSSY1gzCEs) <br>
+WARNING: The well known problem with these cheap calipers is the battery goes flat if you do not use them for a while, it turns out that they are producing the data we use here all the time, even when turned off.  I suspect that newer, improved calipers have got round this issue by turning off the data all together which is bad news if you want to use it for this project.  <br>
 One interesting thing I was not expecting is you get two decimal places from these very cheap calipers even from the only display one on their LCD, as can be seen in the picture above.
 
 Note: This is a work in progress, whilst it is now in a usable state I have yet to install it myself or add the features I require.
