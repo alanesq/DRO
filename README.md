@@ -4,7 +4,8 @@ My homemade DRO consists of an ESP32-based "cheap yellow display" which costs ar
 
 <table><tr>
   <td><img src="/pics/DROproject.jpg" /></td>
-  <td><img src="/pics/DROonMill.jpg" /></td>
+  <td><img src="/pics/DROinstalled.jpg" /></td>
+  <td><img src="/pics/DROparts.jpg" /></td>
 </tr></table> 
 
 I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available was still going to cost me several hundred pounds, which I just couldn’t justify spending.  I also suspected that the cheapest DRO on the market would probably fail after a short time anyway.  Therefore, I decided to see if I can create my own as inexpensively as possible. I think it safe to say that I have achieved this goal! 
