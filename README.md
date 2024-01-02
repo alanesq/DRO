@@ -18,7 +18,7 @@ You can of course buy better quality calipers if you do not trust these cheap on
 WARNING: The well known problem with these cheap calipers is the battery goes flat if you do not use them for a while, it turns out that they are producing the data we use here all the time, even when turned off.  I suspect that newer, improved calipers have got round this issue by turning off the data all together which is bad news if you want to use it for this project.  <br>
 One interesting thing I was not expecting is you get two decimal places from these very cheap calipers even from the only display one on their LCD, as can be seen in the picture above.
 
-Note: This is a work in progress, whilst it is now in a usable state I have yet to install it myself or add the features I require.
+Note: This is a work in progress, whilst I now have it installed on my milling machine (it works really well :-) it is early days and I want to add more features to it.
 
 ## Misc info:
 [Cheap Yellow Display Information](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display)
