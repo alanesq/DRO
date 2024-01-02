@@ -1,6 +1,6 @@
 # DRO - A super cheap Digital Readout (DRO) for lathes, milling machines etc. 
 
-My homemade DRO consists of an ESP32-based "cheap yellow display" which costs around £12, a pair of digital calipers that cost £5 each plus a few transistors, wiring etc... As a result, building a two-axis DRO can set you back less than £30 (around $40).
+My homemade DRO consists of an ESP32-based "cheap yellow display" which costs around £12, a pair of digital calipers that cost under £5 each plus a few transistors, wiring etc... As a result, building a three-axis DRO can set you back less than £30 (around $40).
 
 <table><tr>
   <td><img src="/pics/DROproject.jpg" /></td>
