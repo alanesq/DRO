@@ -31,7 +31,8 @@ This sketch is wifi enabled just because I already had the code to do this so wh
 At present the display has zero buttons for each axis along with a divide by zero button plus buttons to switch to different display pages.  There is plenty of scope to add lots of other features later, I have an idea that it may be nice to have the option to enter a list of points via the web page then have the DRO guide me to each point? <br>
 On page 3 of the display there is a number entry keypad which at present is not used, it stores the entered number in to a float and a String.
 
-If you have a 3D printer this is a case I have modified to be large enough to contain all the electronics: [custom case](https://github.com/alanesq/DRO/tree/main/case)
+If you have a 3D printer this is a case I have modified to be large enough to contain all the electronics: [custom case](https://github.com/alanesq/DRO/tree/main/case) <br>
+Also a replacement case for the digital calipers: [caliper case](https://github.com/alanesq/DRO/tree/main/caliperCase)
 
 Current Wifi Features:
 - Simulate pressing the screen with: http://x.x.x.x/touch?x=100&y=50
