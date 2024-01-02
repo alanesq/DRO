@@ -116,6 +116,21 @@ void twoRebootPressed() {
   delay(5000);         // restart fails without this delay  
 }
 
+void twoWifiPressed() { 
+  log_system_message("button: wifi enable");
+  startTheWifi();
+  // display ip address
+      tft.setTextColor(TFT_GREEN, TFT_BLACK);
+      tft.setFreeFont(FM9);                       // standard Free Mono font - available sizes: 9, 12, 18 or 24
+      tft.setTextSize(1);                         // 1 or 2
+      if (WiFi.status() == WL_CONNECTED) {
+        tft.drawString("IP: " + WiFi.localIP().toString(), 90, SCREEN_HEIGHT - 25);    
+      } else {
+        tft.drawString("Wifi failed to start", 90, SCREEN_HEIGHT - 25);    
+      }
+}
+
+
 
 // -----------------------------------------------------------------------------------------
 // page 3
@@ -128,7 +143,7 @@ void threePage1Pressed() {
 // keypad
   // check entered number is valid and convert to a float
   void verifyNumber() {          
-    if (keyEnteredNumber.length() > 11) keyEnteredNumber = "";       // too long
+    if (keyEnteredNumber.length() > noDigitsOnNumEntry) keyEnteredNumber = "";       // too long
     keyEnteredNumberVal = keyEnteredNumber.toFloat();                // convert to a float
     if (serialDebug) Serial.println("Number entered: " + String(keyEnteredNumberVal, DROnoOfDigits));
   }

@@ -46,16 +46,8 @@
     gpio 1    Serial Tx 
     gpio 22   Caliper Z data
 
-  Other possible GPIO pins to use
-    35 - On connector P3 - Input only
-    22 - On connector CN1
-    27 - On connector CN1
-    04 - onboard LED
-    16 - onboard LED
-    17 - onboard LED
-    05, 18, 19, 23 - SD card
-    34 - Light sensor 
-    00 - Onboard button
+  Pins that should be ok to use: 22, 32, 33, 26 (also 35, 18 which are input only)
+  other possible use pins: 4, 16, 17 (onboard LED) : 5, 23, 18, 19 (sd card) : 1, 3 (Serial) 0 (onboard button) : 34 (LDR)
 
 
   Test Points
@@ -109,6 +101,7 @@
   void handleTest();
   void drawScreen(int);      
   void displayReadings();
+  void startTheWifi();
 
 
 // ---------------------------------------------------------------
@@ -119,7 +112,7 @@
 
   const char* sversion = "29Dec23";                      // version of this sketch
 
-  const bool wifiEnabled = 0;                            // if wifi is to be used
+  bool wifiEnabled = 0;                                  // if wifi is to be enabled at boot (can be enabled from display menu if turned off here)
   
   const bool serialDebug = 1;                            // provide debug info on serial port  (disable if using Tx or Rx gpio pins for caliper)
   const int serialSpeed = 115200;                        // Serial data speed to use  
@@ -143,7 +136,7 @@
     #define DATA_PIN_Y  16    // 16
     
     #define CLOCK_PIN_Z -1    // 22
-    #define DATA_PIN_Z  -1    // 5
+    #define DATA_PIN_Z  -1    // 5   Note: Used by SD card (chip select?)
 
   // Touchscreen 
     #define TOUCH_LEFT 200         // positions on screen (wont be needed when calibration is implemented?)
@@ -171,7 +164,9 @@
 
     //page 2
 
-    // page 3 - numeric keypad
+    // page 3 
+      //numeric keypad
+        const int noDigitsOnNumEntry = 10;               // maximum length of entered number
         const int keyWidth = 45;
         const int keyHeight = 32;
         const int keySpacing = 10;
@@ -269,6 +264,7 @@
     // page 2
       ButtonWidget p2p1 = ButtonWidget(&tft);    // page 1 
       ButtonWidget p2r = ButtonWidget(&tft);     // reboot
+      ButtonWidget p2wifi = ButtonWidget(&tft);  // enable wifi
 
     // page 3
       ButtonWidget p3p1 = ButtonWidget(&tft);    // page 1
@@ -329,6 +325,7 @@
     // page 2
       {2, 1, "Page1", 0, SCREEN_HEIGHT - DRObuttonheight, DRObuttonWidth * 2, DRObuttonheight, TFT_WHITE, 1, TFT_SILVER, TFT_BLACK, &p2p1, &twoPage1Pressed},
       {2, 1, "Reboot", 200, 140, DRObuttonWidth * 2, DRObuttonheight, TFT_WHITE, 1, TFT_RED, TFT_BLACK, &p2r, &twoRebootPressed},
+      {2, 1, "Wifi-Enable", 30, 140, DRObuttonWidth * 4, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &p2wifi, &twoWifiPressed},
 
     // page 3 
       {3, 1, "Page1", 0, SCREEN_HEIGHT - DRObuttonheight, DRObuttonWidth * 2, DRObuttonheight, TFT_WHITE, 1, TFT_SILVER, TFT_BLACK, &p3p1, &threePage1Pressed},
@@ -376,6 +373,63 @@ unsigned long wifiDownTime = 0;         // if wifi connection is lost this recor
 
 
 // ---------------------------------------------------------------
+//                           start wifi
+// ---------------------------------------------------------------
+// called from setup or when wifi enabled from screen menu
+
+void startTheWifi() {
+
+      startWifiManager();                                        // Connect to wifi using wifi manager (see wifi.h)
+      //startWifi();                                             // Connect to wifi using fixed details (see wifi.h)
+
+      WiFi.mode(WIFI_STA);     // turn off access point - options are WIFI_AP, WIFI_STA, WIFI_AP_STA or WIFI_OFF
+
+    //  // configure as access point that other esp units can use if main wifi is down
+    //    WiFi.mode(WIFI_STA);                                   // turn off access point in case wifimanager still has one active
+    //    if (serialDebug) Serial.print("Starting access point: ");
+    //    if (serialDebug) Serial.print(APSSID);
+    //    WiFi.softAP(APSSID, APPWD, 1, 1, 8);                   // access point settings
+    //    delay(150);
+    //    if ( WiFi.softAPConfig(Ip, Ip, NMask) ) {
+    //      WiFi.mode(WIFI_AP_STA);                              // enable as both Station and access point - options are WIFI_AP, WIFI_STA, WIFI_AP_STA or WIFI_OFF
+    //      log_system_message("Access Point wifi started: " + WiFi.softAPIP().toString());
+    //    } else {
+    //      log_system_message("Error: unable to start Access Point wifi");
+    //    }  
+
+      // set up web page request handling
+        server.on(HomeLink, handleRoot);         // root page
+        server.on("/data", handleData);          // supplies information to update root page via Ajax)
+        server.on("/ping", handlePing);          // ping requested
+        server.on("/log", handleLogpage);        // system log (in standard.h)
+        server.on("/test", handleTest);          // testing page
+        server.on("/reboot", handleReboot);      // reboot the esp
+        server.on("/touch", handleTouch);        // for simulating a press on the touchscreen
+        //server.onNotFound(handleNotFound);       // invalid page requested
+        #if ENABLE_OTA
+          server.on("/ota", handleOTA);          // ota updates web page
+        #endif
+
+      // start web server
+        if (serialDebug) Serial.println("Starting web server");  
+
+      server.begin();
+
+      // Stop wifi going to sleep (if enabled it can cause wifi to drop out randomly especially on esp8266 boards)
+          WiFi.setSleep(false);
+   
+      // Finished connecting to network
+        if (WiFi.status() == WL_CONNECTED) {
+          log_system_message("Started, ip=" + WiFi.localIP().toString());
+          wifiEnabled = 1;
+        } else {
+          log_system_message("Wifi failed to start");
+          wifiEnabled = 0;
+        }
+    }
+
+
+// ---------------------------------------------------------------
 //    -SETUP     SETUP     SETUP     SETUP     SETUP     SETUP
 // ---------------------------------------------------------------
 
@@ -418,76 +472,33 @@ void setup() {
       system_message[i].reserve(maxLogEntryLength);
     }
 
-  // if (serialDebug) Serial.setDebugOutput(true);         // to enable extra diagnostic info
+  // if (serialDebug) Serial.setDebugOutput(true);             // to enable extra diagnostic info
 
   #if ENABLE_EEPROM
-    settingsEeprom(0);       // read stored settings from eeprom
+    settingsEeprom(0);                                         // read stored settings from eeprom
   #endif
 
+  if (wifiEnabled) {
+    // update screen
+      tft.setTextColor(TFT_WHITE, TFT_BLACK);
+      tft.drawString("Starting wifi ...", 5, sSpacing * 3);   
+      dro.updateNeedle(25, 20);                                // move dial to 25    
+    startTheWifi();                                            // start wifi
+    // update screen
+      tft.setTextColor(TFT_WHITE, TFT_BLACK);       
+      if (WiFi.status() == WL_CONNECTED) { 
+        tft.drawString("IP = " + WiFi.localIP().toString() + "      ", 5, sSpacing * 3);  
+      } else {
+        tft.drawString("Wifi failed to start", 5, sSpacing * 3);  
+        wifiEnabled = 0;
+      }  
+      dro.updateNeedle(75, 20);      
+  }
 
-  // wifi stuff
-
-    if (wifiEnabled) {
-      // update screen
-        tft.setTextColor(TFT_WHITE, TFT_BLACK);
-        tft.drawString("Starting wifi ...", 5, sSpacing * 3);   
-        dro.updateNeedle(25, 20);                                // move dial to 25
-
-      startWifiManager();                                        // Connect to wifi using wifi manager (see wifi.h)
-      //startWifi();                                             // Connect to wifi using fixed details (see wifi.h)
-
-      WiFi.mode(WIFI_STA);     // turn off access point - options are WIFI_AP, WIFI_STA, WIFI_AP_STA or WIFI_OFF
-
-    //  // configure as access point that other esp units can use if main wifi is down
-    //    WiFi.mode(WIFI_STA);                                   // turn off access point in case wifimanager still has one active
-    //    if (serialDebug) Serial.print("Starting access point: ");
-    //    if (serialDebug) Serial.print(APSSID);
-    //    WiFi.softAP(APSSID, APPWD, 1, 1, 8);                   // access point settings
-    //    delay(150);
-    //    if ( WiFi.softAPConfig(Ip, Ip, NMask) ) {
-    //      WiFi.mode(WIFI_AP_STA);                              // enable as both Station and access point - options are WIFI_AP, WIFI_STA, WIFI_AP_STA or WIFI_OFF
-    //      log_system_message("Access Point wifi started: " + WiFi.softAPIP().toString());
-    //    } else {
-    //      log_system_message("Error: unable to start Access Point wifi");
-    //    }  
-
-      // set up web page request handling
-        server.on(HomeLink, handleRoot);         // root page
-        server.on("/data", handleData);          // supplies information to update root page via Ajax)
-        server.on("/ping", handlePing);          // ping requested
-        server.on("/log", handleLogpage);        // system log (in standard.h)
-        server.on("/test", handleTest);          // testing page
-        server.on("/reboot", handleReboot);      // reboot the esp
-        server.on("/touch", handleTouch);        // for simulating a press on the touchscreen
-        //server.onNotFound(handleNotFound);       // invalid page requested
-        #if ENABLE_OTA
-          server.on("/ota", handleOTA);          // ota updates web page
-        #endif
-
-      // start web server
-        if (serialDebug) Serial.println("Starting web server");  
-      // update screen   
-        tft.setTextColor(TFT_WHITE, TFT_BLACK);
-        tft.drawString("Starting web server ...", 5, sSpacing * 3);      // Left Aligned  
-        dro.updateNeedle(50, 20);                                        // move dial to 50
-
-      server.begin();
-
-      // Stop wifi going to sleep (if enabled it can cause wifi to drop out randomly especially on esp8266 boards)
-          WiFi.setSleep(false);
-   
-      // Finished connecting to network
-        log_system_message("Started, ip=" + WiFi.localIP().toString());
-        // update screen
-          tft.setTextColor(TFT_WHITE, TFT_BLACK);        
-          tft.drawString("IP = " + WiFi.localIP().toString() + "      ", 5, sSpacing * 3);    
-          dro.updateNeedle(75, 20);  
-    }    // wifi stuff
-
-    // watchdog timer (esp32)
-      if (serialDebug) Serial.println("Configuring watchdog timer");
-      esp_task_wdt_init(WDT_TIMEOUT, true);                      //enable panic so ESP32 restarts
-      esp_task_wdt_add(NULL);                                    //add current thread to WDT watch        
+  // watchdog timer (esp32)
+    if (serialDebug) Serial.println("Configuring watchdog timer");
+    esp_task_wdt_init(WDT_TIMEOUT, true);                      //enable panic so ESP32 restarts
+    esp_task_wdt_add(NULL);                                    //add current thread to WDT watch        
 
   // Start the SPI for the touch screen and init the TS library
     mySpi.begin(XPT2046_CLK, XPT2046_MISO, XPT2046_MOSI, XPT2046_CS);
@@ -865,15 +876,19 @@ void settingsEeprom(bool eDirection) {
 
 void pageSpecificOperations() {
 
-  // if page 3 update number entered on keypad
+  // if page 3 selected then display number entered on keypad
     if (displayingPage == 3) {
       tft.setFreeFont(&sevenSeg16pt7b);      
       tft.setTextColor(TFT_RED, TFT_BLACK);
       tft.setTextSize(1);
-      tft.setTextPadding( tft.textWidth("8") * DROnoOfDigits );  
+      tft.setTextPadding( tft.textWidth("8") * noDigitsOnNumEntry );  
       tft.drawString(keyEnteredNumber, keyX, keyY - 30 );    
     }    
 
+  // show/hide "enable wifi" button depending if wifi is enabled
+    for (uint8_t b = 0; b < buttonCount; b++) {
+      if (screenButtons[b].label == "Wifi-Enable") screenButtons[b].enabled = !wifiEnabled;
+    }
 }
 
 
