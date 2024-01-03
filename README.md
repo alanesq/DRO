@@ -49,7 +49,8 @@ Current Wifi Features:
 
 --------------------------------------
 
-If just using one caliper then gpio 16 and 17 can be easily used but to find enough GPIO pins to read 3 calipers I had to get a bit creative by removing the onboard 3 colour LED and soldering wires directly on to the ESP32 module.  This is not as difficult as you might think, if you use a small soldering iron tip and thin wire it's pretty easy even for my uncoordinated soldering skills.
+If you only requiring X and Y you could use connector CN1 (GPIO 22 and 27) and connected to P1 (GPIO 1 and 3), 'serialDebug' would need to be set to 0 and you would need to disconnect the P1 caliper to program the CYD. <br> 
+To find enough GPIO pins to read 3 calipers I had to get a bit more creative; I removed the onboard 3 colour LED and then soldered some ribbon wire directly on to one side of the ESP32 module it's self.  This is not as difficult as you might imagine, if you use a small soldering iron tip and magnification it was pretty easy even with my uncoordinated soldering skills.  Tin the pins first ideally using some extra flux, then attach the wires and use some hot melt glue to hold the ribbon wire in place.  I soldered 8 wires to the ESP module plus two to a nearby connector for the 3.3v power.
 [GPIO pins to use](https://github.com/alanesq/DRO/blob/main/pics/CYD-gpioPins.jpg)
 
 I soldered a 10 wire ribbon cable to one side of the ESP32 module then run this to my custom PCB.    [Image](https://github.com/alanesq/DRO/blob/main/PCB/ribbonCablePins.jpeg) <br>
