@@ -10,14 +10,16 @@ My homemade DRO consists of an ESP32-based "cheap yellow display" which costs ar
   <td><img src="/pics/caliperInstalled.jpg" /></td>
 </tr></table> 
 
-I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available was still going to cost me several hundred pounds, which I just couldn’t justify spending.  I also suspected that the cheapest DRO on the market would probably fail after a short time anyway.  Therefore, I decided to see if I can create my own as inexpensively as possible. I think it safe to say that I have achieved this goal! 
+I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available was still going to cost me several hundred pounds, which I just couldn’t justify spending.  I also suspected that the cheapest DRO on the market would probably fail after a short time anyway.  Therefore, I decided to see if I can create my own as inexpensively as possible. I think it safe to say that I have achieved this goal! <br>
+
+WARNING: The well known problem with these cheap calipers is the battery goes flat if you do not use them for a while, it turns out that they are producing the data we use here all the time, even when turned off.  I bought one of the longer calipers recently which looks like a "new/impoved" design which has got round this issue by turning off the data all together which is very bad news if you want to use it for this project.  You can still use the reader from a cheaper caliper on this longer bar though.<br>
 
 The cheap calipers only have a range of 150mm although longer 200mm or even 300mm are available on eBay for under £20, this is probably enough for my requirements although I have now ordered some circuit boards designed by "Limi DIY" to try, these promise to extend this range to 650mm.  These are pretty expensive by the standards of this project but still not too bad although I have yet to find out if they work ok for me. <br>
 [YouTube video-extending the range](https://www.youtube.com/watch?v=JYnit_PSSMY) - [PCBway order link](https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.html)
 
 You can of course buy better quality calipers if you do not trust these cheap ones to be accurate or you can buy similar items from China which are actually designed to be used as a DRO but it soon starts to get expensive.  These cheap calipers really are amazing for the price, they are almost being given away.  Big Clive has made a nice video showing what is inside them and how to take them apart:
 [Big Clive](https://www.youtube.com/watch?v=fKSSY1gzCEs) <br>
-WARNING: The well known problem with these cheap calipers is the battery goes flat if you do not use them for a while, it turns out that they are producing the data we use here all the time, even when turned off.  I suspect that newer, improved calipers have got round this issue by turning off the data all together which is bad news if you want to use it for this project.  <br>
+
 One interesting thing I was not expecting is you get two decimal places from these very cheap calipers even from the only display one on their LCD, as can be seen in the picture above.
 
 Note: This is a work in progress, whilst I now have it installed on my milling machine (it works really well :-) it is early days and I want to add more features to it.
