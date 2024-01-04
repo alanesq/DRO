@@ -110,16 +110,16 @@
 
   const char* stitle = "SuperLowBudget-DRO";             // title of this sketch
 
-  const char* sversion = "29Dec23";                      // version of this sketch
+  const char* sversion = "02Jan24";                      // version of this sketch
 
   bool wifiEnabled = 0;                                  // if wifi is to be enabled at boot (can be enabled from display menu if turned off here)
   
-  const bool serialDebug = 1;                            // provide debug info on serial port  (disable if using Tx or Rx gpio pins for caliper)
+  const bool serialDebug = 0;                            // provide debug info on serial port  (disable if using Tx or Rx gpio pins for caliper)
   const int serialSpeed = 115200;                        // Serial data speed to use  
   
   const bool invertCaliperDataSignals = 1;               // If using transistors on the data and clock pins the signals will be inverted so set this to 1
   
-  const int checkDROreadings = 20;                       // how often to refresh DRO readings (ms)  
+  const int checkDROreadings = 200;                      // how often to refresh DRO readings (ms)  
   const int checkTouchScreen = 80;                       // how often to check touchscreen for a press (ms)
 
   // Display
@@ -135,8 +135,16 @@
     #define CLOCK_PIN_Y 17    // 17
     #define DATA_PIN_Y  16    // 16
     
-    #define CLOCK_PIN_Z -1    // 22
-    #define DATA_PIN_Z  -1    // 5   Note: Used by SD card (chip select?)
+    #define CLOCK_PIN_Z 22    // 22
+    #define DATA_PIN_Z  5     // 5   Note: this pin is used by the SD card (chip select)
+
+    // // testing
+    // #define CLOCK_PIN_X 22     // 0   Note: gpio is the onboard button so not really a good idea to use it but it seems to work ok (it can stop the device rebooting its self)
+    // #define DATA_PIN_X  35    // 4
+    // #define CLOCK_PIN_Y -1    // 17
+    // #define DATA_PIN_Y  -1    // 16
+    // #define CLOCK_PIN_Z -1    // 22
+    // #define DATA_PIN_Z  -1    // 5   Note: this pin is used by the SD card (chip select)
 
   // Touchscreen 
     #define TOUCH_LEFT 200         // positions on screen (wont be needed when calibration is implemented?)
@@ -211,6 +219,7 @@
     MeterWidget dro  = MeterWidget(&tft);         // demo meter used at startup
 
     float xReading, yReading, zReading;            // store for the current dro readings 
+    unsigned long lastReadingTimeX = 0, lastReadingTimeY = 0, lastReadingTimeZ = 0;     // last time caliper data was read
     unsigned long lastTouch = 0;                   // last time touchscreen button was pressed
 
     // zero adjustments for calipers (for the 3 coordinate systems)
@@ -224,6 +233,7 @@
   
   
     int displayingPage = 1;        // which screen page is live
+    const int maxLabelLength = 30; // maximum number of characters in a buttons label (name)
 
     typedef void (*buttonActionCallback)(void);   
     
@@ -231,7 +241,7 @@
     struct buttonStruct {
       int page;                    // which screen page it belongs to (0 = show on all pages)
       bool enabled;                // if this button is enabled
-      char* label;                 // buttons title
+      char label[maxLabelLength];  // buttons title
       int16_t x, y;                // location on screen (top left)
       uint16_t width, height;
       uint16_t outlineColour;
@@ -435,9 +445,9 @@ void startTheWifi() {
 
 void setup() {
 
-  if (serialDebug) {       // if serial debug information is enabled
-    Serial.begin(serialSpeed); while (!Serial); delay(50);       // start serial comms
-    //delay(2000);      // gives platformio chance to start serial monitor
+  if (serialDebug) {           // if serial debug information is enabled
+    Serial.begin(serialSpeed); // start serial comms
+    //delay(2000);             // gives platformio chance to start serial monitor
 
     Serial.println("\n\n\n");                                    // some line feeds
     Serial.println("-----------------------------------");
@@ -551,59 +561,43 @@ void loop() {
       }
     }
 
-  // Digital Caliper - X                                     // Note: I have kept the three caliper codes seperate here in case any require custom code
-    if (DATA_PIN_X != -1) {                                  // if caliper is present 
-      static repeatTimer caliperTimerX;                      // set up a repeat timer  (see standard.h)
-      if (caliperTimerX.check(checkDROreadings)) {           // repeat at set interval  
-        float tRead = 1.0;  
-        if (!waitPinState(CLOCK_PIN_X, HIGH)) tRead = 8888.88;   // wait for gpio pin to change (8888.88 signifies failed)
-        unsigned long tmpTime=micros();
-        if (!waitPinState(CLOCK_PIN_X, LOW)) tRead = 8888.88;
-        if((micros()-tmpTime) > 500) {
-          if (tRead == 1.0) tRead = readCaliper(CLOCK_PIN_X, DATA_PIN_X);  // read data from caliper 
-          if (tRead != xReading) {     // if reading has changed or flag to refresh is set update display
-            xReading = tRead;                                // store result in global variable
-            displayReadings();                               // display caliper readings 
-          }
-        }
-      }
-    } 
 
-  // Digital Caliper - Y      
-    if (DATA_PIN_Y != -1) {                                  // if caliper is present 
-      static repeatTimer caliperTimerY;                      // set up a repeat timer 
-      if (caliperTimerY.check(checkDROreadings + 1)) {           // repeat at set interval (ms)
-        float tRead = 1.0;  
-        if (!waitPinState(CLOCK_PIN_Y, HIGH)) tRead = 8888.88;   // wait for gpio pin to change (8888.88 signifies failed)
-        unsigned long tmpTime=micros();
-        if (!waitPinState(CLOCK_PIN_Y, LOW)) tRead = 8888.88;
-        if((micros()-tmpTime) > 500) {
-          if (tRead == 1.0) tRead = readCaliper(CLOCK_PIN_Y, DATA_PIN_Y);  // read data from caliper 
-          if (tRead != yReading) {     // if reading has changed or flag to refresh is set update display
-            yReading = tRead;                                // store result in global variable
-            displayReadings();                               // display caliper readings 
+  // Digital Caliper - X       
+    if (DATA_PIN_X != -1 && millis() - lastReadingTimeX > checkDROreadings) {  // if caliper is present and has not refreshed recently
+          float tRead = readCaliper(CLOCK_PIN_X, DATA_PIN_X);  // read data from caliper 
+          if (tRead != xReading && tRead < 9999.00) {          // if reading has changed, over 9999 signifies failed to read data
+            xReading = tRead;                                  // store result in global variable
+            if (lastReadingTimeX == 0) {xAdj[0] = xReading; xAdj[1] = xReading; xAdj[2] = xReading;}   // first time caliper has been read so zero it
+            displayReadings();                                 // display caliper readings 
+            lastReadingTimeX = millis();                       // log time of last reading
           }
-        }
-      }
-    } 
+          if (serialDebug && tRead > 9999.00) Serial.println("X Caliper read failed: " + String(tRead));      
+    }
 
-  // Digital Caliper - Z 
-    if (DATA_PIN_Z != -1) {                                  // if caliper is present 
-      static repeatTimer caliperTimerZ;                      // set up a repeat timer 
-      if (caliperTimerZ.check(checkDROreadings + 2)) {           // repeat at set interval (ms)
-        float tRead = 1.0;  
-        if (!waitPinState(CLOCK_PIN_Z, HIGH)) tRead = 8888.88;   // wait for gpio pin to change (8888.88 signifies failed)
-        unsigned long tmpTime=micros();
-        if (!waitPinState(CLOCK_PIN_Z, LOW)) tRead = 8888.88;
-        if((micros()-tmpTime) > 500) {
-          if (tRead == 1.0) tRead = readCaliper(CLOCK_PIN_Z, DATA_PIN_Z);  // read data from caliper 
-          if (tRead != zReading) {     // if reading has changed or flag to refresh is set update display
-            zReading = tRead;                                   // store result in global variable
-            displayReadings();                                  // display caliper readings 
+  // Digital Caliper - Y     
+    if (DATA_PIN_Y != -1 && millis() - lastReadingTimeY > checkDROreadings) {  // if caliper is present and has not refreshed recently
+          float tRead = readCaliper(CLOCK_PIN_Y, DATA_PIN_Y);  // read data from caliper 
+          if (tRead != yReading && tRead < 9999.00) {          // if reading has changed, over 9999 signifies failed to read data
+            yReading = tRead;                                  // store result in global variable
+            if (lastReadingTimeY == 0) {yAdj[0] = yReading; yAdj[1] = yReading; yAdj[2] = yReading;}   // first time caliper has been read so zero it
+            displayReadings();                                 // display caliper readings 
+            lastReadingTimeY = millis();                       // log time of last reading
           }
-        }
-      }
-    }     
+          if (serialDebug && tRead > 9999.00) Serial.println("Y Caliper read failed: " + String(tRead));      
+    }    
+
+  // Digital Caliper - Z    
+    if (DATA_PIN_Z != -1 && millis() - lastReadingTimeZ > checkDROreadings) {  // if caliper is present and has not refreshed recently
+          float tRead = readCaliper(CLOCK_PIN_Z, DATA_PIN_Z);  // read data from caliper (9999 = failed)
+          if (tRead != zReading && tRead < 9999.00) {          // if reading has changed and data was read ok
+            zReading = tRead;                                  // store result in global variable
+            if (lastReadingTimeZ == 0) {zAdj[0] = zReading; zAdj[1] = zReading; zAdj[2] = zReading;}   // first time caliper has been read so zero it
+            displayReadings();                                 // display caliper readings 
+            lastReadingTimeZ = millis();                       // log time of last reading
+          }
+          if (serialDebug && tRead > 9999.00) Serial.println("Z Caliper read failed: " + String(tRead));      
+    }    
+
 
     // Periodically change the LED status to indicate all is well
       static repeatTimer ledTimer;                          // set up a repeat timer (see standard.h)
@@ -1008,22 +1002,22 @@ void drawScreen(int screen) {
 }
 
 
+//      ***************************  Calipers  *****************************
+
+
 // ----------------------------------------------------------------
-//              -wait for gpio pin state to change  
+//      -wait for gpio pin to change to supplied state
 // ----------------------------------------------------------------
 // returns 0 if times out
 
 bool waitPinState(int pin, bool state) {
-  int timeout = 1000000;         // timeout (usual time taken = 500000)
-  while(digitalRead(pin) == state && timeout > 0) {
-    timeout--;
-  }
-  if (timeout < 1) return 0;
+
+  unsigned long timeoutTime = 200;    // max time to wait
+  unsigned long tTimer = millis();  
+  while(digitalRead(pin) != state && millis() - tTimer < timeoutTime) { }
+  if (millis() - tTimer >= timeoutTime) return 0;
   return 1;
 }
-
-
-//      ***************************  Calipers  *****************************
 
 
 // ----------------------------------------------------------------
@@ -1041,17 +1035,29 @@ float readCaliper(int clockPin, int dataPin) {
   int sign = 1;         // if the reading is negative
   int inches = 0;       // flag if data is in inches (0 = mm) -  NOTE: this doesn't seem to work (always 1)?
   long value = 0;       // reading from caliper  
-  for(int i=0;i<24;i++) {                                 // read the data bits 
-    if (!waitPinState(clockPin, pin0)) return 8888.88;       // wait for gpio pin state to change
-    if (!waitPinState(clockPin, pin1)) return 8888.88;
-    if(digitalRead(dataPin) == pin1) {
-      // 1 received
-        if(i<20) value|=(1<<i);
-        if(i==20) sign=-1;
-        if(i==23) inches=1;    
-    } 
-  }
-  return (value*sign)/100.0;
+
+  // start of data is preceded by clock being high for long period
+  // so check if we are in this long period now (most likely yes), if not fail and return
+    if (!waitPinState(CLOCK_PIN_X, pin1)) return 9999.1;    // make sure clock pin is curently high (9999.xx signifies it timed out waiting)
+    unsigned long tmpTime=micros();                         // start timer
+    if (!waitPinState(CLOCK_PIN_X, pin0)) return 9999.2;    // wait for clock pin to go low
+    if ((micros() - tmpTime) < 500) return 9999.3;          // if it was high for long time then we are at start of data
+
+  // long period confirmed so read the data
+    for(int i=0;i<24;i++) {                                 // step through the data bits 
+      if (!waitPinState(clockPin, pin0)) return 9999.4;     // wait for gpio pin to go low
+      if (!waitPinState(clockPin, pin1)) return 9999.5;     // wait for gpio pin to go HIGH
+      if(digitalRead(dataPin) == pin1) {
+        // 1 was received
+          if(i<20) value|=(1<<i);
+          if(i==20) sign=-1;
+          if(i==23) inches=1;    
+      } 
+    }
+
+  // return the result
+    if (inches) return (value*sign) / 2000.00;               // inches
+    else return (value*sign) / 100.00;                       // mm
 }
 
 // ----------------------------------------------------------------

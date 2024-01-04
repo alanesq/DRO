@@ -53,7 +53,7 @@ void halfYpressed() {
 void halfZpressed() { 
   log_system_message("button: halfZ");
   float t = (zReading - zAdj[currentCoord]) / 2.0;   
-  yAdj[currentCoord] = zAdj[currentCoord] + t;   
+  zAdj[currentCoord] = zAdj[currentCoord] + t;   
 }
 
 
