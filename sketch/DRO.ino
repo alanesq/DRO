@@ -92,6 +92,7 @@
 #include <Arduino.h>         
 #include <WiFi.h>
 
+
 // forward declarations
   void log_system_message(String smes);   // in standard.h
   void handleRoot();
@@ -110,7 +111,7 @@
 
   const char* stitle = "SuperLowBudget-DRO";             // title of this sketch
 
-  const char* sversion = "04Jan24";                      // version of this sketch
+  const char* sversion = "06Jan24";                      // version of this sketch
 
   bool wifiEnabled = 0;                                  // if wifi is to be enabled at boot (can be enabled from display menu if turned off here)
   
@@ -119,8 +120,7 @@
   
   const bool invertCaliperDataSignals = 1;               // If using transistors on the data and clock pins the signals will be inverted so set this to 1
   
-  const int checkDROreadings = 200;                      // how often to refresh DRO readings (ms)  
-  const int checkTouchScreen = 80;                       // how often to check touchscreen for a press (ms)
+  const int checkDROreadings = 50;                       // how often to refresh DRO readings (ms)  
 
   // Display
     #define SCREEN_ROTATION 1
@@ -151,7 +151,6 @@
     #define TOUCH_RIGHT 3700
     #define TOUCH_TOP 200
     #define TOUCH_BOTTOM 3850
-    
     #define XPT2046_IRQ 36
     #define XPT2046_MOSI 32
     #define XPT2046_MISO 39
@@ -159,26 +158,38 @@
     #define XPT2046_CS 33       
     #define TOUCH_CS PIN_D2    
     
+    
   // Menu/screen settings
+
+  // font to use for all buttons  
+    #define MENU_FONT FM9                                // standard Free Mono font - available sizes: 9, 12, 18 or 24
+    #define MENU_SIZE 2                                  // font size (1 or 2)
+
+    // Page selection buttons
+    // Note: to add more pages increase 'numberOfPages', modify the two sections marked with '#noPages' and add procedure to 'buttons.h'
+      const int numberOfPages = 4;
+      const int pageButtonWidth = 32;                    // width of the buttons
+      const int pageButtonSpacing = 6;                   // space between the buttons
+      const int pageButtonHeight = (SCREEN_HEIGHT / numberOfPages) - pageButtonSpacing;  // height of button
   
-    // Page 1 - DRO screen size/position settings 
-        const int DROdisplaySpacing = 10;                // DRO reading vertical space between displays
+    // DRO readings size/position settings 
+        const int DROdisplaySpacing = 10;                // space between the DRO readings
         const int DROnoOfDigits = 6;                     // number of digits to display in caliper readings
         const int DROwidth = 200;                        // width of DRO reading display   i.e. x position of zero buttons  
         const int DROheight = 200;                       // Height of the DRO reading display for placement of lower buttons  
         const int DRObuttonheight = 30;                  // buttons around DRO readings              
         const int DRObuttonWidth = 35;                     
         const int DROdbuttonPlacement = 70;              // vertical spacing of the DRO buttons  
+        
+      // page 2
+        const int p2secondColumn = 150;                  // y position of second column of buttons
 
-    //page 2
-
-    // page 3 
-      //numeric keypad
+      //numeric keypad - page 3
         const int noDigitsOnNumEntry = 10;               // maximum length of entered number
         const int keyWidth = 45;
         const int keyHeight = 32;
         const int keySpacing = 10;
-        const int keyX = 160;                            // position on screen (top left)
+        const int keyX = 110;                            // position on screen (top left)
         const int keyY = 30;
       
   #define WDT_TIMEOUT 60                                 // timeout of watchdog timer (seconds) - i.e. auto restart if sketch stops responding
@@ -252,6 +263,10 @@
       buttonActionCallback action;  // procedure called when button pressed
     };
 
+    // page buttons (on all pages) - #noPages 
+      ButtonWidget pb[] = {&tft, &tft, &tft, &tft};
+            
+
     // page 1
       ButtonWidget zeroX = ButtonWidget(&tft);  // zero
       ButtonWidget zeroY = ButtonWidget(&tft);  
@@ -265,20 +280,12 @@
       ButtonWidget coord1 = ButtonWidget(&tft);  // coordinates
       ButtonWidget coord2 = ButtonWidget(&tft);  
       ButtonWidget coord3 = ButtonWidget(&tft);  
-
-      ButtonWidget p1p2 = ButtonWidget(&tft);    // page 2
-      ButtonWidget p1p3 = ButtonWidget(&tft);    // page 3
-      ButtonWidget p1p4 = ButtonWidget(&tft);    // page 4
-      ButtonWidget p1p5 = ButtonWidget(&tft);    // page 5
-
+ 
     // page 2
-      ButtonWidget p2p1 = ButtonWidget(&tft);    // page 1 
       ButtonWidget p2r = ButtonWidget(&tft);     // reboot
       ButtonWidget p2wifi = ButtonWidget(&tft);  // enable wifi
-
+ 
     // page 3
-      ButtonWidget p3p1 = ButtonWidget(&tft);    // page 1
-
       // number keypad
         String keyEnteredNumber = "";      // the number entered on the keypad (String)
         float keyEnteredNumberVal = 0;     // the above string as an float
@@ -299,6 +306,10 @@
         ButtonWidget but6 = ButtonWidget(&tft);   // page 1
 
 
+    // page 4
+
+
+
   // ------------------------- -define the button widgets -------------------------
 
     #include "buttons.h"             // the procedures which are triggered when a button is pressed
@@ -307,8 +318,15 @@
   
     buttonStruct screenButtons[] {               
 
+    // all pages
+      // page selection buttons - #noPages
+      //    page, enabled, title, x, y, width, height, border colour, burder thickness, fill colour, pressed colour, button, procedure to run when button is pressed
+      {0, 1, "P1", SCREEN_WIDTH - pageButtonWidth, (pageButtonHeight + pageButtonSpacing) * 0, pageButtonWidth, pageButtonHeight, TFT_WHITE, 1, TFT_SILVER, TFT_BLACK, &pb[0], &OnePage1Pressed},
+      {0, 1, "P2", SCREEN_WIDTH - pageButtonWidth, (pageButtonHeight + pageButtonSpacing) * 1, pageButtonWidth, pageButtonHeight, TFT_WHITE, 1, TFT_SILVER, TFT_BLACK, &pb[1], &OnePage2Pressed},
+      {0, 1, "P3", SCREEN_WIDTH - pageButtonWidth, (pageButtonHeight + pageButtonSpacing) * 2, pageButtonWidth, pageButtonHeight, TFT_WHITE, 1, TFT_SILVER, TFT_BLACK, &pb[2], &OnePage3Pressed},
+      {0, 1, "P4", SCREEN_WIDTH - pageButtonWidth, (pageButtonHeight + pageButtonSpacing) * 3, pageButtonWidth, pageButtonHeight, TFT_WHITE, 1, TFT_SILVER, TFT_BLACK, &pb[3], &OnePage4Pressed},
+
     // Page 1
-    // page, enabled, title, x, y, width, height, border colour, burder thickness, fill colour, pressed colour, button, procedure to run when button is pressed
 
       // Zero buttons
       {1, 1, "Z", DROwidth, 0, DRObuttonWidth, DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroX, &zeroXpressed},
@@ -325,21 +343,14 @@
       {1, 1, "C1", 0, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord1, &coord1pressed},
       {1, 1, "C2", (DRObuttonWidth + buttonSpacing) * 1, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord2, &coord2pressed},
       {1, 1, "C3", (DRObuttonWidth + buttonSpacing) * 2, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord3, &coord3pressed},
-
-      // pages
-      {1, 1, "P2", DROwidth + ( (DRObuttonWidth + buttonSpacing) * 2), 0, DRObuttonWidth, DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_SILVER, TFT_BLACK, &p1p2, &OnePage2Pressed},
-      {1, 1, "P3", DROwidth + ( (DRObuttonWidth + buttonSpacing) * 2), DRObuttonheight * 2, DRObuttonWidth, DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_SILVER, TFT_BLACK, &p1p3, &OnePage3Pressed},
-      {1, 1, "P4", DROwidth + ( (DRObuttonWidth + buttonSpacing) * 2), DRObuttonheight * 4, DRObuttonWidth, DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_SILVER, TFT_BLACK, &p1p4, &OnePage4Pressed},
-      {1, 1, "P5", DROwidth + ( (DRObuttonWidth + buttonSpacing) * 2), DRObuttonheight * 6, DRObuttonWidth, DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_SILVER, TFT_BLACK, &p1p5, &OnePage5Pressed},
     
     // page 2
-      {2, 1, "Page1", 0, SCREEN_HEIGHT - DRObuttonheight, DRObuttonWidth * 2, DRObuttonheight, TFT_WHITE, 1, TFT_SILVER, TFT_BLACK, &p2p1, &twoPage1Pressed},
-      {2, 1, "Reboot", 200, 140, DRObuttonWidth * 2, DRObuttonheight, TFT_WHITE, 1, TFT_RED, TFT_BLACK, &p2r, &twoRebootPressed},
-      {2, 1, "Wifi-Enable", 30, 140, DRObuttonWidth * 4, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &p2wifi, &twoWifiPressed},
+    
+      {2, 1, "En. Wifi", 0, SCREEN_HEIGHT - DRObuttonheight, 140, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &p2wifi, &twoWifiPressed},
+      {2, 1, "Reboot", p2secondColumn, SCREEN_HEIGHT - DRObuttonheight, 90, DRObuttonheight, TFT_WHITE, 1, TFT_RED, TFT_BLACK, &p2r, &twoRebootPressed},
 
     // page 3 
-      {3, 1, "Page1", 0, SCREEN_HEIGHT - DRObuttonheight, DRObuttonWidth * 2, DRObuttonheight, TFT_WHITE, 1, TFT_SILVER, TFT_BLACK, &p3p1, &threePage1Pressed},
-
+      
       // keypad
       {3, 1, "1", keyX + 0 * (keyWidth + keySpacing), keyY + 2 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key1, &buttonKey1Pressed},
       {3, 1, "2", keyX + 1 * (keyWidth + keySpacing), keyY + 2 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key2, &buttonKey2Pressed},
@@ -355,6 +366,7 @@
       {3, 1, "CLR", keyX + 0 * (keyWidth + keySpacing), keyY + 4 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &keyCLR, &buttonKeyCLRPressed},
       {3, 1, "BACK", keyX + 1 * (keyWidth + keySpacing), keyY + 4 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &keyBACK, &buttonKeyBackPressed},
       {3, 1, ".", keyX + 1 * (keyWidth + keySpacing), keyY + 3 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &keyPoint, &buttonKeyPointPressed},
+      
     };
     uint8_t buttonCount = sizeof(screenButtons) / sizeof(*screenButtons);     // number of buttons created
 
@@ -502,7 +514,7 @@ void setup() {
         tft.drawString("Wifi failed to start", 5, sSpacing * 3);  
         wifiEnabled = 0;
       }  
-      dro.updateNeedle(75, 20);      
+      dro.updateNeedle(75, 50);                                // slowly to give time to read IP address
   }
 
   // watchdog timer (esp32)
@@ -530,12 +542,12 @@ void setup() {
     }
   
   // update screen    
-    dro.updateNeedle(100, 20);                                 // move dial to 100
+    dro.updateNeedle(100, 18);                                 // move dial to 100
 
-  //touch_calibrate();                                           // handle touchscreen calibration
+  //touch_calibrate();                                         // handle touchscreen calibration (not working)
 
-  if (wifiEnabled) delay(2000);                                // give time to see ip address
   drawScreen(1);     // draw the screen
+
 }
 
 
@@ -545,24 +557,41 @@ void setup() {
 
 void loop() {
 
-  if(wifiEnabled) server.handleClient();                    // service any web page requests
+  if(wifiEnabled) server.handleClient();                  // service any web page requests
+
+  refreshCalipers();                                      // refresh readings from calipers and update display
 
   // Touch screen
-    static repeatTimer touchTimer;                          // set up a repeat timer 
-    if (touchTimer.check(checkTouchScreen)) {               // repeat at set interval  
-      bool st = ts.touched();                               // discover if screen is pressed
-      if (st && !sTouched) {                                // if touchscreen has been pressed
-        actionScreenTouch(ts.getPoint());  
-        sTouched = 1;
-      } 
-      if (!st && sTouched) {                                // if touchscreen has been released
-        actionScreenRelease(ts.getPoint());   
-        sTouched = 0;
-      }
+    bool st = ts.touched();                               // discover if screen is pressed
+    if (st && !sTouched) {                                // if touchscreen is pressed and is not already flagged as pressed
+      actionScreenTouch(ts.getPoint());                   // call procedure for when screen has been pressed
+      sTouched = 1;                                       // flag that the screen is curently pressed
+    } 
+    if (!st && sTouched) {                                // if touchscreen has been released
+      actionScreenRelease(ts.getPoint());                 // call procedure for when screen has been released
+      sTouched = 0;                                       // clear screen pressed flag
     }
 
+    // Periodically change the LED status to indicate all is well
+      static repeatTimer ledTimer;                          // set up a repeat timer (see standard.h)
+      if (ledTimer.check(1500)) {                           // repeat at set interval (ms)
+          esp_task_wdt_reset();                             // reset watchdog timer 
+          bool allOK = 1;                                   // if all checks leave this as 1 then the LED is flashed
+          if (!WIFIcheck()) allOK = 0;                      // if wifi connection is not ok
+          if (timeStatus() != timeSet) allOK = 0;           // if NTP time is not updating ok
+          time_t t=now();                                   // read current time to ensure NTP auto refresh keeps triggering (otherwise only triggers when time is required causing a delay in response)
+      }
+}
 
-  bool refreshDisplayFlag = 0;                              // display will be refreshed if this flag is set
+
+// ----------------------------------------------------------------
+//                      -refresh calipers
+// ----------------------------------------------------------------
+// refresh readings from the digital calipers and update display if anything has changed
+
+void refreshCalipers() {
+
+  bool refreshDisplayFlag = 0;                                 // display will be refreshed if this flag is set
 
   // Digital Caliper - X       
     if (DATA_PIN_X != -1 && millis() - lastReadingTimeX > checkDROreadings) {  // if caliper is present and has not refreshed recently
@@ -601,18 +630,7 @@ void loop() {
     }    
 
     if (refreshDisplayFlag) displayReadings();                 // display caliper readings 
-
-
-    // Periodically change the LED status to indicate all is well
-      static repeatTimer ledTimer;                          // set up a repeat timer (see standard.h)
-      if (ledTimer.check(1500)) {                           // repeat at set interval (ms)
-          esp_task_wdt_reset();                             // reset watchdog timer 
-          bool allOK = 1;                                   // if all checks leave this as 1 then the LED is flashed
-          if (!WIFIcheck()) allOK = 0;                      // if wifi connection is not ok
-          if (timeStatus() != timeSet) allOK = 0;           // if NTP time is not updating ok
-          time_t t=now();                                   // read current time to ensure NTP auto refresh keeps triggering (otherwise only triggers when time is required causing a delay in response)
-      }
-}
+}    
 
 
 // ----------------------------------------------------------------
@@ -832,7 +850,7 @@ void handlePing(){
 
 
 // ----------------------------------------------------------------
-//                    -settings stored in eeprom
+//                    -settings stored in eeprom  (not used at present)
 // ----------------------------------------------------------------
 // @param   eDirection   1=write, 0=read
 // Note on esp32 this has now been replaced by preferences.h although I still prefer this method - see: by https://randomnerdtutorials.com/esp32-save-data-permanently-preferences/
@@ -869,12 +887,12 @@ void settingsEeprom(bool eDirection) {
 
 
 // ----------------------------------------------------------------
-//                -additional page specific items
+//                     -page specific items
 // ----------------------------------------------------------------
 
 void pageSpecificOperations() {
 
-  // if page 3 selected then display number entered on keypad
+  // page 3: display the number entered on keypad
     if (displayingPage == 3) {
       tft.setFreeFont(&sevenSeg16pt7b);      
       tft.setTextColor(TFT_RED, TFT_BLACK);
@@ -882,6 +900,16 @@ void pageSpecificOperations() {
       tft.setTextPadding( tft.textWidth("8") * noDigitsOnNumEntry );  
       tft.drawString(keyEnteredNumber, keyX, keyY - 30 );    
     }    
+
+  // page 4: show time
+     if (displayingPage == 4) {
+      tft.setFreeFont(FM9);         // standard Free Mono font - available sizes: 9, 12, 18 or 24   
+      tft.setTextColor(TFT_RED, TFT_BLACK);
+      tft.setTextSize(1);
+      tft.drawString("The current time" ,0, 120);
+      tft.drawString("via wifi is:" ,0, 150);
+      tft.drawString(currentTime() ,0, 180);
+     }
 
   // show/hide "enable wifi" button depending if wifi is enabled
     for (uint8_t b = 0; b < buttonCount; b++) {
@@ -896,8 +924,8 @@ void pageSpecificOperations() {
 
 void actionScreenRelease(TS_Point p) {
 
-  tft.setFreeFont(FM9);         // standard Free Mono font - available sizes: 9, 12, 18 or 24
-  tft.setTextSize(2);  
+  tft.setFreeFont(MENU_FONT);      
+  tft.setTextSize(MENU_SIZE);  
 
   if (serialDebug) Serial.println("button released");
 
@@ -909,6 +937,8 @@ void actionScreenRelease(TS_Point p) {
         screenButtons[b].btn->drawSmoothButton(false);      // draw button
       }
     }
+
+  highlightPageButton();      // indicate which page is being displayed
 }
 
 
@@ -927,8 +957,8 @@ void actionScreenTouch(TS_Point p) {
     if (serialDebug) Serial.println("Touch data: " + String(p.x) + "," + String(p.y) + "," + String(x) + "," + String(y));    
 
   // check if a button has been pressed
-    tft.setFreeFont(FM9);         // standard Free Mono font - available sizes: 9, 12, 18 or 24
-    tft.setTextSize(2);        
+    tft.setFreeFont(MENU_FONT);    
+    tft.setTextSize(MENU_SIZE);        
     for (uint8_t b = 0; b < buttonCount; b++) {
       if (screenButtons[b].enabled == 1 && ( screenButtons[b].page == displayingPage || screenButtons[b].page == 0) && screenButtons[b].btn->contains(x, y)) {
         // button is pressed
@@ -939,10 +969,11 @@ void actionScreenTouch(TS_Point p) {
           lastTouch = millis();          // flag time last button was pressed   
           break;                         // exit for loop   
       } 
-    }
+    }    
 
   pageSpecificOperations();              // draw any page specific items
   displayReadings();                     // redraw DRO readings
+  highlightPageButton();                 // indicate which page is being displayed
 
   // draw data on screen if showpress is enabled
     if (showPress) {
@@ -975,6 +1006,21 @@ void actionScreenTouch(TS_Point p) {
 
 
 // ----------------------------------------------------------------
+//      -highlight the page select button for acive screen
+// ----------------------------------------------------------------
+// i.e. identify which page is being displayed
+
+void highlightPageButton() {
+  tft.setFreeFont(MENU_FONT);     
+  tft.setTextSize(MENU_SIZE);    
+  for (uint8_t b = 0; b < buttonCount; b++) {
+    if (String(screenButtons[b].label) == "P" + String(displayingPage)) 
+      screenButtons[b].btn->drawSmoothButton(true);
+  }    
+}
+
+
+// ----------------------------------------------------------------
 //                     -draw the screen
 // ----------------------------------------------------------------
 // screen = page number to show
@@ -986,10 +1032,8 @@ void drawScreen(int screen) {
   displayingPage = screen;      // set current page
 
   tft.fillScreen(TFT_BLACK);    // clear screen
-  
-  // NOTE: If this font is changed it also needs to be changed in 'actionScreenTouch()'
-    tft.setFreeFont(FM9);         // standard Free Mono font - available sizes: 9, 12, 18 or 24
-    tft.setTextSize(2);
+  tft.setFreeFont(MENU_FONT);   
+  tft.setTextSize(MENU_SIZE);
 
   // draw the buttons
     for (uint8_t b = 0; b < buttonCount; b++) {
@@ -1003,6 +1047,7 @@ void drawScreen(int screen) {
   
   pageSpecificOperations();   // draw any page specific items
   displayReadings();          // display DRO readings
+  highlightPageButton();      // indicate which page is being displayed
 }
 
 
@@ -1010,12 +1055,11 @@ void drawScreen(int screen) {
 
 
 // ----------------------------------------------------------------
-//         -wait for gpio pin to be at supplied state
+//         -wait for gpio pin to be at specified state 
 // ----------------------------------------------------------------
-// returns 0 if timed out
+// returns 0 if it times out (used by 'read caliper data')
 
 bool waitPinState(int pin, bool state, int timeout) {
-
   unsigned long tTimer = millis();  
   while(digitalRead(pin) != state && millis() - tTimer < timeout) { }
   if (millis() - tTimer >= timeout) return 0;
@@ -1031,15 +1075,16 @@ bool waitPinState(int pin, bool state, int timeout) {
 
 float readCaliper(int clockPin, int dataPin) {
 
+  // settings
+    const int longPeriod = 500;                                  // length of time which counts as a long period (microseconds)
+    const int lTimeout = 150;                                    // timeout when waiting for start of data (ms)
+    const int sTimeout = 60;                                     // timeout when reading data (ms)
+
   // logic levels on data and clock pins (if using a transistor these will be inverted)
     const bool pinLOW = invertCaliperDataSignals;
-    const bool pinHIGH = !invertCaliperDataSignals;
+    const bool pinHIGH = !pinLOW;
 
-  const int longPeriod = 500;                                  // length of time which counts as a long period (microseconds)
-  const int lTimeout = 150;                                    // timeout when waiting for start of data (ms)
-  const int sTimeout = 60;                                     // timeout when reading data (ms)
-
-  // start of data is preceded by clock being high for long period so verify we are at this point
+  // start of data is preceded by clock being high for long period so verify we are at this point (most times we will be)
     if (!waitPinState(clockPin, pinHIGH, lTimeout)) return 9999.1;    // if clock is low wait until it is high (9999.x signifies it timed out waiting)
     unsigned long tmpTime=micros();                            // start timer
     if (!waitPinState(clockPin, pinLOW, lTimeout)) return 9999.2;     // wait for clock pin to go low
@@ -1071,6 +1116,8 @@ float readCaliper(int clockPin, int dataPin) {
 
 void displayReadings() {
 
+    const unsigned long warningTimeLimit = 2000;       // if caliper reading has not updated in this time change display to blue (ms)
+
     // create sprint argument  (in the format "%07.2f")
       String spa = "%0" + String(DROnoOfDigits + 1) + ".2f";    // https://alvinalexander.com/programming/printf-format-cheat-sheet/
    
@@ -1088,6 +1135,7 @@ void displayReadings() {
 
     // x
       if (DATA_PIN_X != -1) {
+        //(millis() - lastReadingTimeX < warningTimeLimit) ? tft.setTextColor(TFT_RED, TFT_BLACK) : tft.setTextColor(TFT_BLUE, TFT_BLACK);   // if not updated recently change to blue
         sprintf(buff, spa.c_str(), xReading - xAdj[currentCoord]);
         if (strlen(buff) == DROnoOfDigits+1) tft.drawString(buff, 0, 0);    
         else if (serialDebug) Serial.println("Invalid reading from X: " + String(buff));
@@ -1095,6 +1143,7 @@ void displayReadings() {
 
     // y
       if (DATA_PIN_Y != -1) {
+        //(millis() - lastReadingTimeY < warningTimeLimit) ? tft.setTextColor(TFT_RED, TFT_BLACK) : tft.setTextColor(TFT_BLUE, TFT_BLACK);   // if not updated recently change to blue
         sprintf(buff, spa.c_str(), yReading - yAdj[currentCoord]);
         if (strlen(buff) == DROnoOfDigits+1) tft.drawString(buff, 0, tft.fontHeight() );    
         else if (serialDebug) Serial.println("Invalid reading from Y: " + String(buff));
@@ -1102,6 +1151,7 @@ void displayReadings() {
 
     // z
       if (DATA_PIN_Z != -1) {
+        //(millis() - lastReadingTimeZ < warningTimeLimit) ? tft.setTextColor(TFT_RED, TFT_BLACK) : tft.setTextColor(TFT_BLUE, TFT_BLACK);   // if not updated recently change to blue
         sprintf(buff, spa.c_str(), zReading - zAdj[currentCoord]);
         if (strlen(buff) == DROnoOfDigits+1) tft.drawString(buff, 0, tft.fontHeight() * 2 );    
         else if (serialDebug) Serial.println("Invalid reading from Z: " + String(buff));
@@ -1316,6 +1366,5 @@ void handleTest(){
     delay(1);
     client.stop();
 }
-
 
 // --------------------------- E N D -----------------------------

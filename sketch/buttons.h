@@ -1,11 +1,37 @@
 /* -----------------------------------------------------------------------------------------
 
 
-      Procedures triggered when a button is pressed on the screen - 29Dec23
+      Procedures triggered when a button is pressed on the screen - 05Jan24
 
 
 // -----------------------------------------------------------------------------------------
 */
+
+
+// -----------------------------------------------------------------------------------------
+// on all pages
+
+//  ------------- pages -----------------    #noPages
+
+void OnePage1Pressed() { 
+  log_system_message("button: page 1 selected"); 
+  drawScreen(1);      // switch to page 1
+}
+
+void OnePage2Pressed() { 
+  log_system_message("button: page 2 selected"); 
+  drawScreen(2);      // switch to page 2
+}
+
+void OnePage3Pressed() { 
+  log_system_message("button: page 3 selected"); 
+  drawScreen(3);      // switch to page 3
+}
+
+void OnePage4Pressed() { 
+  log_system_message("button: page 4 selected"); 
+  drawScreen(4);      // switch to page 4
+}
 
 
 // -----------------------------------------------------------------------------------------
@@ -78,29 +104,6 @@ void coord3pressed() {
 }
 
 
-//  ------------- misc -----------------
-
-void OnePage2Pressed() { 
-  log_system_message("button: screen 2"); 
-  drawScreen(2);      // switch to page 2
-}
-
-void OnePage3Pressed() { 
-  log_system_message("button: screen 3"); 
-  drawScreen(3);      // switch to page 3
-}
-
-void OnePage4Pressed() { 
-  log_system_message("button: screen 4"); 
-  //drawScreen(4);      // switch to page 3
-}
-
-void OnePage5Pressed() { 
-  log_system_message("button: screen 5"); 
-  //drawScreen(5);      // switch to page 3
-}
-
-
 // -----------------------------------------------------------------------------------------
 // page 2
 
@@ -124,9 +127,9 @@ void twoWifiPressed() {
       tft.setFreeFont(FM9);                       // standard Free Mono font - available sizes: 9, 12, 18 or 24
       tft.setTextSize(1);                         // 1 or 2
       if (WiFi.status() == WL_CONNECTED) {
-        tft.drawString("IP: " + WiFi.localIP().toString(), 90, SCREEN_HEIGHT - 25);    
+        tft.drawString("IP: " + WiFi.localIP().toString(), 70, SCREEN_HEIGHT - 60);    
       } else {
-        tft.drawString("Wifi failed to start", 90, SCREEN_HEIGHT - 25);    
+        tft.drawString("Wifi failed to start", 70, SCREEN_HEIGHT - 60);    
       }
 }
 
