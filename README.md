@@ -1,19 +1,19 @@
 # DRO - A super cheap Digital Readout (DRO) for lathes, milling machines etc. 
 
-My homemade DRO consists of an ESP32-based "cheap yellow display" which costs around £12, some digital calipers that cost under £5 each plus a few transistors, wiring etc... As a result, building a three-axis DRO can set you back less than £30 (around $40).
+My homemade DRO consists of an ESP32-based "cheap yellow display" which costs around £12, some digital calipers that cost under £5 each plus a few transistors, wiring etc... As a result, building a three-axis DRO can set you back less than £30 (around $40). <br>
 
 <table><tr>
   <td><img src="/pics/DROproject.jpg" /></td>
   <td><img src="/pics/DROinstalled.jpg" /></td>
-</tr>tr><tr></tr>
+</tr><tr>
   <td><img src="/pics/DROparts.jpg" /></td>
   <td><img src="/pics/caliperInstalled.jpg" /></td>
 </tr></table> 
 
 I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available was still going to cost me several hundred pounds, which I just couldn’t justify spending.  I also suspected that the cheapest DRO on the market would probably fail after a short time anyway.  Therefore, I decided to see if I can create my own as inexpensively as possible. I think it safe to say that I have achieved this goal! <br>
 
-WARNING: The well known problem with these cheap calipers is the battery goes flat if you do not use them for a while, it turns out that they are producing the data we use here all the time, even when turned off.  I bought one of the longer calipers recently which looks like a "new/impoved" design which has got round this issue by turning off the data all together which is very bad news if you want to use it for this project.  So if you are buying calipers I suggest you try to buy the older style ones if you can as the newer ones do not seem to support data out.  You can still use the reader from a cheaper caliper on this longer bar if you do have one though.<br>
-Also, I have read that some of these calipers use a different data standard although all the ones I have are the same<br>
+WARNING: The well known problem with these cheap calipers is the battery goes flat if you do not use them for a while, it turns out that they are producing the data we use here all the time, even when turned off.  I bought one of the longer calipers recently which looks like it is a "new/impoved" design which has got round this issue by turning off the data all together which is very bad news if you want to use it for this project.  So if you are buying calipers I suggest you try to buy the older style ones if you can as the newer ones do not seem to support data, the good news is these will be the cheapest ones.  You can still use the reader from a cheaper caliper on this longer bar if you do have one though.<br>
+Also, I have read that some of these calipers use a different data standard although all the ones I have tried are the same<br>
 
 The cheap calipers only have a range of 150mm although longer 200mm or even 300mm are available on eBay for under £20, this is probably enough for my requirements although I have ordered some circuit boards designed by "Limi DIY" and they appear to work and extend the range to around 400mm.  There is the possibility to link these together although the join would need to be very accurate.  These came in at £10 each so are not cheap by the standards of this project but not too bad. <br>
 [YouTube video-extending the range](https://www.youtube.com/watch?v=JYnit_PSSMY) - [PCBway order link](https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.html)
@@ -21,9 +21,7 @@ The cheap calipers only have a range of 150mm although longer 200mm or even 300m
 You can of course buy better quality calipers if you do not trust these cheap ones to be accurate or you can buy similar items from China which are actually designed to be used as a DRO but it soon starts to get expensive.  These cheap calipers really are amazing for the price, they are almost being given away.  Big Clive has made a nice video showing what is inside them and how to take them apart:
 [Big Clive](https://www.youtube.com/watch?v=fKSSY1gzCEs) <br>
 
-One interesting thing I was not expecting is you get two decimal places from these very cheap calipers even from the only display one on their LCD, as can be seen in the picture above.
-
-Note: This is a work in progress, whilst I now have it installed on my milling machine (it works really well :-) it is early days and I want to add more features to it.
+One interesting thing I was not expecting is you get two decimal places from these very cheap calipers even though they only display one on their LCD, as can be seen in the picture above.
 
 ## Misc info:
 [Cheap Yellow Display Information](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display)
@@ -74,9 +72,7 @@ It may also be an idea to coat the rest of the circuit board in some kind of con
 I have found that the power supply is critical for the calipers in that most switch mode USB power supplies seem to cause them to give random readings.  Many USB power supples will cause the calipers to have randomly changing displays or for start counting up for no apparent reason etc., at best the caliper readings will not be very stable.  I built a linear power supply but even this was not perfect and othjer appliances on the mains would cause the readings to become unstable. <br>
 I think by far the best way to power this would be from a battery as this will give a very stable power and be completely isolated from any mains spikes etc..  I have used an old PC power supply for mine which is the next best thing.  A USB power bank seems to work ok also.  Another option may be to power the CYD from a usb power supply but power the calipers from a AA battery?
 
-At present it is set up to have 5 display pages, buttons can be created and assigned to the pages in the "define the button widgets" section of the sketch.  The caliper readings are displayed on all pages but there are two sizes available (this size is set in "displayReadings").  Button actions are defined in the "buttons.h" file.
-
-Custom actions for the pages can be added to the "pageSpecificOperations()" procedure e.g. see "if page 3 show number entered on keypad".
+At present it is set up to have 4 display pages, buttons can be created and assigned to the pages in the "define the button widgets" section of the sketch.  The caliper readings are displayed on all pages but there are two sizes available (this size is set in "displayReadings").  Button actions are defined in the "buttons.h" file.  It has a demo keypad for entering numbers but it is not yet used for anything.  I plan to add more features later on.  Let me know if there are features you would like me to add? <br>
 
 One possible issue I anticipate is that the calipers often have a random reading when first powered on, this could be a problem if it is close to the limit of the caliper if you then move it past this limit (the limit looks to be 999.99mm on mine).  It can of course be solved simply by pressing the zero button on the caliper but this is something I may look in to later.  I believe the caliper can be zeroed by taking one of the data pins to ground but this would require extra circuitry.
 
