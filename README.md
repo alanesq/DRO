@@ -7,14 +7,13 @@ My homemade DRO consists of an ESP32-based "cheap yellow display" which costs ar
 
 I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available was still going to cost me several hundred pounds, which I just couldn’t justify spending.  I also suspected that the cheapest DRO on the market would probably fail after a short time anyway.  Therefore, I decided to see if I can create my own as inexpensively as possible. I think it safe to say that I have achieved this goal! <br>
 
-Rather than have hole patern facilities on the DRO (for drilling a circle of holes etc.) I decided it would be easier and more interesting to enter the coordinates of the positions required via the web page and then you can step through these positions via the DRO display (page 4).  These are ented as a list in the format:<br>
- x10 y10<br> x20 y20<br> x30 y0 etc.<br>
-This may seem a bit limited but I have set it up so you can paste simple gcode in to this window and it will pull out the coordinates, this gives the option to create your own gcode or use online generators for creating paterns of hole etc.<br>
-e.g. [online gcode tools](https://www.intuwiz.com/drill-circle-points.html) <br>
-
-WARNINGS: The well known problem with these cheap calipers is the battery goes flat if you do not use them for a while, it turns out that they are producing the data we use here all the time, even when turned off.  I bought one of the longer calipers recently which looks like it is a "new/impoved" design which has got round this issue by turning off the data all together which is very bad news if you want to use it for this project.  So if you are buying calipers I suggest you try to buy the older style ones if you can as the newer ones do not seem to support data, the good news is these will be the cheapest ones.  You can still use the reader from a cheaper caliper on this longer bar if you do have one though.<br>
-Also, I have read that some of these calipers use a different data standard although all the ones I have tried are the same<br>
-Make sure when ordering a Cheap Yellow Display that it is not the version with two USB ports as this has a differnt display and will not work with this sketch at present (anyone know how to fix this?)<br>
+Rather than have hole patern facilities on the DRO (for drilling a circle of holes etc.) I decided it would be easier and more versatile to enter the coordinates of the positions required via the web page and then step through these positions via the DRO display menu (page 4).  These are ented as a list in the format:<br>
+```
+x10 y10
+x10 y20
+x20 y30 etc.
+```
+I have set it up so you can paste simple gcode in to this window and it will pull out the coordinates, this gives the option to create your own gcode or use online generators for creating paterns of hole etc.   e.g. [online gcode tools](https://www.intuwiz.com/drill-circle-points.html) <br>
 
 The cheap calipers only have a range of 150mm although longer 200mm or even 300mm are available on eBay for under £20, this is probably enough for my requirements although I have ordered some circuit boards designed by "Limi DIY" and they appear to work and extend the range to around 400mm.  There is the possibility to link these together although the join would need to be very accurate.  These came in at £10 each so are not cheap by the standards of this project but not too bad. <br>
 [YouTube video-extending the range](https://www.youtube.com/watch?v=JYnit_PSSMY) - [PCBway order link](https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.html)
@@ -23,6 +22,10 @@ You can of course buy better quality calipers if you do not trust these cheap on
 [Big Clive](https://www.youtube.com/watch?v=fKSSY1gzCEs) <br>
 
 One interesting thing I was not expecting is you get two decimal places from these very cheap calipers even though they only display one on their LCD, as can be seen in the picture above.
+
+WARNINGS: The well known problem with these cheap calipers is the battery goes flat if you do not use them for a while, it turns out that they are producing the data we use here all the time, even when turned off.  I bought one of the longer calipers recently which looks like it is a "new/impoved" design which has got round this issue by turning off the data all together which is very bad news if you want to use it for this project.  So if you are buying calipers I suggest you try to buy the older style ones if you can as the newer ones do not seem to support data, the good news is these will be the cheapest ones.  You can still use the reader from a cheaper caliper on this longer bar if you do have one though.<br>
+Also, I have read that some of these calipers use a different data standard although all the ones I have tried are the same<br>
+Make sure when ordering a Cheap Yellow Display that it is not the version with two USB ports as this has a differnt display and will not work with this sketch at present (anyone know how to fix this?)<br>
 
 ## Misc info:
 [Cheap Yellow Display Information](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display)
