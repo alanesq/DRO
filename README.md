@@ -13,7 +13,7 @@ x10 y10
 x10 y20
 x20 y30 etc.
 ```
-I have set it up so you can paste simple gcode in to this window and it will pull out the coordinates, this gives the option to create your own gcode in whatever software you preffer or use online generators for creating paterns of hole etc.   e.g. [online gcode tools](https://www.intuwiz.com/drill-circle-points.html) <br>
+I have set it up so you can paste simple gcode in to this window and it will pull out the coordinates, this gives the option to create your own gcode in whatever software you preffer or use online generators for creating paterns of hole etc.   e.g. [online gcode tools](https://www.intuwiz.com/drilling.html) <br>
 
 The cheap calipers only have a range of 150mm although longer 200mm or even 300mm are available on eBay for under £20, this is probably enough for my requirements although I have ordered some circuit boards designed by "Limi DIY" and they appear to work and extend the range to around 400mm.  There is the possibility to link these together although the join would need to be very accurate.  These came in at £10 each so are not cheap by the standards of this project but not too bad. <br>
 [YouTube video-extending the range](https://www.youtube.com/watch?v=JYnit_PSSMY) - [PCBway order link](https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.html)
