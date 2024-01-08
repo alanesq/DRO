@@ -120,13 +120,12 @@
   
   const bool showPress = 0;                              // show touch data on screen 
 
-  const bool invertCaliperDataSignals = 1;               // If using transistors on the data and clock pins the signals will be inverted so set this to 1
+  const bool invertCaliperDataSignals = 2;               // If using transistors on the data and clock pins the signals will be inverted so set this to 1
   
   const int checkDROreadings = 50;                       // how often to refresh DRO readings (ms)  
-  const unsigned long DROerrorTimeout = 2000;            // if no data is received from caliper for this length of time flag as in error - i.e. turn blue (ms)
 
   // Display settings
-    #define SCREEN_ROTATION 1  
+    #define SCREEN_ROTATION 1
     #define SCREEN_WIDTH 320
     #define SCREEN_HEIGHT 240
     #define SCREEN_BACKLIGHT 21
@@ -251,6 +250,7 @@
       int gcodeLineCount = 0;                   // number of positions extracted from gcode
       bool incX, incY, incZ;                    // which coordinates to process
       int gcodeStepPosition = 1;                // current position through the steps
+      float gcodeDROadjX = 0, gcodeDROadjY = 0, gcodeDROadjZ = 0;        // temp adjustments to DRO readings for locating position when stepping through gcode
 
 
   // ---------------------------------------- Screen buttons --------------------------------------------
@@ -951,20 +951,32 @@ void pageSpecificOperations() {
 
 
   // page4: step through gcode coordinates
-     if (displayingPage == 4) {
-      tft.setFreeFont(FM9);         // standard Free Mono font - available sizes: 9, 12, 18 or 24   
-      tft.setTextColor(TFT_RED, TFT_BLACK);
-      tft.setTextSize(1);
-      tft.drawString("  STEP THROUGH" , rightOfSmallDRO, lineSpace * 0);
-      tft.drawString("  COORDINATES" , rightOfSmallDRO, lineSpace * 1);
-      // display coordinate
-        tft.drawString(" Position: " + String(gcodeStepPosition) + " of " + String(gcodeLineCount) , 0, belowSmallDRO + lineSpace * 1);
-        String tRes = "";
-        if (incX) tRes += " X:" + String(gcodeX[gcodeStepPosition - 1]);
-        if (incY) tRes += " Y:" + String(gcodeY[gcodeStepPosition - 1]);
-        if (incZ) tRes += " Z:" + String(gcodeZ[gcodeStepPosition - 1]);
-        tft.drawString(tRes, 0, belowSmallDRO + lineSpace * 3);
-     } 
+
+    // clear gcode DRO adjustments if no longer on page 4
+      if (displayingPage != 4) {
+        gcodeDROadjX = 0; gcodeDROadjY = 0; gcodeDROadjZ = 0;  
+      }
+
+    if (displayingPage == 4) {
+      // set adjustments to DRO
+        gcodeDROadjX = gcodeX[gcodeStepPosition - 1];
+        gcodeDROadjY = gcodeY[gcodeStepPosition - 1];
+        gcodeDROadjZ = gcodeZ[gcodeStepPosition - 1];      
+
+      // show coordinate info.
+        tft.setFreeFont(FM9);         // standard Free Mono font - available sizes: 9, 12, 18 or 24   
+        tft.setTextColor(TFT_RED, TFT_BLACK);
+        tft.setTextSize(1);
+        tft.drawString("  STEP THROUGH" , rightOfSmallDRO, lineSpace * 0);
+        tft.drawString("  COORDINATES" , rightOfSmallDRO, lineSpace * 1);
+        // display coordinate
+          tft.drawString(" Position: " + String(gcodeStepPosition) + " of " + String(gcodeLineCount) , 0, belowSmallDRO + lineSpace * 1);
+          String tRes = "";
+          if (incX) tRes += " X:" + String(gcodeX[gcodeStepPosition - 1]);
+          if (incY) tRes += " Y:" + String(gcodeY[gcodeStepPosition - 1]);
+          if (incZ) tRes += " Z:" + String(gcodeZ[gcodeStepPosition - 1]);
+          tft.drawString(tRes, 0, belowSmallDRO + lineSpace * 3);
+        } 
 }
 
 
@@ -1182,7 +1194,7 @@ void displayReadings() {
     // x
       if (DATA_PIN_X != -1) {
         (lastReadingTimeX > 0) ? tft.setTextColor(TFT_RED, TFT_BLACK) : tft.setTextColor(TFT_BLUE, TFT_BLACK);   // if no data received yet
-        sprintf(buff, spa.c_str(), xReading - xAdj[currentCoord]);
+        sprintf(buff, spa.c_str(), xReading - xAdj[currentCoord] - gcodeDROadjX); 
         if (strlen(buff) == DROnoOfDigits+1) tft.drawString(buff, 0, 0);    
         else if (serialDebug) Serial.println("Invalid reading from X: " + String(buff));
       }
@@ -1190,7 +1202,7 @@ void displayReadings() {
     // y
       if (DATA_PIN_Y != -1) {
         (lastReadingTimeY > 0) ? tft.setTextColor(TFT_RED, TFT_BLACK) : tft.setTextColor(TFT_BLUE, TFT_BLACK);   // if no data received yet
-        sprintf(buff, spa.c_str(), yReading - yAdj[currentCoord]);
+        sprintf(buff, spa.c_str(), yReading - yAdj[currentCoord] - gcodeDROadjY);
         if (strlen(buff) == DROnoOfDigits+1) tft.drawString(buff, 0, tft.fontHeight() );    
         else if (serialDebug) Serial.println("Invalid reading from Y: " + String(buff));
       }
@@ -1198,18 +1210,13 @@ void displayReadings() {
     // z
       if (DATA_PIN_Z != -1) {
         (lastReadingTimeZ > 0) ? tft.setTextColor(TFT_RED, TFT_BLACK) : tft.setTextColor(TFT_BLUE, TFT_BLACK);   // if no data received yet
-        sprintf(buff, spa.c_str(), zReading - zAdj[currentCoord]);
+        sprintf(buff, spa.c_str(), zReading - zAdj[currentCoord] - gcodeDROadjZ);
         if (strlen(buff) == DROnoOfDigits+1) tft.drawString(buff, 0, tft.fontHeight() * 2 );    
         else if (serialDebug) Serial.println("Invalid reading from Z: " + String(buff));
       }   
    
     tft.setFreeFont(FM12);        // switch back to standard Free Mono font - available sizes: 9, 12, 18 or 24   
     tft.setTextPadding(0);        // clear the padding setting
-          
-    // turn display blue if no data being received from caliper
-      if (millis() - lastReadingTimeX > DROerrorTimeout) lastReadingTimeX = 0;
-      if (millis() - lastReadingTimeY > DROerrorTimeout) lastReadingTimeY = 0;
-      if (millis() - lastReadingTimeZ > DROerrorTimeout) lastReadingTimeZ = 0;
 
     tft.setTextPadding(0);        // turn off text padding
 }
