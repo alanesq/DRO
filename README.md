@@ -7,18 +7,18 @@ My homemade DRO consists of an ESP32-based "cheap yellow display" which costs ar
 
 I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available was still going to cost me several hundred pounds, which I just couldn’t justify spending.  I also suspected that the cheapest DRO on the market would probably fail after a short time anyway.  Therefore, I decided to see if I can create my own as inexpensively as possible. I think it safe to say that I have achieved this goal! <br>
 
-Rather than have hole patern facilities on the DRO (for drilling a circle of holes etc.) I decided it would be easier and more versatile to enter the coordinates of the positions required via the web page and then step through these positions via the DRO display menu (page 4).  These are ented as a list in the format:<br>
+Rather than have hole pattern facilities on the DRO (for drilling a circle of holes etc.) I decided it would be easier and more versatile to enter the coordinates of the positions required via the web page and then step through these positions via the DRO display menu (page 4).  These are ented as a list in the format:<br>
 ```
 x10 y10
 x10 y20
 x20 y30 etc.
 ```
-I have set it up so you can paste simple gcode in to this window and it will pull out the coordinates, this gives the option to create your own gcode or use online generators for creating paterns of hole etc.   e.g. [online gcode tools](https://www.intuwiz.com/drill-circle-points.html) <br>
+I have set it up so you can paste simple gcode in to this window and it will pull out the coordinates, this gives the option to create your own gcode in whatever software you preffer or use online generators for creating paterns of hole etc.   e.g. [online gcode tools](https://www.intuwiz.com/drill-circle-points.html) <br>
 
 The cheap calipers only have a range of 150mm although longer 200mm or even 300mm are available on eBay for under £20, this is probably enough for my requirements although I have ordered some circuit boards designed by "Limi DIY" and they appear to work and extend the range to around 400mm.  There is the possibility to link these together although the join would need to be very accurate.  These came in at £10 each so are not cheap by the standards of this project but not too bad. <br>
 [YouTube video-extending the range](https://www.youtube.com/watch?v=JYnit_PSSMY) - [PCBway order link](https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.html)
 
-You can of course buy better quality calipers if you do not trust these cheap ones to be accurate or you can buy similar items from China which are actually designed to be used as a DRO but it soon starts to get expensive.  These cheap calipers really are amazing for the price, they are almost being given away.  Big Clive has made a nice video showing what is inside them and how to take them apart:
+You can of course buy better quality calipers if you do not trust these cheap ones to be accurate or you can buy similar items from China which are actually designed to be used as a DRO but it soon starts to get expensive; These cheap calipers really are amazing for the price, they are so cheap that it feels like they are almost being given away.  Big Clive has made a nice video showing what is inside them and how to take them apart:
 [Big Clive](https://www.youtube.com/watch?v=fKSSY1gzCEs) <br>
 
 One interesting thing I was not expecting is you get two decimal places from these very cheap calipers even though they only display one on their LCD, as can be seen in the picture above.
@@ -61,7 +61,7 @@ Note: the transistors to convert the 1.5v signals from the caliper results in th
 
 <img src="/PCB/circuit.jpg" />
 
-Note: I am using GPIO0 which isn't ideal as it is also attached to the onboard button, but if you do not install the pullup resistor and use a lower value resistor on the input this seems to work fine (although it can stop the hardware reset working when programming the CYD).
+Note: I am using GPIO0 which isn't ideal as it is also attached to the onboard button, but if you do not install the pull-up resistor and use a lower value resistor on the input this seems to work fine (although it can stop the hardware reset working when programming the CYD).
 
 There are connections for GPIO1 and 3 which are the serial pins but could be used as general GPIO if required (it can be programmed by OTA so this would not be a big problem).
 
