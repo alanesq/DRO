@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------------------
 
 
-      Procedures triggered when a button is pressed on the screen - 05Jan24
+      Procedures triggered when a button is pressed on the screen - 08Jan24
 
 
 // -----------------------------------------------------------------------------------------
@@ -107,11 +107,6 @@ void coord3pressed() {
 // -----------------------------------------------------------------------------------------
 // page 2
 
-void twoPage1Pressed() { 
-  log_system_message("button: screen 1");
-  drawScreen(1);
-}
-
 void twoRebootPressed() { 
   log_system_message("button: reboot");
   delay(500);          // give time to send the above html
@@ -122,15 +117,6 @@ void twoRebootPressed() {
 void twoWifiPressed() { 
   log_system_message("button: wifi enable");
   startTheWifi();
-  // display ip address
-      tft.setTextColor(TFT_GREEN, TFT_BLACK);
-      tft.setFreeFont(FM9);                       // standard Free Mono font - available sizes: 9, 12, 18 or 24
-      tft.setTextSize(1);                         // 1 or 2
-      if (WiFi.status() == WL_CONNECTED) {
-        tft.drawString("IP: " + WiFi.localIP().toString(), 70, SCREEN_HEIGHT - 60);    
-      } else {
-        tft.drawString("Wifi failed to start", 70, SCREEN_HEIGHT - 60);    
-      }
 }
 
 
@@ -221,6 +207,22 @@ void threePage1Pressed() {
     keyEnteredNumber = "";
   }
 
+
+// page 4 - step through gcode coordinates
+
+  void buttonKeyStepNextPressed() {
+    gcodeStepPosition++;
+    if (gcodeStepPosition > gcodeLineCount) gcodeStepPosition = 1;
+  }
+
+  void buttonKeyStepPrevPressed() {
+    gcodeStepPosition--;
+    if (gcodeStepPosition < 1) gcodeStepPosition = gcodeLineCount;    
+  }  
+
+  void buttonKeyStepResetPressed() {
+    gcodeStepPosition = 1;
+  }  
 
 // -----------------------------------------------------------------------------------------
 // end

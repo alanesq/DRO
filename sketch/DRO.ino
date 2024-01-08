@@ -111,19 +111,22 @@
 
   const char* stitle = "SuperLowBudget-DRO";             // title of this sketch
 
-  const char* sversion = "06Jan24";                      // version of this sketch
+  const char* sversion = "08Jan24";                      // version of this sketch
 
   bool wifiEnabled = 0;                                  // if wifi is to be enabled at boot (can be enabled from display menu if turned off here)
   
   const bool serialDebug = 0;                            // provide debug info on serial port  (disable if using Tx or Rx gpio pins for caliper)
   const int serialSpeed = 115200;                        // Serial data speed to use  
   
+  const bool showPress = 0;                              // show touch data on screen 
+
   const bool invertCaliperDataSignals = 1;               // If using transistors on the data and clock pins the signals will be inverted so set this to 1
   
   const int checkDROreadings = 50;                       // how often to refresh DRO readings (ms)  
+  const unsigned long DROerrorTimeout = 2000;            // if no data is received from caliper for this length of time flag as in error - i.e. turn blue (ms)
 
-  // Display
-    #define SCREEN_ROTATION 1
+  // Display settings
+    #define SCREEN_ROTATION 1  
     #define SCREEN_WIDTH 320
     #define SCREEN_HEIGHT 240
     #define SCREEN_BACKLIGHT 21
@@ -138,16 +141,16 @@
     #define CLOCK_PIN_Z 22    // 22
     #define DATA_PIN_Z  5     // 5   Note: this pin is used by the SD card (chip select)
 
-    // // testing
-    // #define CLOCK_PIN_X 22     // 0   Note: gpio is the onboard button so not really a good idea to use it but it seems to work ok (it can stop the device rebooting its self)
-    // #define DATA_PIN_X  35    // 4
-    // #define CLOCK_PIN_Y -1    // 17
-    // #define DATA_PIN_Y  -1    // 16
-    // #define CLOCK_PIN_Z -1    // 22
-    // #define DATA_PIN_Z  -1    // 5   Note: this pin is used by the SD card (chip select)
+    // // testing - single caliper attached via CYD standard connectors (beware that the serial connector power pin is 5v not 3.3v)
+    // #define CLOCK_PIN_X 22  
+    // #define DATA_PIN_X  35   
+    // #define CLOCK_PIN_Y -1  
+    // #define DATA_PIN_Y  -1  
+    // #define CLOCK_PIN_Z -1   
+    // #define DATA_PIN_Z  -1   
 
-  // Touchscreen 
-    #define TOUCH_LEFT 200         // positions on screen (wont be needed when calibration is implemented?)
+  // Touchscreen settings
+    #define TOUCH_LEFT 200         // positions on screen (may be better to have some kind of calibration routine?)
     #define TOUCH_RIGHT 3700
     #define TOUCH_TOP 200
     #define TOUCH_BOTTOM 3850
@@ -159,7 +162,7 @@
     #define TOUCH_CS PIN_D2    
     
     
-  // Menu/screen settings
+  // --------------------------------------- Menu/screen settings ---------------------------------------
 
   // font to use for all buttons  
     #define MENU_FONT FM9                                // standard Free Mono font - available sizes: 9, 12, 18 or 24
@@ -182,7 +185,7 @@
         const int DROdbuttonPlacement = 70;              // vertical spacing of the DRO buttons  
         
       // page 2
-        const int p2secondColumn = 150;                  // y position of second column of buttons
+        const int p2secondColumn = 150;                  // y position of second column of buttons 
 
       //numeric keypad - page 3
         const int noDigitsOnNumEntry = 10;               // maximum length of entered number
@@ -192,6 +195,9 @@
         const int keyX = 110;                            // position on screen (top left)
         const int keyY = 30;
       
+  // ----------------------------------------------------------------------------------------------------
+
+
   #define WDT_TIMEOUT 60                                 // timeout of watchdog timer (seconds) - i.e. auto restart if sketch stops responding
 
   #define ENABLE_EEPROM 0                                // if some settings are to be stored in eeprom  (not used)
@@ -204,13 +210,12 @@
 
   int dataRefresh = 2;                                   // Refresh rate of the updating data on root web page (seconds)
 
-  const byte LogNumber = 30;                             // number of entries in the system log
+  const byte LogNumber = 40;                             // number of entries in the system log
 
   unsigned long wifiRetryTime = 30;                      // how often to try to reconnect to wifi when connection is lost (seconds)
 
   
-  // -------------------------------- CYD display -------------------------------- 
-
+  // -------------------------------------------- CYD DISPLAY --------------------------------------------
 
     #include <SPI.h>
     #include <FS.h>
@@ -239,10 +244,17 @@
       float zAdj[3] = {0};
       int currentCoord = 0;     // current one in use (0-2)
     
-  
-  // ---------------------------- screen buttons ---------------------------------
-  
-  
+    // entered gcode
+      const int maxGcodeStringLines = 256;      // maximum number of lines of gcode allowed
+      String gcodeEntered;                      // store for the entered gcode 
+      float gcodeX[maxGcodeStringLines], gcodeY[maxGcodeStringLines], gcodeZ[maxGcodeStringLines];      // array of positions extracted fro gcode
+      int gcodeLineCount = 0;                   // number of positions extracted from gcode
+      bool incX, incY, incZ;                    // which coordinates to process
+      int gcodeStepPosition = 1;                // current position through the steps
+
+
+  // ---------------------------------------- Screen buttons --------------------------------------------
+    
     int displayingPage = 1;        // which screen page is live
     const int maxLabelLength = 30; // maximum number of characters in a buttons label (name)
 
@@ -306,11 +318,13 @@
         ButtonWidget but6 = ButtonWidget(&tft);   // page 1
 
 
-    // page 4
+      // page 4
+        ButtonWidget stepNext = ButtonWidget(&tft); 
+        ButtonWidget stepPrev = ButtonWidget(&tft); 
+        ButtonWidget stepReset = ButtonWidget(&tft); 
 
 
-
-  // ------------------------- -define the button widgets -------------------------
+  // ---------------------------------- -define the button widgets --------------------------------------
 
     #include "buttons.h"             // the procedures which are triggered when a button is pressed
 
@@ -367,14 +381,22 @@
       {3, 1, "BACK", keyX + 1 * (keyWidth + keySpacing), keyY + 4 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &keyBACK, &buttonKeyBackPressed},
       {3, 1, ".", keyX + 1 * (keyWidth + keySpacing), keyY + 3 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &keyPoint, &buttonKeyPointPressed},
       
+
+    // page 4
+      {4, 1, "Prev", 0, SCREEN_HEIGHT - DRObuttonheight, 80, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &stepPrev, &buttonKeyStepPrevPressed},
+      {4, 1, "Next", 90, SCREEN_HEIGHT - DRObuttonheight, 80, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &stepNext, &buttonKeyStepNextPressed},
+      {4, 1, "Reset", 180, SCREEN_HEIGHT - DRObuttonheight, 80, DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLACK, &stepReset, &buttonKeyStepResetPressed},
+
+
+      // step through gcode
+
     };
     uint8_t buttonCount = sizeof(screenButtons) / sizeof(*screenButtons);     // number of buttons created
 
     
-  // -----------------------------------------------------------------------------
+  // ----------------------------------------------------------------------------------------------------
     
 
-//int _TEMPVARIABLE_ = 1;                 // Temporary variable used in demo radio buttons on root web page
 unsigned long wifiBackupRetryTime = 300;  // not used but here to keep compatibility with my standard wifi.h file
 bool sTouched = 0;                        // flag if a button is curently pressed on the screen
 
@@ -406,19 +428,6 @@ void startTheWifi() {
 
       WiFi.mode(WIFI_STA);     // turn off access point - options are WIFI_AP, WIFI_STA, WIFI_AP_STA or WIFI_OFF
 
-    //  // configure as access point that other esp units can use if main wifi is down
-    //    WiFi.mode(WIFI_STA);                                   // turn off access point in case wifimanager still has one active
-    //    if (serialDebug) Serial.print("Starting access point: ");
-    //    if (serialDebug) Serial.print(APSSID);
-    //    WiFi.softAP(APSSID, APPWD, 1, 1, 8);                   // access point settings
-    //    delay(150);
-    //    if ( WiFi.softAPConfig(Ip, Ip, NMask) ) {
-    //      WiFi.mode(WIFI_AP_STA);                              // enable as both Station and access point - options are WIFI_AP, WIFI_STA, WIFI_AP_STA or WIFI_OFF
-    //      log_system_message("Access Point wifi started: " + WiFi.softAPIP().toString());
-    //    } else {
-    //      log_system_message("Error: unable to start Access Point wifi");
-    //    }  
-
       // set up web page request handling
         server.on(HomeLink, handleRoot);         // root page
         server.on("/data", handleData);          // supplies information to update root page via Ajax)
@@ -442,7 +451,7 @@ void startTheWifi() {
    
       // Finished connecting to network
         if (WiFi.status() == WL_CONNECTED) {
-          log_system_message("Started, ip=" + WiFi.localIP().toString());
+          log_system_message("Wifi started, ip=" + WiFi.localIP().toString());
           wifiEnabled = 1;
         } else {
           log_system_message("Wifi failed to start");
@@ -494,6 +503,9 @@ void setup() {
       system_message[i].reserve(maxLogEntryLength);
     }
 
+  // reserve memory for the entered gcode store
+    gcodeEntered.reserve(maxGcodeStringLines * 30); 
+
   // if (serialDebug) Serial.setDebugOutput(true);             // to enable extra diagnostic info
 
   #if ENABLE_EEPROM
@@ -543,8 +555,6 @@ void setup() {
   
   // update screen    
     dro.updateNeedle(100, 18);                                 // move dial to 100
-
-  //touch_calibrate();                                         // handle touchscreen calibration (not working)
 
   drawScreen(1);     // draw the screen
 
@@ -695,18 +705,27 @@ void handleRoot() {
 // ---------------------------------------------------------------------------------------------
 
 
+    // textbox for entering gcode
+      client.println("LOCATION ASSISTANT<br>");
+      client.println("Enter list of positions you wish to step through in the format: X10 Y20 Z30<br>");
+      client.println("You can paste simple gcode &ensp; <a href='https://www.intuwiz.com/drilling.html' target='_top'>GCODE GENERATOR</a><br>");  
+      client.println("<textarea id='gcode' name='gcode' rows='10' cols='40'></textarea><br>"); 
+
+      // coordinate selection checkboxes
+        client.print(R"=====(
+          Coordinates to process: 
+          <INPUT type='checkbox' name='X' value='X'>X&ensp;
+          <INPUT type='checkbox' name='Y' value='Y'>Y&ensp;
+          <INPUT type='checkbox' name='Z' value='Z'>Z&ensp;
+        )=====");
+
+      client.println("<input type='submit' value='submit'> <br>");   
+
+
+
     // // demo enter a value
     //   client.println("<br><br>Enter a value: <input type='number' style='width: 40px' name='value1' title='additional info which pops up'> ");
     //   client.println("<input type='submit' name='submit'>");
-
-    // // demo radio buttons - "RADIO1"
-    //   client.print(R"=====(
-    //     <br><br>Demo radio buttons
-    //     <br>Radio1 button1<INPUT type='radio' name='RADIO1' value='1'>
-    //     <br>Radio1 button2<INPUT type='radio' name='RADIO1' value='2'>
-    //     <br>Radio1 button3<INPUT type='radio' name='RADIO1' value='3'>
-    //     <br><INPUT type='reset'> <INPUT type='submit' value='Action'>
-    //   )=====");
 
     // // demo standard button
     // //    'name' is what is tested for above to detect when button is pressed, 'value' is the text displayed on the button
@@ -749,6 +768,19 @@ void handleRoot() {
 
 void rootUserInput(WiFiClient &client) {
 
+  // entered gcode
+    // checkboxes
+      (server.hasArg("X")) ? incX = 1 : incX = 0;
+      (server.hasArg("Y")) ? incY = 1 : incY = 0;
+      (server.hasArg("Z")) ? incZ = 1 : incZ = 0;
+
+    if (server.hasArg("gcode")) {
+      gcodeEntered = server.arg("gcode");   // read value in to global gcode store
+      processGCode(gcodeEntered);           // process the gcode and put resulting coordinates in to global arrays
+    }
+
+
+
   // // if value1 was entered
   //   if (server.hasArg("value1")) {
   //   String Tvalue = server.arg("value1");   // read value
@@ -758,25 +790,6 @@ void rootUserInput(WiFiClient &client) {
   //   }
   // }
 
-  // // if radio button "RADIO1" was selected
-  //   if (server.hasArg("RADIO1")) {
-  //     String RADIOvalue = server.arg("RADIO1");   // read value of the "RADIO" argument
-  //     //if radio button 1 selected
-  //     if (RADIOvalue == "1") {
-  //       log_system_message("radio button 1 selected");
-  //       _TEMPVARIABLE_ = 1;
-  //     }
-  //     //if radio button 2 selected
-  //     if (RADIOvalue == "2") {
-  //       log_system_message("radio button 2 selected");
-  //       _TEMPVARIABLE_ = 2;
-  //     }
-  //     //if radio button 3 selected
-  //     if (RADIOvalue == "3") {
-  //       log_system_message("radio button 3 selected");
-  //       _TEMPVARIABLE_ = 3;
-  //     }
-  //   }
 
   //   // if button "demobutton" was pressed
   //     if (server.hasArg("demobutton")) {
@@ -892,29 +905,66 @@ void settingsEeprom(bool eDirection) {
 
 void pageSpecificOperations() {
 
-  // page 3: display the number entered on keypad
-    if (displayingPage == 3) {
-      tft.setFreeFont(&sevenSeg16pt7b);      
+  const int lineSpace = 18;           // standard line spacing
+  const int belowSmallDRO = 100;      // position just below DRO readouts
+  const int rightOfSmallDRO = 100;    // position to right of DRO readouts
+
+
+  // page 1: show active coordinate system 
+    if (displayingPage == 1) {
+      tft.setFreeFont(FM12);         // standard Free Mono font - available sizes: 9, 12, 18 or 24
+      tft.setTextSize(1);            // 1 or 2  
+      tft.setTextColor(TFT_MAROON, TFT_BLACK);
+      tft.drawString("C" + String(currentCoord + 1), ( (DRObuttonWidth + buttonSpacing) * 3), DROheight + 5);   
+    }  
+
+  // page 2: 
+  if (displayingPage == 2) {
+
+    // hide "enable wifi" button if wifi is enabled
+      for (uint8_t b = 0; b < buttonCount; b++) {
+        if (String(screenButtons[b].label) == "En. Wifi") {  
+          if (screenButtons[b].enabled && wifiEnabled) {
+            screenButtons[b].enabled = 0;
+            drawScreen(2);         // not sure if this a good idea?
+          }
+        }
+      }
+
+    // show time and ip address
+      tft.setFreeFont(FM9);         // standard Free Mono font - available sizes: 9, 12, 18 or 24   
       tft.setTextColor(TFT_RED, TFT_BLACK);
       tft.setTextSize(1);
-      tft.setTextPadding( tft.textWidth("8") * noDigitsOnNumEntry );  
-      tft.drawString(keyEnteredNumber, keyX, keyY - 30 );    
-    }    
+      tft.drawString(currentTime() ,0, belowSmallDRO);      
+      if (wifiEnabled) tft.drawString("IP: " + WiFi.localIP().toString() ,0, belowSmallDRO + lineSpace);       
+  }    
 
-  // page 4: show time
+
+  // page 3: display the number entered on the keypad
+    if (displayingPage == 3) {
+      tft.setFreeFont(&sevenSeg16pt7b);      // 7 seg font (small)
+      tft.setTextColor(TFT_BLUE, TFT_BLACK);
+      tft.setTextSize(1);
+      tft.setTextPadding( tft.textWidth("8") * noDigitsOnNumEntry );  
+      tft.drawString(keyEnteredNumber, keyX, keyY - 30 );       
+    }
+
+
+  // page4: step through gcode coordinates
      if (displayingPage == 4) {
       tft.setFreeFont(FM9);         // standard Free Mono font - available sizes: 9, 12, 18 or 24   
       tft.setTextColor(TFT_RED, TFT_BLACK);
       tft.setTextSize(1);
-      tft.drawString("The current time" ,0, 120);
-      tft.drawString("via wifi is:" ,0, 150);
-      tft.drawString(currentTime() ,0, 180);
-     }
-
-  // show/hide "enable wifi" button depending if wifi is enabled
-    for (uint8_t b = 0; b < buttonCount; b++) {
-      if (screenButtons[b].label == "Wifi-Enable") screenButtons[b].enabled = !wifiEnabled;
-    }
+      tft.drawString("  STEP THROUGH" , rightOfSmallDRO, lineSpace * 0);
+      tft.drawString("  COORDINATES" , rightOfSmallDRO, lineSpace * 1);
+      // display coordinate
+        tft.drawString(" Position: " + String(gcodeStepPosition) + " of " + String(gcodeLineCount) , 0, belowSmallDRO + lineSpace * 1);
+        String tRes = "";
+        if (incX) tRes += " X:" + String(gcodeX[gcodeStepPosition - 1]);
+        if (incY) tRes += " Y:" + String(gcodeY[gcodeStepPosition - 1]);
+        if (incZ) tRes += " Z:" + String(gcodeZ[gcodeStepPosition - 1]);
+        tft.drawString(tRes, 0, belowSmallDRO + lineSpace * 3);
+     } 
 }
 
 
@@ -948,9 +998,6 @@ void actionScreenRelease(TS_Point p) {
 
 void actionScreenTouch(TS_Point p) {
 
-  const int lineHight = 16;
-  const bool showPress = 0;     // show data on screen
-
   // calculate position on screen
     int x = map(p.x, TOUCH_LEFT, TOUCH_RIGHT, 0, SCREEN_WIDTH);  
     int y = map(p.y, TOUCH_TOP, TOUCH_BOTTOM, 0, SCREEN_HEIGHT);  
@@ -965,8 +1012,8 @@ void actionScreenTouch(TS_Point p) {
           screenButtons[b].btn->drawSmoothButton(true);
           if (serialDebug) Serial.println("button " + String(screenButtons[b].label) + " pressed!");
           screenButtons[b].btn->press(true);
-          screenButtons[b].btn->pressAction();     
-          lastTouch = millis();          // flag time last button was pressed   
+          screenButtons[b].btn->pressAction();      // call procedure in buttons.h
+          lastTouch = millis();          // flag time a button was pressed   
           break;                         // exit for loop   
       } 
     }    
@@ -976,6 +1023,7 @@ void actionScreenTouch(TS_Point p) {
   highlightPageButton();                 // indicate which page is being displayed
 
   // draw data on screen if showpress is enabled
+    const int lineHight = 16;
     if (showPress) {
       //tft.fillScreen(TFT_BLACK);
       tft.setTextColor(TFT_WHITE, TFT_BLACK);
@@ -1037,12 +1085,10 @@ void drawScreen(int screen) {
 
   // draw the buttons
     for (uint8_t b = 0; b < buttonCount; b++) {
-      if (screenButtons[b].enabled == 1) {   
-         if( screenButtons[b].page == screen || screenButtons[b].page == 0) {       // 0 = show on all pages
-            screenButtons[b].btn->drawSmoothButton(false, screenButtons[b].outlineThickness, TFT_BLACK);      
-            //screenButtons[b].btn->press(0);     // flag as not pressed
-         }
-      }
+        if( screenButtons[b].enabled == 1 && (screenButtons[b].page == screen || screenButtons[b].page == 0) ) {       // 0 = show on all pages
+          screenButtons[b].btn->drawSmoothButton(false, screenButtons[b].outlineThickness, TFT_BLACK);      
+          //screenButtons[b].btn->press(0);     // flag as not pressed
+        }
     } 
   
   pageSpecificOperations();   // draw any page specific items
@@ -1135,7 +1181,7 @@ void displayReadings() {
 
     // x
       if (DATA_PIN_X != -1) {
-        //(millis() - lastReadingTimeX < warningTimeLimit) ? tft.setTextColor(TFT_RED, TFT_BLACK) : tft.setTextColor(TFT_BLUE, TFT_BLACK);   // if not updated recently change to blue
+        (lastReadingTimeX > 0) ? tft.setTextColor(TFT_RED, TFT_BLACK) : tft.setTextColor(TFT_BLUE, TFT_BLACK);   // if no data received yet
         sprintf(buff, spa.c_str(), xReading - xAdj[currentCoord]);
         if (strlen(buff) == DROnoOfDigits+1) tft.drawString(buff, 0, 0);    
         else if (serialDebug) Serial.println("Invalid reading from X: " + String(buff));
@@ -1143,7 +1189,7 @@ void displayReadings() {
 
     // y
       if (DATA_PIN_Y != -1) {
-        //(millis() - lastReadingTimeY < warningTimeLimit) ? tft.setTextColor(TFT_RED, TFT_BLACK) : tft.setTextColor(TFT_BLUE, TFT_BLACK);   // if not updated recently change to blue
+        (lastReadingTimeY > 0) ? tft.setTextColor(TFT_RED, TFT_BLACK) : tft.setTextColor(TFT_BLUE, TFT_BLACK);   // if no data received yet
         sprintf(buff, spa.c_str(), yReading - yAdj[currentCoord]);
         if (strlen(buff) == DROnoOfDigits+1) tft.drawString(buff, 0, tft.fontHeight() );    
         else if (serialDebug) Serial.println("Invalid reading from Y: " + String(buff));
@@ -1151,7 +1197,7 @@ void displayReadings() {
 
     // z
       if (DATA_PIN_Z != -1) {
-        //(millis() - lastReadingTimeZ < warningTimeLimit) ? tft.setTextColor(TFT_RED, TFT_BLACK) : tft.setTextColor(TFT_BLUE, TFT_BLACK);   // if not updated recently change to blue
+        (lastReadingTimeZ > 0) ? tft.setTextColor(TFT_RED, TFT_BLACK) : tft.setTextColor(TFT_BLUE, TFT_BLACK);   // if no data received yet
         sprintf(buff, spa.c_str(), zReading - zAdj[currentCoord]);
         if (strlen(buff) == DROnoOfDigits+1) tft.drawString(buff, 0, tft.fontHeight() * 2 );    
         else if (serialDebug) Serial.println("Invalid reading from Z: " + String(buff));
@@ -1159,15 +1205,11 @@ void displayReadings() {
    
     tft.setFreeFont(FM12);        // switch back to standard Free Mono font - available sizes: 9, 12, 18 or 24   
     tft.setTextPadding(0);        // clear the padding setting
-      
-    // Show current coordinate system (if showing page 1)
-      if (displayingPage == 1) {
-        sprintf(buff, "C%d", currentCoord + 1);
-        tft.setFreeFont(FM12);         // standard Free Mono font - available sizes: 9, 12, 18 or 24
-        tft.setTextSize(1);            // 1 or 2  
-        tft.setTextColor(TFT_MAROON, TFT_BLACK);
-        tft.drawString(buff, ( (DRObuttonWidth + buttonSpacing) * 3), DROheight + 5);   
-      }
+          
+    // turn display blue if no data being received from caliper
+      if (millis() - lastReadingTimeX > DROerrorTimeout) lastReadingTimeX = 0;
+      if (millis() - lastReadingTimeY > DROerrorTimeout) lastReadingTimeY = 0;
+      if (millis() - lastReadingTimeZ > DROerrorTimeout) lastReadingTimeZ = 0;
 
     tft.setTextPadding(0);        // turn off text padding
 }
@@ -1223,73 +1265,77 @@ void handleTouch() {
   server.send(200, "text/plain", message);   // send reply as plain text    
 }
 
-
 // ----------------------------------------------------------------
-//                     touch screen calibration 
+//                        -process gcode 
 // ----------------------------------------------------------------
+// process the entered gcode (from web page) extracting an x,y,z position from each line and store in global array
 
-void touch_calibrate()
-{
-  uint16_t calData[5];
-  uint8_t calDataOK = 0;
+void processGCode(String &gcodeText) {
+  
+  if (gcodeText == "") return;        // if text is blank
 
-  // check file system exists
-  if (!LittleFS.begin()) {
-    Serial.println("Formating file system");
-    LittleFS.format();
-    LittleFS.begin();
+  float tX = 0, tY = 0, tZ = 0;       // extracted position
+
+  // Split the G-code string into lines and process each line
+  int startPos = 0;
+  int endPos = 0;
+  gcodeLineCount = 0;                                 // global variable storing number of coordinates extracted from the gcode
+
+  while (endPos != -1 && gcodeLineCount < maxGcodeStringLines) {
+    endPos = gcodeText.indexOf('\n', startPos);
+    if (endPos != -1) {
+      String gcodeLine = gcodeText.substring(startPos, endPos);
+      processGCodeLine(gcodeLine, tX, tY, tZ);        // pass the line of gcode which updates position of x,y,z based upon this line
+      startPos = endPos + 1;
+
+      // process line if different to previous coordinate
+        if ( (tX != 0 && incX == 1) || (tY != 0 && incY == 1) || (tZ != 0 && incZ == 1) ) {    // if position extracted from line then store it in global array
+          if (gcodeLineCount == 0 || (gcodeX[gcodeLineCount - 1] != tX && incX == 1) || (gcodeY[gcodeLineCount - 1] != tY && incY == 1) || (gcodeZ[gcodeLineCount - 1] != tZ && incZ == 1) ) {
+            gcodeX[gcodeLineCount] = tX; gcodeY[gcodeLineCount] = tY; gcodeZ[gcodeLineCount] = tZ;
+            gcodeLineCount ++;
+          }
+          //log_system_message("gcode line: '" +  gcodeLine + "', result : x:" + String(tX ,2) + " y:" + String(tY ,2) + " z:" + String(tZ ,2));    // temp line
+         }
+    }
   }
 
-  // check if calibration file exists and size is correct
-  if (LittleFS.exists(CALIBRATION_FILE)) {
-    if (REPEAT_CAL)
-    {
-      // Delete if we want to re-calibrate
-      LittleFS.remove(CALIBRATION_FILE);
-    }
-    else
-    {
-      File f = LittleFS.open(CALIBRATION_FILE, "r");
-      if (f) {
-        if (f.readBytes((char *)calData, 14) == 14)
-          calDataOK = 1;
-        f.close();
-      }
-    }
+  log_system_message(String(gcodeLineCount) + " coordinates extracted from gcode");
+}
+
+// ----------------------------------------------------------------
+//                     -process a line of gcode
+// ----------------------------------------------------------------
+// NOT USED AT PRESENT - planning to enter some gcode via web page and then have it step through the positions 
+// This takes a String containing a line of basic gcode and updates positions -  It simply finds an 'x', 'y' or 'z' in the string and extracts the number following it
+
+void processGCodeLine(String gcodeLine, float &xPos, float &yPos, float &zPos) {
+
+  int xPosIndex = gcodeLine.indexOf("X");
+  if (xPosIndex == -1) xPosIndex = gcodeLine.indexOf("x");
+  if (xPosIndex != -1) {
+    xPos = gcodeLine.substring(xPosIndex + 1).toFloat();
   }
 
-  if (calDataOK && !REPEAT_CAL) {
-    // calibration data valid
-    tft.setTouch(calData);
-  } else {
-    // data not valid so recalibrate
-    tft.fillScreen(TFT_BLACK);
-    tft.setCursor(20, 0);
-    tft.setTextFont(2);
-    tft.setTextSize(1);
-    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  int yPosIndex = gcodeLine.indexOf("Y");
+  if (yPosIndex == -1) yPosIndex = gcodeLine.indexOf("y");
+  if (yPosIndex != -1) {
+    yPos = gcodeLine.substring(yPosIndex + 1).toFloat();
+  }
 
-    tft.println("Touch corners as indicated");
+  int zPosIndex = gcodeLine.indexOf("Z");
+  if (zPosIndex == -1) zPosIndex = gcodeLine.indexOf("z");
+  if (zPosIndex != -1) {
+    zPos = gcodeLine.substring(zPosIndex + 1).toFloat();
+  }
 
-    tft.setTextFont(1);
-    tft.println();
-
-    if (REPEAT_CAL) {
-      tft.setTextColor(TFT_RED, TFT_BLACK);
-      tft.println("Set REPEAT_CAL to false to stop this running again!");
-    }
-
-    tft.calibrateTouch(calData, TFT_MAGENTA, TFT_BLACK, 15);
-
-    tft.setTextColor(TFT_GREEN, TFT_BLACK);
-    tft.println("Calibration complete!");
-
-    // store data
-    File f = LittleFS.open(CALIBRATION_FILE, "w");
-    if (f) {
-      f.write((const unsigned char *)calData, 14);
-      f.close();
-    }
+  if (serialDebug) {
+  // Print the extracted position
+    Serial.print("X: ");
+    Serial.print(xPos);
+    Serial.print(" Y: ");
+    Serial.print(yPos);
+    Serial.print(" Z: ");
+    Serial.println(zPos);
   }
 }
 
@@ -1306,7 +1352,7 @@ void handleTest(){
   // log page request including clients IP address
     IPAddress cip = client.remoteIP();
     String clientIP = decodeIP(cip.toString());   // check for known IP addresses
-    log_system_message("Test page requested from: " + clientIP);
+    //log_system_message("Test page requested from: " + clientIP);
 
   webheader(client);                 // add the standard html header
   client.println("<br><H2>TEST PAGE</H2><br>");
@@ -1317,10 +1363,20 @@ void handleTest(){
   // ---------------------------- test section here ------------------------------
 
 
-// turn backloight off then on
-  digitalWrite(SCREEN_BACKLIGHT, LOW);       // turn backlight on
-  delay(3000);
-  digitalWrite(SCREEN_BACKLIGHT, HIGH);       // turn backlight on
+// display stored coordinates from entered gcode
+  client.print("Positions extracted from gcode: <br>");
+  for (int i=0; i < gcodeLineCount; i++) {
+    if (incX) client.print("&ensp; x:" + String(gcodeX[i]) );
+    if (incY) client.print("&ensp; y:" + String(gcodeY[i]) );
+    if (incZ) client.print("&ensp; z:" + String(gcodeZ[i]) );
+    client.println("<br>");
+  }
+
+
+// // turn backloight off then on
+//   digitalWrite(SCREEN_BACKLIGHT, LOW);       // turn backlight on
+//   delay(3000);
+//   digitalWrite(SCREEN_BACKLIGHT, HIGH);       // turn backlight on
 
 // // test x zero
 //   xAdj[currentCoord] = xReading;
