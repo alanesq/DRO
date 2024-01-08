@@ -2,13 +2,8 @@
 
 My homemade DRO consists of an ESP32-based "cheap yellow display" which costs around £12, some digital calipers that cost under £5 each plus a few transistors, wiring etc... As a result, building a three-axis DRO can set you back less than £30 (around $40). <br>
 
-<table><tr>
-  <td><img src="/pics/DROproject.jpg" /></td>
-  <td><img src="/pics/DROinstalled.jpg" /></td>
-</tr><tr>
-  <td><img src="/pics/DROparts.jpg" /></td>
-  <td><img src="/pics/caliperInstalled.jpg" /></td>
-</tr></table> 
+<img src="/pics/pics.jpg" /><br><br>
+<img src="/pics/screenGrabs.jpg" /><br>
 
 I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available was still going to cost me several hundred pounds, which I just couldn’t justify spending.  I also suspected that the cheapest DRO on the market would probably fail after a short time anyway.  Therefore, I decided to see if I can create my own as inexpensively as possible. I think it safe to say that I have achieved this goal! <br>
 
