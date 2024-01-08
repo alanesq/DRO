@@ -73,13 +73,18 @@ In an attempt to try and make the calipers more robust I have put some insulatio
 It may also be an idea to coat the rest of the circuit board in some kind of conformal coating (clear nail varnish?) and maybe some kind of dust seal around the slider where it enters the reader (I believe some come with one fitted).
 <br>One advantage of having the remote display is it will make it easier to fit the calipers out of harms way as you do not need to see the display on them.
 
+At present it is set up to have 4 display pages, buttons can be created and assigned to the pages in the "define the button widgets" section of the sketch.  The caliper readings are displayed on all pages but there are two sizes available (this size is set in "displayReadings").  Button actions are defined in the "buttons.h" file.  It has a demo keypad for entering numbers but it is not yet used for anything.  I plan to add more features later on.  Let me know if there are features you would like me to add? <br>
+
+## Troubleshooting
+
 I have found that the power supply is critical for the calipers in that most switch mode USB power supplies seem to cause them to give random readings.  Many USB power supples will cause the calipers to have randomly changing displays or for start counting up for no apparent reason etc., at best the caliper readings will not be very stable.  I built a linear power supply but even this was not perfect and othjer appliances on the mains would cause the readings to become unstable. <br>
 I think by far the best way to power this would be from a battery as this will give a very stable power and be completely isolated from any mains spikes etc..  I have used an old PC power supply for mine which is the next best thing.  A USB power bank seems to work ok also.  Another option may be to power the CYD from a usb power supply but power the calipers from a AA battery?
 
-At present it is set up to have 4 display pages, buttons can be created and assigned to the pages in the "define the button widgets" section of the sketch.  The caliper readings are displayed on all pages but there are two sizes available (this size is set in "displayReadings").  Button actions are defined in the "buttons.h" file.  It has a demo keypad for entering numbers but it is not yet used for anything.  I plan to add more features later on.  Let me know if there are features you would like me to add? <br>
+If you find the CYD reboots as soon as a button is pressed this is probably becuase the User_Setup.h file has not been copied over for the "TFT_eSPI" library [see here](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/blob/main/SETUP.md)
 
 One possible issue I anticipate is that the calipers often have a random reading when first powered on, this could be a problem if it is close to the limit of the caliper if you then move it past this limit (the limit looks to be 999.99mm on mine).  It can of course be solved simply by pressing the zero button on the caliper but this is something I may look in to later.  I believe the caliper can be zeroed by taking one of the data pins to ground but this would require extra circuitry.
 
 ## Contact
+
 If you use this sketch please let me know how you get on  - alanesq@disroot.org
 
