@@ -12,6 +12,12 @@ My homemade DRO consists of an ESP32-based "cheap yellow display" which costs ar
 
 I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available was still going to cost me several hundred pounds, which I just couldn’t justify spending.  I also suspected that the cheapest DRO on the market would probably fail after a short time anyway.  Therefore, I decided to see if I can create my own as inexpensively as possible. I think it safe to say that I have achieved this goal! <br>
 
+Rather than have hole patern facilities on the DRO (for drilling a circle of holes etc.) I decided it would be easier and more interesting to enter the coordinates of the positions required via the web page and then you can step through these positions via the DRO display.  These are ented as a list in the format:<br>
+ x10 y10<br> x20 y20<br> x30 y0 etc.<br>
+This may seem a bit limited but I have set it up so you can paste simple gcode in to this window and it will pull out the coordinates, this gives the option to create your own gcode or use online generators for creating paterns of hole etc.<br>
+e.g. [online gcode tools](https://www.intuwiz.com/drill-circle-points.html) <br>
+It is early days so at the moment it just displays the coordinate but I plan to have it guide you on to the position.
+
 WARNING: The well known problem with these cheap calipers is the battery goes flat if you do not use them for a while, it turns out that they are producing the data we use here all the time, even when turned off.  I bought one of the longer calipers recently which looks like it is a "new/impoved" design which has got round this issue by turning off the data all together which is very bad news if you want to use it for this project.  So if you are buying calipers I suggest you try to buy the older style ones if you can as the newer ones do not seem to support data, the good news is these will be the cheapest ones.  You can still use the reader from a cheaper caliper on this longer bar if you do have one though.<br>
 Also, I have read that some of these calipers use a different data standard although all the ones I have tried are the same<br>
 
@@ -31,7 +37,7 @@ Communicating with the digital caliper
 - [wei48221](http://wei48221.blogspot.com/2016/01/using-digital-caliper-for-digital-read_21.html)
 - [makingstuffchannel](https://github.com/MakingStuffChannel/DigitalCalipers/blob/master/DigitalCalipers.ino)
 
-This sketch is wifi enabled just because I already had the code to do this so why not, this is turned off by default but can be turned on via the DROs menu.  You can enable wifi at startup by changing a flag in the settings section.  It is mainly useful for OTA updates but offers the option to add features at a later date. <br>
+This sketch is wifi enabled, this is turned off by default but can be turned on via the DROs menu.  You can enable wifi at startup by changing a flag in the settings section.  It is mainly useful for OTA updates but offers the option to add features at a later date. <br>
 At present the display has zero buttons for each axis along with a divide by zero button plus buttons to switch to different display pages.  There is plenty of scope to add lots of other features later, I have an idea that it may be nice to have the option to enter a list of points via the web page then have the DRO guide me to each point? <br>
 On page 3 of the display there is a number entry keypad which at present is not used, it stores the entered number in to a float and a String.
 
