@@ -1,12 +1,23 @@
 # DRO - A super cheap Digital Readout (DRO) for lathes, milling machines etc. 
 
-<br>My homemade DRO consists of an ESP32-based "cheap yellow display" which costs around £12, some digital calipers that cost under £5 each plus a few transistors, wiring etc... As a result, building a three-axis DRO can set you back less than £30 (around $40). <br><br>
+<br>My homemade ESP32 based DRO which conists of:
+ - [Cheap Yellow Display](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display) &ensp; (A.K.A. ESP32-2432S028R) which costs around £12
+ - Digital calipers that cost under £5 each
+ - Plus a few transistors, wiring etc... 
 
-<img src="/pics/pics.jpg" /><br><br>
-<img src="/pics/screenGrabs.jpg" /><br>
+As a result, building a three-axis DRO for your milling machine or lathe can set you back less than £30 (around $40). <br><br>
+
+<p align="center" width="100%">
+  <img src="/pics/pics.jpg" /><br><br>
+  <img src="/pics/screenGrabs.jpg" />
+  <img width="450" class="center" src="/pics/webpage.jpg" /><br><br>
+</p>
 
 I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available was still going to cost me several hundred pounds, which I just couldn’t justify spending.  I also suspected that the cheapest DRO on the market would probably fail after a short time anyway.  Therefore, I decided to see if I can create my own as inexpensively as possible. <br>
 I think it safe to say that I have achieved this goal! <br><br>
+
+ - Make sure to copy the UserSetup.h file into the TFT_eSPI library. &ensp; See: [setup instructions](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/blob/main/SETUP.md) <br>
+ - Make sure your Cheap Yellow Display is not the version with two USB ports as this has a different display <br><br>
 
 ## Patterns
 
@@ -18,15 +29,14 @@ x0 y10
 x10 y0
 x10 y10
 ```
-It also has the option to paste simple gcode, this gives the option to create your own gcode in whatever software you preffer (A good choice would be Inkscape and [Krabzcam](https://github.com/mkrabset/krabzcam) ) or you can use online tools for creating paterns of hole etc.  see: [online gcode tools](https://www.intuwiz.com/drilling.html) <br><br>
+It also has the option to paste simple gcode, this gives the option to create your own gcode in whatever software you preffer (A good choice would be Inkscape and [Krabzcam](https://github.com/mkrabset/krabzcam) ) or you can use online tools for creating paterns of hole etc. &ensp; see: [online gcode tools](https://www.intuwiz.com/drilling.html) <br><br>
 
 ## Digital calipers
 
-The cheap calipers only have a range of 150mm although longer 200mm or even 300mm are available on eBay for under £20, this is probably enough for my requirements although I have had some longer PCBs created which were designed by "Limi DIY" and they appear to work and extend the range to around 400mm.  There is the possibility to link these together although the join would need to be very accurate.  These boards came in at £10 each so are not cheap by the standards of this project but not too bad. <br>
-[YouTube video-extending the range](https://www.youtube.com/watch?v=JYnit_PSSMY) - [PCBway order link](https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.html)
+The cheap calipers only have a range of 150mm although longer 200mm or even 300mm are available on eBay for under £20, this is probably enough for my requirements although I have had some longer PCBs created which were designed by "Limi DIY" and they appear to work and extend the range to around 400mm.  There is the possibility to link these together although the join would need to be very accurate.  These boards came in at £10 each so are not cheap by the standards of this project but not too bad. <br> 
+&ensp; &ensp; [YouTube video-extending the range](https://www.youtube.com/watch?v=JYnit_PSSMY) &ensp; - &ensp;  [PCBway order link](https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.html)
 
-You can of course buy better quality calipers if you do not trust these cheap ones to be accurate or you can buy similar items from China which are actually designed to be used as a DRO but it soon starts to get expensive; These cheap calipers really are amazing for the price, they are so cheap that it feels like they are almost being given away and appear to be very accurate.  Big Clive has made a nice video showing what is inside them and how to take them apart:
-[Big Clive](https://www.youtube.com/watch?v=fKSSY1gzCEs) <br>
+You can of course buy better quality calipers if you do not trust these cheap ones to be accurate or you can buy similar items from China which are actually designed to be used as a DRO but it soon starts to get expensive; These cheap calipers really are amazing for the price, they are so cheap that it feels like they are almost being given away and appear to be very accurate.  Big Clive has made a nice video showing what is inside them and how to take them apart: &ensp; [Big Clive](https://www.youtube.com/watch?v=fKSSY1gzCEs) <br>
 
 One interesting thing I was not expecting is you get two decimal places from these very cheap calipers even though they only display one on their LCD, as can be seen in the pictures above. <br><br>
 
@@ -34,11 +44,11 @@ One interesting thing I was not expecting is you get two decimal places from the
 
 The well known problem with these cheap calipers is the battery goes flat if you do not use them for a while, it turns out that they are producing the data we use here all the time, even when turned off.  I bought one of the longer calipers recently which looks like it is a "new/impoved" design which has got round this issue by turning off the data all together which is very bad news if you want to use it for this project.  So if you are buying calipers I suggest you try to buy the older style ones if you can as the newer ones do not seem to support data, the good news is these will be the cheapest ones.  You can still use the reader from a cheaper caliper on this longer bar if you do have one though.<br>
 Also, I have read that some of these calipers use a different data standard although all the ones I have tried are the same<br>
-Make sure when ordering a Cheap Yellow Display that it is not the version with two USB ports as this has a differnt display and will not work with this sketch at present (anyone know how to fix this?)<br><br>
+<br><br>
 
 ## Misc info:
 
-[Cheap Yellow Display Information](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display)
+Brian Lough's information on the [Cheap Yellow Display](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display)
   
 Communicating with the digital calipers
 - [Martin's Creations](https://sites.google.com/site/marthalprojects/home/arduino/arduino-reads-digital-caliper)
@@ -49,8 +59,8 @@ This sketch is wifi enabled, this is turned off by default but can be turned on 
 At present the display has zero buttons for each axis along with a divide by zero button plus buttons to switch to different display pages.  There is plenty of scope to add lots of other features later, I have an idea that it may be nice to have the option to enter a list of points via the web page then have the DRO guide me to each point? <br>
 On page 3 of the display there is a number entry keypad which at present is not used, it stores the entered number in to a float and a String.
 
-If you have a 3D printer this is a case I have modified to be large enough to contain all the electronics: [custom case](https://github.com/alanesq/DRO/tree/main/case) <br>
-Also a replacement case for the digital calipers: [caliper case](https://github.com/alanesq/DRO/tree/main/caliperCase)
+If you have a 3D printer this is a case I have modified to be large enough to contain all the electronics: &ensp; [custom case](https://github.com/alanesq/DRO/tree/main/case) <br>
+Also a replacement case for the digital calipers: &ensp; [caliper case](https://github.com/alanesq/DRO/tree/main/caliperCase)
 
 Current Wifi Features:
 - Simulate pressing the screen with: http://x.x.x.x/touch?x=100&y=50
@@ -73,7 +83,7 @@ Note: I am using GPIO0 which isn't ideal as it is also attached to the onboard b
 
 There are connections for GPIO1 and 3 which are the serial pins but could be used as general GPIO if required (it can be programmed by OTA so this would not be a big problem).
 
-In an attempt to try and make the calipers more robust I have put some insulation tape over the circuit board (where the slider runs along it) as I think the bare circuit board is very vulnerable to damp entering and corroding the board.  [Picture](https://github.com/alanesq/DRO/blob/main/pics/caliperMod.jpg) <br>
+In an attempt to try and make the calipers more robust I have put some insulation tape over the circuit board (where the slider runs along it) as I think the bare circuit board is very vulnerable to damp entering and corroding the board. &ensp; [Picture](https://github.com/alanesq/DRO/blob/main/pics/caliperMod.jpg) <br>
 It may also be an idea to coat the rest of the circuit board in some kind of conformal coating (clear nail varnish?) and maybe some kind of dust seal around the slider where it enters the reader (I believe some come with one fitted).
 <br>One advantage of having the remote display is it will make it easier to fit the calipers out of harms way as you do not need to see the display on them.
 
