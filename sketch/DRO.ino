@@ -111,7 +111,7 @@
 
   const char* stitle = "SuperLowBudget-DRO";             // title of this sketch
 
-  const char* sversion = "08Jan24";                      // version of this sketch
+  const char* sversion = "09Jan24";                      // version of this sketch
 
   bool wifiEnabled = 0;                                  // if wifi is to be enabled at boot (can be enabled from display menu if turned off here)
   
@@ -708,18 +708,15 @@ void handleRoot() {
     // textbox for entering gcode
       client.println("LOCATION ASSISTANT<br>");
       client.println("Enter list of positions you wish to step through in the format: X10 Y20 Z30<br>");
-      client.println("You can paste simple gcode &ensp; <a href='https://www.intuwiz.com/drilling.html' target='_top'>GCODE GENERATOR</a><br>");  
+      client.println("or you can paste simple gcode &ensp; <a href='https://www.intuwiz.com/drilling.html' target='_top'>GCODE GENERATOR</a><br>");  
       client.println("<textarea id='gcode' name='gcode' rows='10' cols='40'></textarea><br>"); 
 
-      // coordinate selection checkboxes
-        client.print(R"=====(
-          Coordinates to process: 
-          <INPUT type='checkbox' name='X' value='X'>X&ensp;
-          <INPUT type='checkbox' name='Y' value='Y'>Y&ensp;
-          <INPUT type='checkbox' name='Z' value='Z'>Z&ensp;
-        )=====");
-
-      client.println("<input type='submit' value='submit'> <br>");   
+    // coordinate selection checkboxes
+      client.println("Coordinates to process: ");
+      if (DATA_PIN_X != -1) client.print("<INPUT type='checkbox' name='X' value='X'>X&ensp;");
+      if (DATA_PIN_Y != -1) client.print("<INPUT type='checkbox' name='Y' value='Y'>Y&ensp;");
+      if (DATA_PIN_Z != -1) client.print("<INPUT type='checkbox' name='Z' value='Z'>Z&ensp;");
+      client.println("<input type='submit' value='submit'> <br><br>");   
 
 
 
@@ -752,6 +749,9 @@ void handleRoot() {
            </script>
         )=====", imagerefresh * 1000);
     */
+
+    // link to github
+      client.println("<a href='https://github.com/alanesq/DRO' target='_top'>Project Github</a>");
 
     // close page
       client.println("</P>");                                // end of section
@@ -905,12 +905,15 @@ void settingsEeprom(bool eDirection) {
 
 void pageSpecificOperations() {
 
-  const int lineSpace = 18;           // standard line spacing
-  const int belowSmallDRO = 100;      // position just below DRO readouts
-  const int rightOfSmallDRO = 100;    // position to right of DRO readouts
+  // some values to use for display positions
+    const int lineSpace = 18;           // standard line spacing
+    const int belowSmallDRO = 100;      // position just below DRO readouts
+    const int rightOfSmallDRO = 100;    // position to right of DRO readouts
 
+  // -------------------------------------------------------
 
   // page 1: show active coordinate system 
+
     if (displayingPage == 1) {
       tft.setFreeFont(FM12);         // standard Free Mono font - available sizes: 9, 12, 18 or 24
       tft.setTextSize(1);            // 1 or 2  
@@ -918,7 +921,10 @@ void pageSpecificOperations() {
       tft.drawString("C" + String(currentCoord + 1), ( (DRObuttonWidth + buttonSpacing) * 3), DROheight + 5);   
     }  
 
-  // page 2: 
+  // -------------------------------------------------------
+
+  // page 2: Misc buttons
+
   if (displayingPage == 2) {
 
     // hide "enable wifi" button if wifi is enabled
@@ -939,44 +945,61 @@ void pageSpecificOperations() {
       if (wifiEnabled) tft.drawString("IP: " + WiFi.localIP().toString() ,0, belowSmallDRO + lineSpace);       
   }    
 
+  // -------------------------------------------------------
 
-  // page 3: display the number entered on the keypad
-    if (displayingPage == 3) {
-      tft.setFreeFont(&sevenSeg16pt7b);      // 7 seg font (small)
-      tft.setTextColor(TFT_BLUE, TFT_BLACK);
-      tft.setTextSize(1);
-      tft.setTextPadding( tft.textWidth("8") * noDigitsOnNumEntry );  
-      tft.drawString(keyEnteredNumber, keyX, keyY - 30 );       
-    }
+  // page 3: demo keypad
 
-
-  // page4: step through gcode coordinates
-
-    // clear gcode DRO adjustments if no longer on page 4
-      if (displayingPage != 4) {
-        gcodeDROadjX = 0; gcodeDROadjY = 0; gcodeDROadjZ = 0;  
+    // display number ented via keypad
+      if (displayingPage == 3) {
+        tft.setFreeFont(&sevenSeg16pt7b);      // 7 seg font (small)
+        tft.setTextColor(TFT_BLUE, TFT_BLACK);
+        tft.setTextSize(1);
+        tft.setTextPadding( tft.textWidth("8") * noDigitsOnNumEntry );  
+        tft.drawString(keyEnteredNumber, keyX, keyY - 30 );       
       }
 
+  // -------------------------------------------------------
+
+  // page 4: step through gcode coordinates
+
+    // reset gcode DRO adjustments if no longer on page 4
+      if (displayingPage != 4)  gcodeDROadjX = 0; gcodeDROadjY = 0; gcodeDROadjZ = 0;  
+
     if (displayingPage == 4) {
-      // set adjustments to DRO
+
+      // get possition coordinates
         gcodeDROadjX = gcodeX[gcodeStepPosition - 1];
         gcodeDROadjY = gcodeY[gcodeStepPosition - 1];
         gcodeDROadjZ = gcodeZ[gcodeStepPosition - 1];      
 
-      // show coordinate info.
-        tft.setFreeFont(FM9);         // standard Free Mono font - available sizes: 9, 12, 18 or 24   
+      // page title
+        tft.setFreeFont(FM9);                // standard Free Mono font - available sizes: 9, 12, 18 or 24   
         tft.setTextColor(TFT_RED, TFT_BLACK);
         tft.setTextSize(1);
         tft.drawString("  STEP THROUGH" , rightOfSmallDRO, lineSpace * 0);
         tft.drawString("  COORDINATES" , rightOfSmallDRO, lineSpace * 1);
-        // display coordinate
+
+      // display coordinates
+        if (gcodeLineCount > 0) {                                     // if there is data to use
           tft.drawString(" Position: " + String(gcodeStepPosition) + " of " + String(gcodeLineCount) , 0, belowSmallDRO + lineSpace * 1);
-          String tRes = "";
-          if (incX) tRes += " X:" + String(gcodeX[gcodeStepPosition - 1]);
-          if (incY) tRes += " Y:" + String(gcodeY[gcodeStepPosition - 1]);
-          if (incZ) tRes += " Z:" + String(gcodeZ[gcodeStepPosition - 1]);
-          tft.drawString(tRes, 0, belowSmallDRO + lineSpace * 3);
-        } 
+          // display coordinates
+            String tRes = "";
+            if (incX) tRes += " X:" + String(gcodeX[gcodeStepPosition - 1], 2);
+            if (incY) tRes += " Y:" + String(gcodeY[gcodeStepPosition - 1], 2);
+            if (incZ) tRes += " Z:" + String(gcodeZ[gcodeStepPosition - 1], 2);
+            tft.setTextPadding(SCREEN_WIDTH - pageButtonWidth);       // this clears the previous text 
+            tft.drawString(tRes, 0, belowSmallDRO + lineSpace * 3);
+            tft.setTextPadding(0);                                    // reset padding
+        } else {                                                      // no data to use
+            tft.drawString(" No data to display" , 0, belowSmallDRO + lineSpace * 1);
+            if (wifiEnabled) {
+              tft.drawString(" To enter data visit", 0, belowSmallDRO + lineSpace * 2);
+              tft.drawString(" http://" + WiFi.localIP().toString(), 0, belowSmallDRO + lineSpace * 3);
+            } else {
+              tft.drawString(" Enable wifi to use", 0, belowSmallDRO + lineSpace * 2);
+            }
+        }
+      } 
 }
 
 
@@ -1186,7 +1209,7 @@ void displayReadings() {
     // Cheap Yellow Display
       tft.setTextColor(TFT_RED, TFT_BLACK);
       tft.setTextSize(1);
-      //tft.setTextPadding(DROwidth);           // this clears the previous text (it should anyway)
+      //tft.setTextPadding(DROwidth);           // this clears the previous text 
       tft.setTextPadding( tft.textWidth("8") * DROnoOfDigits );           // this clears the previous text
 
       char buff[30];
@@ -1296,13 +1319,14 @@ void processGCode(String &gcodeText) {
       startPos = endPos + 1;
 
       // process line if different to previous coordinate
-        if ( (tX != 0 && incX == 1) || (tY != 0 && incY == 1) || (tZ != 0 && incZ == 1) ) {    // if position extracted from line then store it in global array
-          if (gcodeLineCount == 0 || (gcodeX[gcodeLineCount - 1] != tX && incX == 1) || (gcodeY[gcodeLineCount - 1] != tY && incY == 1) || (gcodeZ[gcodeLineCount - 1] != tZ && incZ == 1) ) {
-            gcodeX[gcodeLineCount] = tX; gcodeY[gcodeLineCount] = tY; gcodeZ[gcodeLineCount] = tZ;
-            gcodeLineCount ++;
-          }
-          //log_system_message("gcode line: '" +  gcodeLine + "', result : x:" + String(tX ,2) + " y:" + String(tY ,2) + " z:" + String(tZ ,2));    // temp line
-         }
+        bool tFlag = 0;        
+        if (incX == 1 && ( gcodeLineCount == 0 || gcodeX[gcodeLineCount - 1] != tX ) ) tFlag = 1;        // if X is active and has changed since last line
+        if (incY == 1 && ( gcodeLineCount == 0 || gcodeY[gcodeLineCount - 1] != tY ) ) tFlag = 1;        // if Y is active and has changed since last line
+        if (incZ == 1 && ( gcodeLineCount == 0 || gcodeZ[gcodeLineCount - 1] != tZ ) ) tFlag = 1;        // if Z is active and has changed since last line
+        if (tFlag == 1) {
+          gcodeX[gcodeLineCount] = tX; gcodeY[gcodeLineCount] = tY; gcodeZ[gcodeLineCount] = tZ;
+          gcodeLineCount ++;
+        }
     }
   }
 
@@ -1312,7 +1336,6 @@ void processGCode(String &gcodeText) {
 // ----------------------------------------------------------------
 //                     -process a line of gcode
 // ----------------------------------------------------------------
-// NOT USED AT PRESENT - planning to enter some gcode via web page and then have it step through the positions 
 // This takes a String containing a line of basic gcode and updates positions -  It simply finds an 'x', 'y' or 'z' in the string and extracts the number following it
 
 void processGCodeLine(String gcodeLine, float &xPos, float &yPos, float &zPos) {
