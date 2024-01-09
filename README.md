@@ -34,7 +34,8 @@ It also has the option to paste simple gcode, this gives the option to create yo
 ## Digital calipers
 
 The cheap calipers only have a range of 150mm although longer 200mm or even 300mm are available on eBay for under £20, this is probably enough for my requirements although I have had some longer PCBs created which were designed by "Limi DIY" and they appear to work and extend the range to around 400mm.  There is the possibility to link these together although the join would need to be very accurate.  These boards came in at £10 each so are not cheap by the standards of this project but not too bad. <br> 
-&ensp; &ensp; [YouTube video-extending the range](https://www.youtube.com/watch?v=JYnit_PSSMY) &ensp; - &ensp;  [PCBway order link](https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.html)
+&ensp; &ensp; [extending the range](https://hackaday.com/2021/08/05/custom-caliper-tracks-for-when-youre-going-the-distance/) &ensp; - &ensp;
+[PCBway order link](https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.html)
 
 You can of course buy better quality calipers if you do not trust these cheap ones to be accurate or you can buy similar items from China which are actually designed to be used as a DRO but it soon starts to get expensive; These cheap calipers really are amazing for the price, they are so cheap that it feels like they are almost being given away and appear to be very accurate.  Big Clive has made a nice video showing what is inside them and how to take them apart: &ensp; [Big Clive](https://www.youtube.com/watch?v=fKSSY1gzCEs) <br>
 
