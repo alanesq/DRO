@@ -244,7 +244,8 @@
       int currentCoord = 0;     // current one in use (0-2)
     
     // entered gcode
-      const int maxGcodeStringLines = 256;      // maximum number of lines of gcode allowed
+      const int maxGcodeStringLines = 1024;     // maximum number of lines of gcode allowed
+      const int estimateAverageLineLength = 30;
       String gcodeEntered;                      // store for the entered gcode 
       float gcodeX[maxGcodeStringLines], gcodeY[maxGcodeStringLines], gcodeZ[maxGcodeStringLines];      // array of positions extracted fro gcode
       int gcodeLineCount = 0;                   // number of positions extracted from gcode
@@ -504,7 +505,7 @@ void setup() {
     }
 
   // reserve memory for the entered gcode store
-    gcodeEntered.reserve(maxGcodeStringLines * 30); 
+    gcodeEntered.reserve(maxGcodeStringLines * estimateAverageLineLength); 
 
   // if (serialDebug) Serial.setDebugOutput(true);             // to enable extra diagnostic info
 
@@ -967,10 +968,11 @@ void pageSpecificOperations() {
 
     if (displayingPage == 4) {
 
-      // get possition coordinates
-        gcodeDROadjX = gcodeX[gcodeStepPosition - 1];
-        gcodeDROadjY = gcodeY[gcodeStepPosition - 1];
-        gcodeDROadjZ = gcodeZ[gcodeStepPosition - 1];      
+      // set position coordinates on DRO 
+        gcodeDROadjX = 0; gcodeDROadjY = 0; gcodeDROadjZ = 0;  
+        if (incX) gcodeDROadjX = gcodeX[gcodeStepPosition - 1];
+        if (incY) gcodeDROadjY = gcodeY[gcodeStepPosition - 1];
+        if (incZ) gcodeDROadjZ = gcodeZ[gcodeStepPosition - 1];      
 
       // page title
         tft.setFreeFont(FM9);                // standard Free Mono font - available sizes: 9, 12, 18 or 24   
