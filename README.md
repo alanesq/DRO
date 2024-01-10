@@ -1,9 +1,9 @@
 # DRO - A super cheap Digital Readout (DRO) for lathes, milling machines etc. 
 
 <br>My homemade ESP32 based DRO which conists of:
- - [Cheap Yellow Display](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display) &ensp; (A.K.A. ESP32-2432S028R) which costs around £12
- - Digital calipers that cost under £5 each
- - Plus a few transistors, wiring etc... 
+ - [Cheap Yellow Display](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display) &ensp; (A.K.A. ESP32-2432S028R) which costs around £12 from Aliexpress
+ - Digital calipers which cost under £5 each on eBay or Aliexpress
+ - Plus a few transistors, general wiring etc... 
 
 As a result, building a three-axis DRO for your milling machine or lathe can set you back less than £30 (around $40). <br><br>
 
@@ -13,40 +13,40 @@ As a result, building a three-axis DRO for your milling machine or lathe can set
   <img width="450" class="center" src="/pics/webpage.jpg" /><br><br>
 </p>
 
-I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available was still going to cost me several hundred pounds, which I just couldn’t justify spending.  I also suspected that the cheapest DRO on the market would probably fail after a short time anyway.  Therefore, I decided to see if I can create my own as inexpensively as possible. <br>
-I think it safe to say that I have achieved this goal! <br><br>
-
- - Make sure to copy the UserSetup.h file into the TFT_eSPI library. &ensp; See: [setup instructions](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/blob/main/SETUP.md) <br>
- - Make sure your Cheap Yellow Display is not the version with two USB ports as this has a different display <br><br>
+I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available was still going to cost me several hundred pounds, which I just couldn’t justify spending. I also suspected that the cheapest DRO on the market would probably fail after a short time anyway ging on past experience of cheap electronics.  Therefore, I decided to see if I can create my own as inexpensively as possible. <br>
+I think it safe to say that I have achieved this goal ! <br><br>
 
 ## Patterns
 
-Rather than a complicated hole pattern facilities on this DRO (for drilling a circle of holes etc.) I decided it would be easier and more versatile to enter the coordinates of the positions required via the web page, these coordinates can then be steped through via the DRO menu (page 4).  <br>
-These coordinates are ented as a simple list in the format:<br>
+Rather than a complicated hole pattern facilities on this DRO (for drilling a circle of holes etc.) I decided it would be easier and more versatile to enter the coordinates of the positions required via the web page, these coordinates can then be steped through from the DRO screen (page 4).  <br>
+The coordinates are ented as a simple list in the format:<br>
 ```
 x0 y0
 x0 y10
 x10 y0
 x10 y10
 ```
-It also has the option to paste simple gcode, this gives the option to create your own gcode in whatever software you preffer (A good choice would be Inkscape and [Krabzcam](https://github.com/mkrabset/krabzcam) ) or you can use online tools for creating paterns of hole etc. &ensp; see: [online gcode tools](https://www.intuwiz.com/drilling.html) <br><br>
+It also has the option to paste simple gcode, this gives the ability to create your own bolt hole patterns etc. using whatever software you preffer (A good choice would be Inkscape and [Krabzcam](https://github.com/mkrabset/krabzcam) ) or even easier you can use online tools for creating them &ensp; e.g. [online gcode tools](https://www.intuwiz.com/drilling.html) <br><br>
 
 ## Digital calipers
 
-The cheap calipers only have a range of 150mm although longer 200mm or even 300mm are available on eBay for under £20, this is probably enough for my requirements although I have had some longer PCBs created which were designed by "Limi DIY" and they appear to work and extend the range to around 400mm.  There is the possibility to link these together although the join would need to be very accurate.  These boards came in at £10 each so are not cheap by the standards of this project but not too bad. <br> 
+The cheap calipers only have a range of 150mm although longer 200mm or even 300mm are available on eBay for under £20, this is probably enough for my requirements although I have had some longer PCBs created which were designed by "Limi DIY" and they appear to work and extend the range to around 400mm.  There is the possibility to link these together although the join would need to be very accurate.  I had 5 lengths made which came in at £10 each so they are not cheap by the standards of this project but not as expensive as you may think. <br> 
 &ensp; &ensp; [extending the range](https://hackaday.com/2021/08/05/custom-caliper-tracks-for-when-youre-going-the-distance/) &ensp; - &ensp;
 [PCBway order link](https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.html)
 
-You can of course buy better quality calipers if you do not trust these cheap ones to be accurate or you can buy similar items from China which are actually designed to be used as a DRO but it soon starts to get expensive; These cheap calipers really are amazing for the price, they are so cheap that it feels like they are almost being given away and appear to be very accurate.  Big Clive has made a nice video showing what is inside them and how to take them apart: &ensp; [Big Clive](https://www.youtube.com/watch?v=fKSSY1gzCEs) <br>
+You can of course buy better quality calipers if you do not trust these cheap ones to be accurate or you can buy similar items from China which are actually designed to be used as a DRO, but it soon starts to get expensive; These cheap calipers really are amazing for the price, they are so cheap that it feels like they are almost being given away and appear to be very accurate.  Big Clive has made a nice video showing what is inside them and how to take them apart: &ensp; [Big Clive](https://www.youtube.com/watch?v=fKSSY1gzCEs) <br>
 
-One interesting thing I was not expecting is you get two decimal places from these very cheap calipers even though they only display one on their LCD, as can be seen in the pictures above. <br><br>
+One good thing that I was not expecting is you still get two decimal places from these very cheap calipers even though they only display one on their LCD, as can be seen in the pictures above. <br><br>
 
 ## Warnings!
 
 The well known problem with these cheap calipers is the battery goes flat if you do not use them for a while, it turns out that they are producing the data we use here all the time, even when turned off.  I bought one of the longer calipers recently which looks like it is a "new/impoved" design which has got round this issue by turning off the data all together which is very bad news if you want to use it for this project.  So if you are buying calipers I suggest you try to buy the older style ones if you can as the newer ones do not seem to support data, the good news is these will be the cheapest ones.  You can still use the reader from a cheaper caliper on this longer bar if you do have one though.<br>
 Also, I have read that some of these calipers use a different data standard although all the ones I have tried are the same<br>
-<br><br>
 
+Make sure to copy the CYD custom UserSetup.h file into the TFT_eSPI library. &ensp; See: [setup instructions](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/blob/main/SETUP.md) <br>
+ 
+Make sure your Cheap Yellow Display is not the version with two USB ports as this has a different display (I am looking in to supporting both)<br><br>
+ 
 ## Misc info:
 
 Brian Lough's information on the [Cheap Yellow Display](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display)
@@ -96,12 +96,13 @@ I have found that the power supply is critical for the calipers in that most swi
 I think by far the best way to power this would be from a battery as this will give a very stable power and be completely isolated from any mains spikes etc..  I have used an old PC power supply for mine which is the next best thing.  A USB power bank seems to work ok also.  Another option may be to power the CYD from a usb power supply but power the calipers from a AA battery?
 
 If you find the CYD reboots as soon as a button is pressed this is probably becuase the User_Setup.h file has not been copied over for the "TFT_eSPI" library [see here](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/blob/main/SETUP.md)
+Note: I have had issues where I change something in the library settings and even when I change it back it no longer works.  This is becuase the Arduino IDE doesn't re-compile everything, every time so to get it to re-compile I changed the dev board to something else then back again (just closing and re-opening the IDE may have worked?)
 
-One possible issue I anticipate is that the calipers often have a random reading when first powered on, this could be a problem if it is close to the limit of the caliper if you then move it past this limit (the limit looks to be 999.99mm on mine).  It can of course be solved simply by pressing the zero button on the caliper but this is something I may look in to later.  I believe the caliper can be zeroed by taking one of the data pins to ground but this would require extra circuitry.
+One possible issue I anticipate is that the calipers often have a random reading when first powered on, this could be a problem if it is close to the limit of the caliper if you then move it past this limit (the limit looks to be 9999.99mm on mine?).  It can of course be solved simply by pressing the zero button on the caliper but this is something I may look in to later.  I believe the caliper can be zeroed by taking one of the data pins to ground but this would require extra circuitry.
 
 --------------------------------------
 
 ## Contact
 
-If you use this sketch please let me know how you get on  - alanesq@disroot.org
+If you use this sketch please let me know how you get on and if you have any suggestions for improvments etc.  - alanesq@disroot.org
 
