@@ -56,7 +56,7 @@ Communicating with the digital calipers
 - [electronoobs](http://electronoobs.com/eng_arduino_tut93.php)
 - [wei48221](http://wei48221.blogspot.com/2016/01/using-digital-caliper-for-digital-read_21.html)
 
-This sketch is wifi enabled, this is turned off by default but can be turned on via the DROs menu.  You can enable wifi at startup by changing a flag in the settings section.  It is mainly useful for OTA updates but offers the option to add features at a later date. <br>
+This sketch is wifi enabled, this is turned off by default but can be turned on via the DROs menu (You can enable wifi at startup by changing a flag in the settings section).  It is useful for OTA updates and for entering drill hole patterns etc.  BTW - I have been very surprised at the range I get from it's wifi.<br>
 At present the display has zero buttons for each axis along with a divide by zero button plus buttons to switch to different display pages.  There is plenty of scope to add lots of other features later, I have an idea that it may be nice to have the option to enter a list of points via the web page then have the DRO guide me to each point? <br>
 On page 3 of the display there is a number entry keypad which at present is not used, it stores the entered number in to a float and a String.
 
