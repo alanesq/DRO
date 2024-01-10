@@ -24,9 +24,14 @@
  ********************************************************************************************************************
 
   3 Channel DRO using cheap digital calipers and a ESP32-2432S028R  (Cheap Yellow Display)
-  see: https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display
+    see: https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display
 
-  
+  Make sure to copy the UserSetup.h file into the TFT_eSPI library.    
+    see: https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/blob/main/SETUP.md
+
+  Make sure your Cheap Yellow Display is not the version with two USB ports as this has a different display
+
+
   Libraries used:     https://github.com/PaulStoffregen/XPT2046_Touchscreen
                       https://github.com/Bodmer/TFT_eSPI
                       https://github.com/Bodmer/TFT_eWidget
@@ -111,7 +116,7 @@
 
   const char* stitle = "SuperLowBudget-DRO";             // title of this sketch
 
-  const char* sversion = "09Jan24";                      // version of this sketch
+  const char* sversion = "10Jan24";                      // version of this sketch
 
   bool wifiEnabled = 0;                                  // if wifi is to be enabled at boot (can be enabled from display menu if turned off here)
   
@@ -123,8 +128,12 @@
   const bool invertCaliperDataSignals = 2;               // If using transistors on the data and clock pins the signals will be inverted so set this to 1
   
   const int checkDROreadings = 50;                       // how often to refresh DRO readings (ms)  
+  
+  // web page
+    const int gcodeTextHeight = 15;                      // Size of text box on main web page for entering gcode
+    const int gcodeTextWidth = 40;
 
-  // Display settings
+  // CYD - Display settings
     #define SCREEN_ROTATION 1
     #define SCREEN_WIDTH 320
     #define SCREEN_HEIGHT 240
@@ -148,8 +157,8 @@
     // #define CLOCK_PIN_Z -1   
     // #define DATA_PIN_Z  -1   
 
-  // Touchscreen settings
-    #define TOUCH_LEFT 200         // positions on screen (may be better to have some kind of calibration routine?)
+  // CYD - Touchscreen settings
+    #define TOUCH_LEFT 200         // touch positions relating to the display (may be better to have some kind of calibration routine?)
     #define TOUCH_RIGHT 3700
     #define TOUCH_TOP 200
     #define TOUCH_BOTTOM 3850
@@ -163,6 +172,7 @@
     
   // --------------------------------------- Menu/screen settings ---------------------------------------
 
+    
   // font to use for all buttons  
     #define MENU_FONT FM9                                // standard Free Mono font - available sizes: 9, 12, 18 or 24
     #define MENU_SIZE 2                                  // font size (1 or 2)
@@ -176,23 +186,29 @@
   
     // DRO readings size/position settings 
         const int DROdisplaySpacing = 10;                // space between the DRO readings
-        const int DROnoOfDigits = 6;                     // number of digits to display in caliper readings
+        const int DROnoOfDigits1 = 4;                    // number of digits to display in caliper readings (before decimal)
+        const int DROnoOfDigits2 = 2;                    // number of digits to display in caliper readings (after decimal)
         const int DROwidth = 200;                        // width of DRO reading display   i.e. x position of zero buttons  
         const int DROheight = 200;                       // Height of the DRO reading display for placement of lower buttons  
         const int DRObuttonheight = 30;                  // buttons around DRO readings              
         const int DRObuttonWidth = 35;                     
         const int DROdbuttonPlacement = 70;              // vertical spacing of the DRO buttons  
         
-      // page 2
-        const int p2secondColumn = 150;                  // y position of second column of buttons 
+    // page 2 - misc buttons
+      const int p2secondColumn = 150;                  // y position of second column of buttons 
 
-      //numeric keypad - page 3
-        const int noDigitsOnNumEntry = 10;               // maximum length of entered number
-        const int keyWidth = 45;
-        const int keyHeight = 32;
-        const int keySpacing = 10;
-        const int keyX = 110;                            // position on screen (top left)
-        const int keyY = 30;
+    // page 3 - numeric keypad 
+      const int noDigitsOnNumEntry = 10;               // maximum length of entered number
+      const int keyWidth = 45;
+      const int keyHeight = 32;
+      const int keySpacing = 10;
+      const int keyX = 110;                            // position on screen (top left)
+      const int keyY = 30;
+      
+    // page 4 - gcode
+      const int p4ButtonSpacing = 70;                  // button spacing
+      const int p4ButtonGap = 4;                       // gap between buttons
+
       
   // ----------------------------------------------------------------------------------------------------
 
@@ -323,6 +339,7 @@
         ButtonWidget stepNext = ButtonWidget(&tft); 
         ButtonWidget stepPrev = ButtonWidget(&tft); 
         ButtonWidget stepReset = ButtonWidget(&tft); 
+        ButtonWidget stepKBD = ButtonWidget(&tft); 
 
 
   // ---------------------------------- -define the button widgets --------------------------------------
@@ -384,9 +401,10 @@
       
 
     // page 4
-      {4, 1, "Prev", 0, SCREEN_HEIGHT - DRObuttonheight, 80, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &stepPrev, &buttonKeyStepPrevPressed},
-      {4, 1, "Next", 90, SCREEN_HEIGHT - DRObuttonheight, 80, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &stepNext, &buttonKeyStepNextPressed},
-      {4, 1, "Reset", 180, SCREEN_HEIGHT - DRObuttonheight, 80, DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLACK, &stepReset, &buttonKeyStepResetPressed},
+      {4, 1, "Prev", p4ButtonSpacing * 0, SCREEN_HEIGHT - DRObuttonheight, p4ButtonSpacing - p4ButtonGap, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &stepPrev, &buttonKeyStepPrevPressed},
+      {4, 1, "Next", p4ButtonSpacing * 1, SCREEN_HEIGHT - DRObuttonheight, p4ButtonSpacing - p4ButtonGap, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &stepNext, &buttonKeyStepNextPressed},
+      {4, 1, "Reset", p4ButtonSpacing * 2, SCREEN_HEIGHT - DRObuttonheight, p4ButtonSpacing - p4ButtonGap, DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLACK, &stepReset, &buttonKeyStepResetPressed},
+      {4, 1, "KBD", p4ButtonSpacing * 3, SCREEN_HEIGHT - DRObuttonheight, p4ButtonSpacing - p4ButtonGap, DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLACK, &stepKBD, &buttonKeyStepKBDPressed},
 
 
       // step through gcode
@@ -710,7 +728,7 @@ void handleRoot() {
       client.println("LOCATION ASSISTANT<br>");
       client.println("Enter list of positions you wish to step through in the format: X10 Y20 Z30<br>");
       client.println("or you can paste simple gcode &ensp; <a href='https://www.intuwiz.com/drilling.html' target='_top'>GCODE GENERATOR</a><br>");  
-      client.println("<textarea id='gcode' name='gcode' rows='10' cols='40'></textarea><br>"); 
+      client.println("<textarea id='gcode' name='gcode' rows='" + String(gcodeTextHeight) + "' cols='" + String(gcodeTextWidth) + "'></textarea><br>"); 
 
     // coordinate selection checkboxes
       client.println("Coordinates to process: ");
@@ -816,7 +834,7 @@ void handleData(){
      reply += "<br>,";        // end of line
 
    // line2 - DRO readings
-     String spa = "%0" + String(DROnoOfDigits + 1) + ".2f";             // create sprint argument for number format (in the format "%07.2f")
+     String spa = "%0" + String(DROnoOfDigits1 + DROnoOfDigits2 + 1) + ".2f";             // create sprint argument for number format (in the format "%07.2f")
      String spa2 = "Absolute=" + spa + " : 1=" + spa + " : 2=" + spa + " : 3=" + spa + "<br>";  // for the full line
 
      if (DATA_PIN_X != -1) {
@@ -986,9 +1004,9 @@ void pageSpecificOperations() {
           tft.drawString(" Position: " + String(gcodeStepPosition) + " of " + String(gcodeLineCount) , 0, belowSmallDRO + lineSpace * 1);
           // display coordinates
             String tRes = "";
-            if (incX) tRes += " X:" + String(gcodeX[gcodeStepPosition - 1], 2);
-            if (incY) tRes += " Y:" + String(gcodeY[gcodeStepPosition - 1], 2);
-            if (incZ) tRes += " Z:" + String(gcodeZ[gcodeStepPosition - 1], 2);
+            if (incX) tRes += " X:" + String(gcodeX[gcodeStepPosition - 1], DROnoOfDigits2);
+            if (incY) tRes += " Y:" + String(gcodeY[gcodeStepPosition - 1], DROnoOfDigits2);
+            if (incZ) tRes += " Z:" + String(gcodeZ[gcodeStepPosition - 1], DROnoOfDigits2);
             tft.setTextPadding(SCREEN_WIDTH - pageButtonWidth);       // this clears the previous text 
             tft.drawString(tRes, 0, belowSmallDRO + lineSpace * 3);
             tft.setTextPadding(0);                                    // reset padding
@@ -1202,7 +1220,7 @@ void displayReadings() {
     const unsigned long warningTimeLimit = 2000;       // if caliper reading has not updated in this time change display to blue (ms)
 
     // create sprint argument  (in the format "%07.2f")
-      String spa = "%0" + String(DROnoOfDigits + 1) + ".2f";    // https://alvinalexander.com/programming/printf-format-cheat-sheet/
+      String spa = "%0" + String(DROnoOfDigits1 + DROnoOfDigits2 + 1) + "." + String(DROnoOfDigits2) + "f";    // https://alvinalexander.com/programming/printf-format-cheat-sheet/
    
     // font size
       if (displayingPage == 1) tft.setFreeFont(&sevenSeg35pt7b);         // seven segment style font from sevenSeg.h  
@@ -1212,7 +1230,7 @@ void displayReadings() {
       tft.setTextColor(TFT_RED, TFT_BLACK);
       tft.setTextSize(1);
       //tft.setTextPadding(DROwidth);           // this clears the previous text 
-      tft.setTextPadding( tft.textWidth("8") * DROnoOfDigits );           // this clears the previous text
+      tft.setTextPadding( tft.textWidth("8") * (DROnoOfDigits1 + DROnoOfDigits2) );           // this clears the previous text
 
       char buff[30];
 
@@ -1220,7 +1238,7 @@ void displayReadings() {
       if (DATA_PIN_X != -1) {
         (lastReadingTimeX > 0) ? tft.setTextColor(TFT_RED, TFT_BLACK) : tft.setTextColor(TFT_BLUE, TFT_BLACK);   // if no data received yet
         sprintf(buff, spa.c_str(), xReading - xAdj[currentCoord] - gcodeDROadjX); 
-        if (strlen(buff) == DROnoOfDigits+1) tft.drawString(buff, 0, 0);    
+        if (strlen(buff) == DROnoOfDigits1 + DROnoOfDigits2 +1) tft.drawString(buff, 0, 0);    
         else if (serialDebug) Serial.println("Invalid reading from X: " + String(buff));
       }
 
@@ -1228,7 +1246,7 @@ void displayReadings() {
       if (DATA_PIN_Y != -1) {
         (lastReadingTimeY > 0) ? tft.setTextColor(TFT_RED, TFT_BLACK) : tft.setTextColor(TFT_BLUE, TFT_BLACK);   // if no data received yet
         sprintf(buff, spa.c_str(), yReading - yAdj[currentCoord] - gcodeDROadjY);
-        if (strlen(buff) == DROnoOfDigits+1) tft.drawString(buff, 0, tft.fontHeight() );    
+        if (strlen(buff) == DROnoOfDigits1 + DROnoOfDigits2 +1) tft.drawString(buff, 0, tft.fontHeight() );    
         else if (serialDebug) Serial.println("Invalid reading from Y: " + String(buff));
       }
 
@@ -1236,7 +1254,7 @@ void displayReadings() {
       if (DATA_PIN_Z != -1) {
         (lastReadingTimeZ > 0) ? tft.setTextColor(TFT_RED, TFT_BLACK) : tft.setTextColor(TFT_BLUE, TFT_BLACK);   // if no data received yet
         sprintf(buff, spa.c_str(), zReading - zAdj[currentCoord] - gcodeDROadjZ);
-        if (strlen(buff) == DROnoOfDigits+1) tft.drawString(buff, 0, tft.fontHeight() * 2 );    
+        if (strlen(buff) == DROnoOfDigits1 + DROnoOfDigits2 +1) tft.drawString(buff, 0, tft.fontHeight() * 2 );    
         else if (serialDebug) Serial.println("Invalid reading from Z: " + String(buff));
       }   
    
@@ -1307,24 +1325,46 @@ void processGCode(String &gcodeText) {
   if (gcodeText == "") return;        // if text is blank
 
   float tX = 0, tY = 0, tZ = 0;       // extracted position
+  float ptX = 99999999, ptY = 99999999, ptZ = 99999999;    // previous position extracted
 
   // Split the G-code string into lines and process each line
   int startPos = 0;
   int endPos = 0;
-  gcodeLineCount = 0;                                 // global variable storing number of coordinates extracted from the gcode
+  gcodeLineCount = 0;                                      // global variable storing number of coordinates extracted from the gcode
 
   while (endPos != -1 && gcodeLineCount < maxGcodeStringLines) {
     endPos = gcodeText.indexOf('\n', startPos);
     if (endPos != -1) {
       String gcodeLine = gcodeText.substring(startPos, endPos);
-      processGCodeLine(gcodeLine, tX, tY, tZ);        // pass the line of gcode which updates position of x,y,z based upon this line
+      processGCodeLine(gcodeLine, tX, tY, tZ);             // pass the line of gcode which updates position of x,y,z based upon this line (99999999 = not found)
       startPos = endPos + 1;
 
       // process line if different to previous coordinate
-        bool tFlag = 0;        
-        if (incX == 1 && ( gcodeLineCount == 0 || gcodeX[gcodeLineCount - 1] != tX ) ) tFlag = 1;        // if X is active and has changed since last line
-        if (incY == 1 && ( gcodeLineCount == 0 || gcodeY[gcodeLineCount - 1] != tY ) ) tFlag = 1;        // if Y is active and has changed since last line
-        if (incZ == 1 && ( gcodeLineCount == 0 || gcodeZ[gcodeLineCount - 1] != tZ ) ) tFlag = 1;        // if Z is active and has changed since last line
+        bool tFlag = 0;    
+        if (incX == 1 && tX != 99999999) {                 // if this coordinate is active and a reading has been extracted from this line
+          if (ptX != tX) {                                 // if reading is different to the previous one
+            // new reading for X
+              ptX = tX;
+              tFlag = 1;          
+          }
+        }
+        if (incY == 1 && tY != 99999999) {    
+          if (ptY != tY) {
+            // new reading for Y
+              ptY = tY;
+              tFlag = 1;              
+          }
+        }
+        if (incZ == 1 && tZ != 99999999) {    
+          if (ptZ != tZ) {
+            // new reading for Z
+              ptZ = tZ;
+              tFlag = 1;           
+          }                    
+        }
+        // if (incX == 1 && tX != 99999999 && ( gcodeLineCount == 0 || gcodeX[gcodeLineCount - 1] != tX ) ) tFlag = 1;        // if X is active and has changed since last time it was read
+        // if (incY == 1 && tY != 99999999 && ( gcodeLineCount == 0 || gcodeY[gcodeLineCount - 1] != tY ) ) tFlag = 1;    
+        // if (incZ == 1 && tZ != 99999999 && ( gcodeLineCount == 0 || gcodeZ[gcodeLineCount - 1] != tZ ) ) tFlag = 1;    
         if (tFlag == 1) {
           gcodeX[gcodeLineCount] = tX; gcodeY[gcodeLineCount] = tY; gcodeZ[gcodeLineCount] = tZ;
           gcodeLineCount ++;
@@ -1339,6 +1379,7 @@ void processGCode(String &gcodeText) {
 //                     -process a line of gcode
 // ----------------------------------------------------------------
 // This takes a String containing a line of basic gcode and updates positions -  It simply finds an 'x', 'y' or 'z' in the string and extracts the number following it
+// if not found it returns 999.69
 
 void processGCodeLine(String gcodeLine, float &xPos, float &yPos, float &zPos) {
 
@@ -1346,19 +1387,19 @@ void processGCodeLine(String gcodeLine, float &xPos, float &yPos, float &zPos) {
   if (xPosIndex == -1) xPosIndex = gcodeLine.indexOf("x");
   if (xPosIndex != -1) {
     xPos = gcodeLine.substring(xPosIndex + 1).toFloat();
-  }
+  } else xPos = 99999999;       // not found
 
   int yPosIndex = gcodeLine.indexOf("Y");
   if (yPosIndex == -1) yPosIndex = gcodeLine.indexOf("y");
   if (yPosIndex != -1) {
     yPos = gcodeLine.substring(yPosIndex + 1).toFloat();
-  }
+  } else yPos = 99999999;       // not found
 
   int zPosIndex = gcodeLine.indexOf("Z");
   if (zPosIndex == -1) zPosIndex = gcodeLine.indexOf("z");
   if (zPosIndex != -1) {
     zPos = gcodeLine.substring(zPosIndex + 1).toFloat();
-  }
+  } else zPos = 99999999;       // not found
 
   if (serialDebug) {
   // Print the extracted position

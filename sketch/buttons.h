@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------------------
 
 
-      Procedures triggered when a button is pressed on the screen - 08Jan24
+      Procedures triggered when a button is pressed on the screen - 10Jan24
 
 
 // -----------------------------------------------------------------------------------------
@@ -134,7 +134,7 @@ void threePage1Pressed() {
   void verifyNumber() {          
     if (keyEnteredNumber.length() > noDigitsOnNumEntry) keyEnteredNumber = "";       // too long
     keyEnteredNumberVal = keyEnteredNumber.toFloat();                // convert to a float
-    if (serialDebug) Serial.println("Number entered: " + String(keyEnteredNumberVal, DROnoOfDigits));
+    if (serialDebug) Serial.println("Number entered: " + String(keyEnteredNumberVal, DROnoOfDigits1 + DROnoOfDigits2));
   }
 
   void buttonKey1Pressed() {
@@ -217,11 +217,16 @@ void threePage1Pressed() {
 
   void buttonKeyStepPrevPressed() {
     gcodeStepPosition--;
-    if (gcodeStepPosition < 1) gcodeStepPosition = gcodeLineCount;    
+    if (gcodeStepPosition < 1) gcodeStepPosition = gcodeLineCount;       
   }  
 
   void buttonKeyStepResetPressed() {
     gcodeStepPosition = 1;
+  }  
+  
+  void buttonKeyStepKBDPressed() {           // use number enbtered on keypad (page 3)
+    int numFromKBD = keyEnteredNumber.toInt();
+    if (numFromKBD > 0 && numFromKBD <= gcodeLineCount) gcodeStepPosition = numFromKBD;
   }  
 
 // -----------------------------------------------------------------------------------------
