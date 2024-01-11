@@ -102,6 +102,9 @@ Note: I have had issues where I change something in the library settings and eve
 
 One possible issue I anticipate is that the calipers often have a random reading when first powered on, this could be a problem if it is close to the limit of the caliper if you then move it past this limit (the limit looks to be 9999.99mm on mine?).  It can of course be solved simply by pressing the zero button on the caliper but this is something I may look in to later.  I believe the caliper can be zeroed by taking one of the data pins to ground but this would require extra circuitry.
 
+I have issues sometimes with interference from other electrical devices, for some odd reason it usually seems to cause the caliper to jump up or down by exactly 5mm.  I have tried all sorts of things to try and improve this but so far nothing seems to make much difference.  I believe it is R.F. intererence on the mains earth is the issue so I am still experimenting.  
+
+
 --------------------------------------
 
 ## Contact
