@@ -53,6 +53,7 @@ Brian Lough's information on the [Cheap Yellow Display](https://github.com/witne
   
 Communicating with the digital calipers
 - [Martin's Creations](https://sites.google.com/site/marthalprojects/home/arduino/arduino-reads-digital-caliper)
+- [Robot Room](https://www.robotroom.com/Caliper-Digital-Data-Port.html) - includes some info on different data protocols 
 - [electronoobs](http://electronoobs.com/eng_arduino_tut93.php)
 - [wei48221](http://wei48221.blogspot.com/2016/01/using-digital-caliper-for-digital-read_21.html)
 
