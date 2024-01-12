@@ -95,7 +95,8 @@ At present it is set up to have 4 display pages, buttons can be created and assi
 ## Troubleshooting
 
 I have found that the power supply is critical for the calipers in that most switch mode USB power supplies seem to cause them to give random readings.  Many USB power supples will cause the calipers to have randomly changing displays or for start counting up for no apparent reason etc., at best the caliper readings will not be very stable.  I built a linear power supply but even this was not perfect and othjer appliances on the mains would cause the readings to become unstable. <br>
-I think by far the best way to power this would be from a battery as this will give a very stable power and be completely isolated from any mains spikes etc..  I have used an old PC power supply for mine which is the next best thing.  A USB power bank seems to work ok also.  Another option may be to power the CYD from a usb power supply but power the calipers from a AA battery?
+I think by far the best way to power this would be from a battery as this will give a very stable power and be completely isolated from any mains spikes etc..  I have used an old PC power supply for mine which is the next best thing.  A USB power bank seems to work ok also.  Another option may be to power the CYD from a usb power supply but power the calipers from a AA battery? <br>
+The displays can vary by 100th of a mm when stable but any more than this can be either noise on the power supply or I find the calipers with a metal slider can cause this.  I understand this is from issues with it making contact with the metal of the machine it is attached to so it needs to be insulated at the mounting points, I get round this by using the plastic ones.
 
 If you find the CYD reboots as soon as a button is pressed this is probably becuase the User_Setup.h file has not been copied over for the "TFT_eSPI" library [see here](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/blob/main/SETUP.md)
 Note: I have had issues where I change something in the library settings and even when I change it back it no longer works.  This is becuase the Arduino IDE doesn't re-compile everything, every time so to get it to re-compile I changed the dev board to something else then back again (just closing and re-opening the IDE may have worked?)
@@ -103,7 +104,6 @@ Note: I have had issues where I change something in the library settings and eve
 One possible issue I anticipate is that the calipers often have a random reading when first powered on, this could be a problem if it is close to the limit of the caliper if you then move it past this limit (the limit looks to be 9999.99mm on mine?).  It can of course be solved simply by pressing the zero button on the caliper but this is something I may look in to later.  I believe the caliper can be zeroed by taking one of the data pins to ground but this would require extra circuitry.
 
 I have issues sometimes with interference from other electrical devices, for some odd reason it usually seems to cause the caliper to jump up or down by exactly 5mm.  I have tried all sorts of things to try and improve this but so far nothing seems to make much difference.  I believe it is R.F. intererence on the mains earth is the issue so I am still experimenting.  
-
 
 --------------------------------------
 
