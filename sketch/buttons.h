@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------------------
 
 
-      Procedures triggered when a button is pressed on the screen - 10Jan24
+      Procedures triggered when a button is pressed on the screen - 14Jan24
 
 
 // -----------------------------------------------------------------------------------------
@@ -119,6 +119,23 @@ void twoWifiPressed() {
   startTheWifi();
 }
 
+// store current position in to eeprom
+void twoStorePressed() {
+  log_system_message("button: store settings");
+  storeX = xReading - xAdj[currentCoord];
+  storeY = yReading - yAdj[currentCoord];
+  storeZ = zReading - zAdj[currentCoord];
+  settingsEeprom(1);   // store to eeprom
+}
+
+// recall position from eeprom
+void twoRecallPressed() {
+  log_system_message("button: recall settings");
+  settingsEeprom(1);   // read from eeprom  
+  xAdj[currentCoord] = xReading - storeX;
+  yAdj[currentCoord] = yReading - storeY;
+  zAdj[currentCoord] = zReading - storeZ;
+}
 
 
 // -----------------------------------------------------------------------------------------

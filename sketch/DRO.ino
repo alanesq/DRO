@@ -3,7 +3,7 @@
  *                                              SuperLowBudget-DRO
  *                                              ------------------
  *
- *          3 Channel DRO using cheap digital calipers and a ESP32-2432S028R  (Cheap Yellow Display)
+ *          3 Channel DRO using cheap digital calipers and a ESP32-2432S028R  (aka Cheap Yellow Display)
  *                     see: https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display
  *                                      https://github.com/alanesq/DRO
  *
@@ -29,7 +29,10 @@
   Make sure to copy the UserSetup.h file into the TFT_eSPI library.    
     see: https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/blob/main/SETUP.md
 
-  Make sure your Cheap Yellow Display is not the version with two USB ports as this has a different display
+  Ensure your Cheap Yellow Display is not the version with two USB ports as this has a different display
+
+  I am using floats a lot in this sketch and using comparison operations with them, this only works because I am not doing any calculation
+    operations on them (i.e. only storing the numbers).
 
 
   Libraries used:     https://github.com/PaulStoffregen/XPT2046_Touchscreen
@@ -55,37 +58,38 @@
   other possible use pins: 4, 16, 17 (onboard LED) : 5, 23, 18, 19 (sd card) : 1, 3 (Serial) 0 (onboard button) : 34 (LDR)
 
 
-  Test Points
-      S1	GND	  near USB-SERIAL
-      S2	3.3v	for ESP32
-      S3	5v	  near USB-SERIAL
-      S4	GND	  for ESP32
-      S5	3.3v	for TFT
-      JP0 (pad nearest USB socket)	5v	TFT LDO
-      JP0	3.3v	TFT LDO
-      JP3 (pad nearest USB socket)	5v	ESP32 LDO
-      JP3	3.3v	ESP32 LDO    
+  Test Points:
+      S1	GND	              near USB-SERIAL
+      S2	3.3v	              for ESP32
+      S3	5v	              near USB-SERIAL
+      S4	GND	              for ESP32
+      S5	3.3v	              for TFT
+      JP0 (pad nearest USB socket)    5v TFT LDO
+      JP0	3.3v	              TFT LDO
+      JP3 (pad nearest USB socket)    5v ESP32 LDO
+      JP3	3.3v	              ESP32 LDO    
 
 
-    Digital Caliper pinout: 
-          GND   
+    Digital Caliper pinout (VCC = edge of circuit board): 
+          VCC (1.5V) - I just use a simple voltage divider of 100ohm resistors to supply 1.65v as they use very little power
+          CLOCK
           DATA
-          CLOCK 
-          VCC 1.5V  (I use a simple voltage divider of 100ohm resistors to supply 1.65v which should be ok)
+          GND
 
 
-    Colours available to use: 
-          TFT_BLACK,TFT_NAVY,TFT_DARKGREEN,TFT_DARKCYAN,TFT_MAROON,TFT_PURPLE,TFT_OLIVE,TFT_LIGHTGREY,TFT_DARKGREY,TFT_BLACK,TFT_GREEN,TFT_CYAN,
-          TFT_RED,TFT_MAGENTATFT_YELLOW,TFT_WHITE,TFT_ORANGE,TFT_GREENYELLOW,TFT_PINK,TFT_BROWN,TFT_GOLD,TFT_SILVER,TFT_SKYBLUE,TFT_VIOLET
+    Colours available to use on display: 
+          TFT_BLACK, TFT_NAVY, TFT_DARKGREEN, TFT_DARKCYAN, TFT_MAROON, TFT_PURPLE, TFT_OLIVE,
+          TFT_LIGHTGREY, TFT_DARKGREY, TFT_BLACK, TFT_GREEN, TFT_CYAN, TFT_RED, TFT_MAGENTATFT_YELLOW,
+          TFT_WHITE, TFT_ORANGE, TFT_GREENYELLOW, TFT_PINK, TFT_BROWN, TFT_GOLD, TFT_SILVER, TFT_SKYBLUE, TFT_VIOLET
 
 
     Wifi features:
-      Simulate pressing the screen with: http://x.x.x.x/touch?x=100&y=50
-      Restart the esp32 with: http://x.x.x.x/reboot
-      Check if it is live with: http://x.x.x.x/ping
-      Log of activity: http://x.x.x.x/log
-      Testing code: see 'handleTest()' at bottom of page, access with http://x.x.x.x/test
-      Update via OTA: http://x.x.x.x/ota      (default password is 'password')
+      Simulate pressing the screen:       http://x.x.x.x/touch?x=100&y=50
+      Restart the esp32:                  http://x.x.x.x/reboot
+      Check if it is live:                http://x.x.x.x/ping
+      Log of activity:                    http://x.x.x.x/log
+      Testing code:                       http://x.x.x.x/test               (see 'handleTest()' at bottom of page)
+      Update via OTA:                     http://x.x.x.x/ota                (default password is 'password')
 
 */
 
@@ -116,7 +120,7 @@
 
   const char* stitle = "SuperLowBudget-DRO";             // title of this sketch
 
-  const char* sversion = "10Jan24";                      // version of this sketch
+  const char* sversion = "14Jan24";                      // version of this sketch
 
   bool wifiEnabled = 0;                                  // if wifi is to be enabled at boot (can be enabled from display menu if turned off here)
   
@@ -196,6 +200,7 @@
         
     // page 2 - misc buttons
       const int p2secondColumn = 150;                  // y position of second column of buttons 
+      const int p2buttonSpacing = 8;                   // space between rows of buttons
 
     // page 3 - numeric keypad 
       const int noDigitsOnNumEntry = 10;               // maximum length of entered number
@@ -215,7 +220,7 @@
 
   #define WDT_TIMEOUT 60                                 // timeout of watchdog timer (seconds) - i.e. auto restart if sketch stops responding
 
-  #define ENABLE_EEPROM 0                                // if some settings are to be stored in eeprom  (not used)
+  #define ENABLE_EEPROM 1                                // if some settings are to be stored in eeprom  (not used)
 
   #define ENABLE_OTA 1                                   // Enable Over The Air updates (OTA)
   const String OTAPassword = "password";                 // Password to enable OTA (supplied as - http://<ip address>?pwd=xxxx )
@@ -258,6 +263,9 @@
       float yAdj[3] = {0};
       float zAdj[3] = {0};
       int currentCoord = 0;     // current one in use (0-2)
+
+    // for the 'store readings' feature - this allows the current readings to be stored in eeprom and recalled later
+      float storeX = 0, storeY = 0, storeZ = 0;
     
     // entered gcode
       const int maxGcodeStringLines = 1024;     // maximum number of lines of gcode allowed
@@ -313,6 +321,8 @@
     // page 2
       ButtonWidget p2r = ButtonWidget(&tft);     // reboot
       ButtonWidget p2wifi = ButtonWidget(&tft);  // enable wifi
+      ButtonWidget p2store = ButtonWidget(&tft); // store readings
+      ButtonWidget p2recall = ButtonWidget(&tft);// recall readings
  
     // page 3
       // number keypad
@@ -378,8 +388,10 @@
     
     // page 2
     
-      {2, 1, "En. Wifi", 0, SCREEN_HEIGHT - DRObuttonheight, 140, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &p2wifi, &twoWifiPressed},
-      {2, 1, "Reboot", p2secondColumn, SCREEN_HEIGHT - DRObuttonheight, 90, DRObuttonheight, TFT_WHITE, 1, TFT_RED, TFT_BLACK, &p2r, &twoRebootPressed},
+      {2, 1, "En. Wifi", 0, SCREEN_HEIGHT - (DRObuttonheight + p2buttonSpacing) * 1, 140, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &p2wifi, &twoWifiPressed},
+      {2, 1, "Reboot", p2secondColumn, SCREEN_HEIGHT - (DRObuttonheight + p2buttonSpacing) * 1, 90, DRObuttonheight, TFT_WHITE, 1, TFT_RED, TFT_BLACK, &p2r, &twoRebootPressed},
+      {2, 1, "Store Pos", p2secondColumn, (DRObuttonheight + p2buttonSpacing) * 0, 120, DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLACK, &p2store, &twoStorePressed},
+      {2, 1, "Recall Pos", p2secondColumn, (DRObuttonheight + p2buttonSpacing) * 1, 120, DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLACK, &p2recall, &twoRecallPressed},
 
     // page 3 
       
@@ -617,6 +629,7 @@ void loop() {
 //                      -refresh calipers
 // ----------------------------------------------------------------
 // refresh readings from the digital calipers and update display if anything has changed
+// Note: The code for each caliper is kept seperate in case any require different treatment (e.g. different type sensor)
 
 void refreshCalipers() {
 
@@ -892,8 +905,6 @@ void settingsEeprom(bool eDirection) {
 
     const int dataRequired = 30;   // total size of eeprom space required (bytes)
 
-    uint32_t demoInt = 42;         // 4 byte variable to be stored in eeprom as an example of how (can be removed)
-
     int currentEPos = 0;           // current position in eeprom
 
     EEPROM.begin(dataRequired);
@@ -901,17 +912,28 @@ void settingsEeprom(bool eDirection) {
     if (eDirection == 0) {
 
       // read settings from Eeprom
-        EEPROM.get(currentEPos, demoInt);             // read data
-        if (demoInt < 1 || demoInt > 99) demoInt = 1; // validate
-        currentEPos += sizeof(demoInt);               // increment to next free position in eeprom
+        EEPROM.get(currentEPos, storeX);              // read data
+        currentEPos += sizeof(storeX);                // increment to next free position in eeprom
+
+        EEPROM.get(currentEPos, storeY);   
+        currentEPos += sizeof(storeY);   
+
+        EEPROM.get(currentEPos, storeZ);   
+        currentEPos += sizeof(storeZ);           
 
     } else {
 
       // write settings to Eeprom
-        EEPROM.put(currentEPos, demoInt);             // write demoInt to Eeprom
-        currentEPos += sizeof(demoInt);               // increment to next free position in eeprom
+        EEPROM.put(currentEPos, storeX);              // write demoInt to Eeprom
+        currentEPos += sizeof(storeX);                // increment to next free position in eeprom
 
-      EEPROM.commit();                              // write the data out (required on esp devices as they simulate eeprom)
+        EEPROM.put(currentEPos, storeY);   
+        currentEPos += sizeof(storeY);        
+
+        EEPROM.put(currentEPos, storeZ);   
+        currentEPos += sizeof(storeZ);           
+
+      EEPROM.commit();                                // write the data out (required on esp devices as they simulate eeprom)
     }
 
 }
@@ -1181,27 +1203,27 @@ float readCaliper(int clockPin, int dataPin) {
     const int lTimeout = 150;                                    // timeout when waiting for start of data (ms)
     const int sTimeout = 60;                                     // timeout when reading data (ms)
 
-  // logic levels on data and clock pins (if using a transistor these will be inverted)
+  // logic levels on data and clock pins (if using a transistor to level shift then these will be inverted)
     const bool pinLOW = invertCaliperDataSignals;
     const bool pinHIGH = !pinLOW;
 
-  // start of data is preceded by clock being high for long period so verify we are at this point (most times we will be)
+  // start of data is preceded by clock being high for long period so verify we are at this point (this is the case most of the time)
     if (!waitPinState(clockPin, pinHIGH, lTimeout)) return 9999.1;    // if clock is low wait until it is high (9999.x signifies it timed out waiting)
     unsigned long tmpTime=micros();                            // start timer
     if (!waitPinState(clockPin, pinLOW, lTimeout)) return 9999.2;     // wait for clock pin to go low
     if ((micros() - tmpTime) < longPeriod) return 9999.3;      // verify it was high for a long period signifying start of data 
 
   // start of data confirmed so now read in the data
-    int sign = 1;                                              // if the reading is negative
+    int sign = 1;                                              // if the reading is negative (1 or -1)
     int inches = 0;                                            // if data is in inches or mm (0 = mm) 
     long value = 0;                                            // the measurement received  
     for(int i=0;i<24;i++) {                                    // step through the data bits 
       if (!waitPinState(clockPin, pinLOW, sTimeout)) return 9999.4;      // If clock is not low wait until it is
       if (!waitPinState(clockPin, pinHIGH, sTimeout)) return 9999.5;     // wait for clock pin to go HIGH (this tells us the next data bit is ready to be read)
       if(digitalRead(dataPin) == pinHIGH) {                    // read data bit - if it is 1 then act upon this (0 can be ignored as all bits defult to 0)
-          if(i<20) value|=(1<<i);
-          if(i==20) sign=-1;
-          if(i==23) inches=1;    
+          if(i<20) value|=(1<<i);                              // shift the 19 bits in to read value
+          if(i==20) sign=-1;                                   // if reading is positive or negative
+          if(i==23) inches=1;                                  // if reading is in inches or mm
       } 
     }
 
@@ -1444,6 +1466,12 @@ void handleTest(){
     if (incZ) client.print("&ensp; z:" + String(gcodeZ[i]) );
     client.println("<br>");
   }
+
+
+// temp section
+  xReading = 100.1;
+  yReading = 200.2;
+  zReading = 300.3;
 
 
 // // turn backloight off then on
