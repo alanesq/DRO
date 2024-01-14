@@ -93,6 +93,8 @@ It may also be an idea to coat the rest of the circuit board in some kind of con
 
 At present it is set up to have 4 display pages, buttons can be created and assigned to the pages in the "define the button widgets" section of the sketch.  The caliper readings are displayed on all pages but there are two sizes available (this size is set in "displayReadings").  Button actions are defined in the "buttons.h" file.  It has a demo keypad for entering numbers but it is not yet used for anything.  I plan to add more features later on.  Let me know if there are features you would like me to add? <br><br>
 
+On page 2 there is the option to store the current readings and recall them.  This is stored in eeprom so can be recalled even after the device has been turned off.
+
 ## Troubleshooting
 
 I have found that the power supply is critical for the calipers in that most switch mode USB power supplies seem to cause them to give random readings.  Many USB power supples will cause the calipers to have randomly changing displays or for start counting up for no apparent reason etc., at best the caliper readings will not be very stable.  I built a linear power supply but even this was not perfect and othjer appliances on the mains would cause the readings to become unstable. <br>
