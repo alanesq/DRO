@@ -1,152 +1,184 @@
 /* -----------------------------------------------------------------------------------------
 
 
-      Procedures triggered when a button is pressed on the screen - 14Jan24
+          Procedures triggered when a button is pressed on the screen - 15Jan24
 
+          Part of the  "SuperLowBudget-DRO" sketch - https://github.com/alanesq/DRO
 
+          
 // -----------------------------------------------------------------------------------------
 */
 
-
-// -----------------------------------------------------------------------------------------
 // on all pages
 
-//  ------------- pages -----------------    #noPages
+  // switch page
+  void OnePage1Pressed() { 
+    log_system_message("button: page 1 selected"); 
+    drawScreen(1);      // switch to page 1
+  }
 
-void OnePage1Pressed() { 
-  log_system_message("button: page 1 selected"); 
-  drawScreen(1);      // switch to page 1
-}
+  void OnePage2Pressed() { 
+    log_system_message("button: page 2 selected"); 
+    drawScreen(2);      // switch to page 2
+  }
 
-void OnePage2Pressed() { 
-  log_system_message("button: page 2 selected"); 
-  drawScreen(2);      // switch to page 2
-}
+  void OnePage3Pressed() { 
+    log_system_message("button: page 3 selected"); 
+    drawScreen(3);      // switch to page 3
+  }
 
-void OnePage3Pressed() { 
-  log_system_message("button: page 3 selected"); 
-  drawScreen(3);      // switch to page 3
-}
-
-void OnePage4Pressed() { 
-  log_system_message("button: page 4 selected"); 
-  drawScreen(4);      // switch to page 4
-}
+  void OnePage4Pressed() { 
+    log_system_message("button: page 4 selected"); 
+    drawScreen(4);      // switch to page 4
+  }
 
 
 // -----------------------------------------------------------------------------------------
 // page 1
 
-//  ------------- zero -----------------
+  //  ------------- zero -----------------
+  // zero the current position
 
-void zeroXpressed() { 
-  log_system_message("button: zeroX");
-  xAdj[currentCoord] = xReading;    // zero X
-}
+  void zeroXpressed() { 
+    log_system_message("button: zeroX");
+    xAdj[currentCoord] = xReading;    // zero X
+  }
 
-void zeroYpressed() { 
-  log_system_message("button: zeroY");
-  yAdj[currentCoord] = yReading;    // zero Y
-}
+  void zeroYpressed() { 
+    log_system_message("button: zeroY");
+    yAdj[currentCoord] = yReading;    // zero Y
+  }
 
-void zeroZpressed() { 
-  log_system_message("button: zeroZ");
-  zAdj[currentCoord] = zReading;    // zero Z
-}
+  void zeroZpressed() { 
+    log_system_message("button: zeroZ");
+    zAdj[currentCoord] = zReading;    // zero Z
+  }
 
-void zAllpressed() { 
-  log_system_message("button: zAll");
-  xAdj[currentCoord] = xReading;    // zero X, Y and Z
-  yAdj[currentCoord] = yReading;     
-  zAdj[currentCoord] = zReading;     
-}
-
-
-//  ------------- half -----------------
-
-void halfXpressed() { 
-  log_system_message("button: halfX");
-  float t = (xReading - xAdj[currentCoord]) / 2.0;  // half of current displayed reading
-  xAdj[currentCoord] = xAdj[currentCoord] + t;      
-}
-
-void halfYpressed() { 
-  log_system_message("button: halfY");
-  float t = (yReading - yAdj[currentCoord]) / 2.0;   
-  yAdj[currentCoord] = yAdj[currentCoord] + t;   
-}
-
-void halfZpressed() { 
-  log_system_message("button: halfZ");
-  float t = (zReading - zAdj[currentCoord]) / 2.0;   
-  zAdj[currentCoord] = zAdj[currentCoord] + t;   
-}
+  void zAllpressed() { 
+    log_system_message("button: zAll");
+    xAdj[currentCoord] = xReading;    // zero X, Y and Z
+    yAdj[currentCoord] = yReading;     
+    zAdj[currentCoord] = zReading;     
+  }
 
 
-//  ------------- coordinates -----------------
+  //  ------------- half -----------------
+  // half the current displayed value
 
-void coord1pressed() { 
-  log_system_message("button: C1");
-  currentCoord = 0;
-  displayReadings();      // make sure the display updates
-}
+  void halfXpressed() { 
+    log_system_message("button: halfX");
+    float t = (xReading - xAdj[currentCoord]) / 2.0;  // half of current displayed reading
+    xAdj[currentCoord] = xAdj[currentCoord] + t;      
+  }
 
-void coord2pressed() { 
-  log_system_message("button: C2");
-  currentCoord = 1;
-  displayReadings();     
-}
+  void halfYpressed() { 
+    log_system_message("button: halfY");
+    float t = (yReading - yAdj[currentCoord]) / 2.0;   
+    yAdj[currentCoord] = yAdj[currentCoord] + t;   
+  }
 
-void coord3pressed() { 
-  log_system_message("button: C3");
-  currentCoord = 2;
-  displayReadings();     
-}
+  void halfZpressed() { 
+    log_system_message("button: halfZ");
+    float t = (zReading - zAdj[currentCoord]) / 2.0;   
+    zAdj[currentCoord] = zAdj[currentCoord] + t;   
+  }
+
+
+  //  ------------- coordinates -----------------
+  // switch between the 3 coordinates
+
+  void coord1pressed() { 
+    log_system_message("button: C1");
+    currentCoord = 0;
+    displayReadings();      // make sure the display updates
+  }
+
+  void coord2pressed() { 
+    log_system_message("button: C2");
+    currentCoord = 1;
+    displayReadings();     
+  }
+
+  void coord3pressed() { 
+    log_system_message("button: C3");
+    currentCoord = 2;
+    displayReadings();     
+  }
+
+
+  // hold current reading
+  void oneHoldPressed() {
+    log_system_message("button: hold current reading");
+
+    storeX = xReading - xAdj[currentCoord];     // store the current displayed value
+    storeY = yReading - yAdj[currentCoord];
+    storeZ = zReading - zAdj[currentCoord];    
+
+    tft.fillScreen(TFT_BLACK);                  // Clear the screen
+    tft.setFreeFont(FM9);                       // standard Free Mono font - available sizes: 9, 12, 18 or 24
+    tft.setTextSize(2);                         // 1 or 2
+    const int sSpacing = 22;                    // line spacing
+    tft.setTextColor(TFT_RED, TFT_BLACK);
+    tft.drawString("H O L D !", 50, 50);       
+
+    delay(p1HoldButtonDelay);
+
+    xAdj[currentCoord] = xReading - storeX;     // restore displayed readings 
+    yAdj[currentCoord] = yReading - storeY;
+    zAdj[currentCoord] = zReading - storeZ;
+
+    drawScreen(displayingPage);                 // re-draw the screen
+  }
 
 
 // -----------------------------------------------------------------------------------------
 // page 2
 
-void twoRebootPressed() { 
-  log_system_message("button: reboot");
-  delay(500);          // give time to send the above html
-  ESP.restart();
-  delay(5000);         // restart fails without this delay  
-}
+  // reboot the device
+  void twoRebootPressed() { 
+    log_system_message("button: reboot");
+    delay(500);          // give time to send the above html
+    ESP.restart();
+    delay(5000);         // restart fails without this delay  
+  }
 
-void twoWifiPressed() { 
-  log_system_message("button: wifi enable");
-  startTheWifi();
-}
+  // eanble wifi
+  void twoWifiPressed() { 
+    log_system_message("button: wifi enable");
+    startTheWifi();
+  }
 
-// store current position in to eeprom
-void twoStorePressed() {
-  log_system_message("button: store settings");
-  storeX = xReading - xAdj[currentCoord];
-  storeY = yReading - yAdj[currentCoord];
-  storeZ = zReading - zAdj[currentCoord];
-  settingsEeprom(1);   // store to eeprom
-}
+  // store current position in to eeprom
+  void twoStorePressed() {
+    log_system_message("button: store settings");
+    storeX = xReading - xAdj[currentCoord];    // store the current displayed value
+    storeY = yReading - yAdj[currentCoord];
+    storeZ = zReading - zAdj[currentCoord];
+    settingsEeprom(1);   // store to eeprom 
+  }
 
-// recall position from eeprom
-void twoRecallPressed() {
-  log_system_message("button: recall settings");
-  settingsEeprom(1);   // read from eeprom  
-  xAdj[currentCoord] = xReading - storeX;
-  yAdj[currentCoord] = yReading - storeY;
-  zAdj[currentCoord] = zReading - storeZ;
-}
+  // recall position from eeprom
+  void twoRecallPressed() {
+    log_system_message("button: recall settings");
+    settingsEeprom(1);   // read from eeprom 
+    xAdj[currentCoord] = xReading - storeX;   // xReading is the value being received from the caliper (i.e. xAdj set to xReading would give a displayed reading of 0)
+    yAdj[currentCoord] = yReading - storeY;
+    zAdj[currentCoord] = zReading - storeZ;
+  }
 
 
 // -----------------------------------------------------------------------------------------
 // page 3
 
+// switch to page 1
 void threePage1Pressed() { 
   log_system_message("button: screen 1");
   drawScreen(1);
 }
 
-// keypad
+// neumeric keypad 
+// curently only used by page 4 to jump to position
+
   // check entered number is valid and convert to a float
   void verifyNumber() {          
     if (keyEnteredNumber.length() > noDigitsOnNumEntry) keyEnteredNumber = "";       // too long
@@ -225,26 +257,32 @@ void threePage1Pressed() {
   }
 
 
-// page 4 - step through gcode coordinates
+// -----------------------------------------------------------------------------------------
+// page 4 - step through the gcode coordinates
 
+  // next position
   void buttonKeyStepNextPressed() {
     gcodeStepPosition++;
     if (gcodeStepPosition > gcodeLineCount) gcodeStepPosition = 1;
   }
 
+  // previous position
   void buttonKeyStepPrevPressed() {
     gcodeStepPosition--;
     if (gcodeStepPosition < 1) gcodeStepPosition = gcodeLineCount;       
   }  
 
+  // back to first position
   void buttonKeyStepResetPressed() {
     gcodeStepPosition = 1;
   }  
   
-  void buttonKeyStepKBDPressed() {           // use number enbtered on keypad (page 3)
+  // jump to number enbtered on keypad (page 3)
+  void buttonKeyStepKBDPressed() {           
     int numFromKBD = keyEnteredNumber.toInt();
     if (numFromKBD > 0 && numFromKBD <= gcodeLineCount) gcodeStepPosition = numFromKBD;
   }  
+
 
 // -----------------------------------------------------------------------------------------
 // end
