@@ -119,15 +119,16 @@
     tft.setTextSize(2);                         // 1 or 2
     const int sSpacing = 22;                    // line spacing
     tft.setTextColor(TFT_RED, TFT_BLACK);
-    tft.drawString("H O L D !", 50, 50);       
+    tft.drawString("H O L D !", 60, 50);       
 
-    delay(p1HoldButtonDelay);
+    delay(p1HoldButtonDelay);                   // wait
+    drawScreen(displayingPage);                 // re-draw the screen
+    refreshCalipers();                          // refresh readings from calipers and display
 
     xAdj[currentCoord] = xReading - storeX;     // restore displayed readings 
     yAdj[currentCoord] = yReading - storeY;
     zAdj[currentCoord] = zReading - storeZ;
 
-    drawScreen(displayingPage);                 // re-draw the screen
   }
 
 
