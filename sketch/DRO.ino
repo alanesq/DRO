@@ -3,8 +3,9 @@
  *                                              SuperLowBudget-DRO
  *                                              ------------------
  *
- *          3 Channel DRO using cheap digital calipers and a ESP32-2432S028R  (aka Cheap Yellow Display)
+ *          3 Channel DRO using cheap digital calipers and a ESP32-2432S028R (aka Cheap Yellow Display)
  *                     see: https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display
+ *
  *                                      https://github.com/alanesq/DRO
  *
  *
@@ -13,8 +14,8 @@
  *
  *                 Included files: standard.h, ota.h, sevenSeg.h, Free_Fonts.h, buttons.h & wifi.h
  *
- *   If using wifi the first time the ESP starts it will create an access point "ESPDRO" which you need to connect to in order 
- *    to enter your wifi details.  Default password = "password"   (change this in wifi.h)
+ *   If using wifi the first time the ESP starts it will create an access point "ESPDRO" which you need to connect to 
+ *    in order to enter your wifi details.  Default password = "password"   (change this in wifi.h)
  *    for more info. see: https://www.youtube.com/watch?v=Errh7LEEug0
  *
  *
@@ -120,7 +121,7 @@
 
   const char* stitle = "SuperLowBudget-DRO";             // title of this sketch
 
-  const char* sversion = "14Jan24";                      // version of this sketch
+  const char* sversion = "15Jan24";                      // version of this sketch
 
   bool wifiEnabled = 0;                                  // if wifi is to be enabled at boot (can be enabled from display menu if turned off here)
   
@@ -197,22 +198,25 @@
         const int DRObuttonheight = 30;                  // buttons around DRO readings              
         const int DRObuttonWidth = 35;                     
         const int DROdbuttonPlacement = 70;              // vertical spacing of the DRO buttons  
+
+    // Hold button
+        const int p1HoldButtonDelay = 4000;              // how long to wait when HOLD button is pressed (ms)
         
     // page 2 - misc buttons
-      const int p2secondColumn = 150;                  // y position of second column of buttons 
-      const int p2buttonSpacing = 8;                   // space between rows of buttons
+      const int p2secondColumn = 150;                    // y position of second column of buttons 
+      const int p2buttonSpacing = 8;                     // space between rows of buttons
 
     // page 3 - numeric keypad 
-      const int noDigitsOnNumEntry = 10;               // maximum length of entered number
+      const int noDigitsOnNumEntry = 10;                 // maximum length of entered number
       const int keyWidth = 45;
       const int keyHeight = 32;
       const int keySpacing = 10;
-      const int keyX = 110;                            // position on screen (top left)
+      const int keyX = 110;                              // position on screen (top left)
       const int keyY = 30;
       
     // page 4 - gcode
-      const int p4ButtonSpacing = 70;                  // button spacing
-      const int p4ButtonGap = 4;                       // gap between buttons
+      const int p4ButtonSpacing = 70;                    // button spacing
+      const int p4ButtonGap = 4;                         // gap between buttons
 
       
   // ----------------------------------------------------------------------------------------------------
@@ -317,6 +321,8 @@
       ButtonWidget coord1 = ButtonWidget(&tft);  // coordinates
       ButtonWidget coord2 = ButtonWidget(&tft);  
       ButtonWidget coord3 = ButtonWidget(&tft);  
+
+      ButtonWidget hold = ButtonWidget(&tft);    // hold button
  
     // page 2
       ButtonWidget p2r = ButtonWidget(&tft);     // reboot
@@ -385,11 +391,14 @@
       {1, 1, "C1", 0, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord1, &coord1pressed},
       {1, 1, "C2", (DRObuttonWidth + buttonSpacing) * 1, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord2, &coord2pressed},
       {1, 1, "C3", (DRObuttonWidth + buttonSpacing) * 2, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord3, &coord3pressed},
-    
+
+      // hold button
+      {1, 1, "H", (DRObuttonWidth + buttonSpacing) * 4, DROheight, DRObuttonWidth - buttonSpacing,  DRObuttonheight, TFT_WHITE, 1, TFT_RED, TFT_BLACK, &hold, &oneHoldPressed},
+
     // page 2
     
       {2, 1, "En. Wifi", 0, SCREEN_HEIGHT - (DRObuttonheight + p2buttonSpacing) * 1, 140, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &p2wifi, &twoWifiPressed},
-      {2, 1, "Reboot", p2secondColumn, SCREEN_HEIGHT - (DRObuttonheight + p2buttonSpacing) * 1, 90, DRObuttonheight, TFT_WHITE, 1, TFT_RED, TFT_BLACK, &p2r, &twoRebootPressed},
+      {2, 1, "Reboot", p2secondColumn, SCREEN_HEIGHT - (DRObuttonheight + p2buttonSpacing) * 1, 140, DRObuttonheight, TFT_WHITE, 1, TFT_RED, TFT_BLACK, &p2r, &twoRebootPressed},
       {2, 1, "Store Pos", p2secondColumn, (DRObuttonheight + p2buttonSpacing) * 0, 120, DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLACK, &p2store, &twoStorePressed},
       {2, 1, "Recall Pos", p2secondColumn, (DRObuttonheight + p2buttonSpacing) * 1, 120, DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLACK, &p2recall, &twoRecallPressed},
 
