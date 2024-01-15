@@ -113,6 +113,7 @@
   void drawScreen(int);      
   void displayReadings();
   void startTheWifi();
+  void refreshCalipers();
 
 
 // ---------------------------------------------------------------
