@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------------------
 
 
-          Procedures triggered when a button is pressed on the screen - 15Jan24
+          Procedures triggered when a button is pressed on the screen - 16Jan24
 
           Part of the  "SuperLowBudget-DRO" sketch - https://github.com/alanesq/DRO
 
@@ -109,26 +109,40 @@
   // hold current reading
   void oneHoldPressed() {
     log_system_message("button: hold current reading");
+    
+    // refresh readings from calipers 
+      if (!refreshCalipers()) {
+        delay(20);
+        refreshCalipers();
+      }
+    
+    // store current readings
+      float tXreading = xReading;
+      float tYreading = yReading;
+      float tZreading = zReading;
+   
+    // display 'HOLD' and wait
+      tft.fillScreen(TFT_BLACK);                  // Clear the screen
+      tft.setFreeFont(FM9);                       // standard Free Mono font - available sizes: 9, 12, 18 or 24
+      tft.setTextSize(2);                         // 1 or 2
+      const int sSpacing = 22;                    // line spacing
+      tft.setTextColor(TFT_RED, TFT_BLACK);
+      tft.drawString("H O L D !", 60, 50);       
+      delay(p1HoldButtonDelay);                   // wait
+      drawScreen(displayingPage);                 // re-draw the screen
 
-    storeX = xReading - xAdj[currentCoord];     // store the current displayed value
-    storeY = yReading - yAdj[currentCoord];
-    storeZ = zReading - zAdj[currentCoord];    
+    // refresh readings from calipers 
+      if (!refreshCalipers()) {
+        delay(20);
+        refreshCalipers();
+      }    
 
-    tft.fillScreen(TFT_BLACK);                  // Clear the screen
-    tft.setFreeFont(FM9);                       // standard Free Mono font - available sizes: 9, 12, 18 or 24
-    tft.setTextSize(2);                         // 1 or 2
-    const int sSpacing = 22;                    // line spacing
-    tft.setTextColor(TFT_RED, TFT_BLACK);
-    tft.drawString("H O L D !", 60, 50);       
-
-    delay(p1HoldButtonDelay);                   // wait
-    drawScreen(displayingPage);                 // re-draw the screen
-    refreshCalipers();                          // refresh readings from calipers and display
-
-    xAdj[currentCoord] = xReading - storeX;     // restore displayed readings 
-    yAdj[currentCoord] = yReading - storeY;
-    zAdj[currentCoord] = zReading - storeZ;
-
+    // adjust coordinates to new reading
+      for (int i = 0; i < 3; i++) {
+        xAdj[i] = xAdj[i] - tXreading + xReading;
+        yAdj[i] = yAdj[i] - tYreading + yReading;
+        zAdj[i] = zAdj[i] - tZreading + zReading;
+      }
   }
 
 
@@ -152,19 +166,14 @@
   // store current position in to eeprom
   void twoStorePressed() {
     log_system_message("button: store settings");
-    storeX = xReading - xAdj[currentCoord];    // store the current displayed value
-    storeY = yReading - yAdj[currentCoord];
-    storeZ = zReading - zAdj[currentCoord];
     settingsEeprom(1);   // store to eeprom 
   }
 
   // recall position from eeprom
   void twoRecallPressed() {
     log_system_message("button: recall settings");
-    settingsEeprom(1);   // read from eeprom 
-    xAdj[currentCoord] = xReading - storeX;   // xReading is the value being received from the caliper (i.e. xAdj set to xReading would give a displayed reading of 0)
-    yAdj[currentCoord] = yReading - storeY;
-    zAdj[currentCoord] = zReading - storeZ;
+    settingsEeprom(0);   // read from eeprom 
+    refreshCalipers();   // update display
   }
 
 
