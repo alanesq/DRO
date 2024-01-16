@@ -113,7 +113,7 @@
   void drawScreen(int);      
   void displayReadings();
   void startTheWifi();
-  void refreshCalipers();
+  bool refreshCalipers();
 
 
 // ---------------------------------------------------------------
@@ -122,7 +122,7 @@
 
   const char* stitle = "SuperLowBudget-DRO";             // title of this sketch
 
-  const char* sversion = "15Jan24";                      // version of this sketch
+  const char* sversion = "16Jan24";                      // version of this sketch
 
   bool wifiEnabled = 0;                                  // if wifi is to be enabled at boot (can be enabled from display menu if turned off here)
   
@@ -201,9 +201,9 @@
         const int DROdbuttonPlacement = 70;              // vertical spacing of the DRO buttons  
 
     // Hold button
-        const int p1HoldButtonDelay = 4000;              // how long to wait when HOLD button is pressed (ms)
+        const int p1HoldButtonDelay = 5000;              // how long to wait when HOLD button is pressed (ms)
         
-    // page 2 - misc buttons
+    // page 2 - misc 
       const int p2secondColumn = 150;                    // y position of second column of buttons 
       const int p2buttonSpacing = 8;                     // space between rows of buttons
 
@@ -399,9 +399,9 @@
     // page 2
     
       {2, 1, "En. Wifi", 0, SCREEN_HEIGHT - (DRObuttonheight + p2buttonSpacing) * 1, 140, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &p2wifi, &twoWifiPressed},
-      {2, 1, "Reboot", p2secondColumn, SCREEN_HEIGHT - (DRObuttonheight + p2buttonSpacing) * 1, 140, DRObuttonheight, TFT_WHITE, 1, TFT_RED, TFT_BLACK, &p2r, &twoRebootPressed},
-      {2, 1, "Store Pos", p2secondColumn, (DRObuttonheight + p2buttonSpacing) * 0, 120, DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLACK, &p2store, &twoStorePressed},
-      {2, 1, "Recall Pos", p2secondColumn, (DRObuttonheight + p2buttonSpacing) * 1, 120, DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLACK, &p2recall, &twoRecallPressed},
+      {2, 1, "Reboot", p2secondColumn, SCREEN_HEIGHT - (DRObuttonheight + p2buttonSpacing) * 1, 120, DRObuttonheight, TFT_WHITE, 1, TFT_RED, TFT_BLACK, &p2r, &twoRebootPressed},
+      {2, 1, "Store", p2secondColumn, (DRObuttonheight + p2buttonSpacing) * 0, 120, DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLACK, &p2store, &twoStorePressed},
+      {2, 1, "Recall", p2secondColumn, (DRObuttonheight + p2buttonSpacing) * 1, 120, DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLACK, &p2recall, &twoRecallPressed},
 
     // page 3 
       
@@ -549,9 +549,9 @@ void setup() {
 
   // if (serialDebug) Serial.setDebugOutput(true);             // to enable extra diagnostic info
 
-  #if ENABLE_EEPROM
-    settingsEeprom(0);                                         // read stored settings from eeprom
-  #endif
+  // #if ENABLE_EEPROM
+  //   settingsEeprom(0);                                         // read stored settings from eeprom
+  // #endif
 
   if (wifiEnabled) {
     // update screen
@@ -610,7 +610,11 @@ void loop() {
 
   if(wifiEnabled) server.handleClient();                  // service any web page requests
 
-  refreshCalipers();                                      // refresh readings from calipers and update display
+  // refresh readings from calipers and display
+    if (!refreshCalipers()) {
+      delay(20);
+      refreshCalipers();    // try again
+    }    
 
   // Touch screen
     bool st = ts.touched();                               // discover if screen is pressed
@@ -639,11 +643,13 @@ void loop() {
 //                      -refresh calipers
 // ----------------------------------------------------------------
 // refresh readings from the digital calipers and update display if anything has changed
+// returns 1 if data received from all calipers
 // Note: The code for each caliper is kept seperate in case any require different treatment (e.g. different type sensor)
 
-void refreshCalipers() {
+bool refreshCalipers() {
 
   bool refreshDisplayFlag = 0;                                 // display will be refreshed if this flag is set
+  bool caliperReadOK = 1;                                      // set if any caliper failed to get a reading
 
   // Digital Caliper - X       
     if (DATA_PIN_X != -1 && millis() - lastReadingTimeX > checkDROreadings) {  // if caliper is present and has not refreshed recently
@@ -654,7 +660,10 @@ void refreshCalipers() {
             refreshDisplayFlag = 1;                            // flag DRO display to refresh
             lastReadingTimeX = millis();                       // log time of last reading
           }
-          if (serialDebug && tRead > 9999.00) Serial.println("X Caliper read failed: " + String(tRead));           
+          if (tRead > 9998) {    
+            if (serialDebug) Serial.println("X Caliper read failed: " + String(tRead));    
+            caliperReadOK = 0;
+          }   
     }
 
   // Digital Caliper - Y    
@@ -666,7 +675,10 @@ void refreshCalipers() {
             refreshDisplayFlag = 1;                            // flag DRO display to refresh
             lastReadingTimeY = millis();                       // log time of last reading
           }
-          if (serialDebug && tRead > 9999.00) Serial.println("Y Caliper read failed: " + String(tRead));           
+          if (tRead > 9998) {    
+            if (serialDebug) Serial.println("Y Caliper read failed: " + String(tRead));    
+            caliperReadOK = 0;
+          }            
     }
 
   // Digital Caliper - Z    
@@ -678,10 +690,14 @@ void refreshCalipers() {
             refreshDisplayFlag = 1;                            // flag DRO display to refresh
             lastReadingTimeZ = millis();                       // log time of last reading
           }
-          if (serialDebug && tRead > 9999.00) Serial.println("Z Caliper read failed: " + String(tRead));      
+          if (tRead > 9998) {    
+            if (serialDebug) Serial.println("Z Caliper read failed: " + String(tRead));    
+            caliperReadOK = 0;
+          }       
     }    
 
     if (refreshDisplayFlag) displayReadings();                 // display caliper readings 
+    return caliperReadOK;
 }    
 
 
@@ -913,37 +929,75 @@ void handlePing(){
 #if ENABLE_EEPROM
 void settingsEeprom(bool eDirection) {
 
-    const int dataRequired = 30;   // total size of eeprom space required (bytes)
+    const int dataRequired = 50;   // total size of eeprom space required (bytes)
 
     int currentEPos = 0;           // current position in eeprom
+    float ts;                      // temp store
 
     EEPROM.begin(dataRequired);
 
-    if (eDirection == 0) {
+    if (eDirection == 0) {         // read settings
 
-      // read settings from Eeprom
-        EEPROM.get(currentEPos, storeX);              // read data
-        currentEPos += sizeof(storeX);                // increment to next free position in eeprom
+      // read flag to show stored settings are valid
+        EEPROM.get(currentEPos,  ts);   
+        if (ts != 69) {
+          log_system_message("Error: invalid data read from eeprom");
+          return;     
+        }
+        currentEPos += sizeof(ts);          
 
-        EEPROM.get(currentEPos, storeY);   
-        currentEPos += sizeof(storeY);   
+      // step through the 3 coordinate systems
+        for (int c = 0; c < 3; c++) {
 
-        EEPROM.get(currentEPos, storeZ);   
-        currentEPos += sizeof(storeZ);           
+            EEPROM.get(currentEPos,  ts);              // read data
+            xAdj[c] = xReading + ts;                   // store data
+            currentEPos += sizeof(ts);                 // increment to next free position in eeprom
 
-    } else {
+            EEPROM.get(currentEPos,  ts);   
+            yAdj[c] = yReading + ts;  
+            currentEPos += sizeof(ts);     
 
-      // write settings to Eeprom
-        EEPROM.put(currentEPos, storeX);              // write demoInt to Eeprom
-        currentEPos += sizeof(storeX);                // increment to next free position in eeprom
+            EEPROM.get(currentEPos,  ts);   
+            zAdj[c] = zReading + ts;  
+            currentEPos += sizeof(ts);               
+        }
 
-        EEPROM.put(currentEPos, storeY);   
-        currentEPos += sizeof(storeY);        
+        // current coordinate system in use
+          EEPROM.get(currentEPos, currentCoord);     
+          if (currentCoord < 0 || currentCoord > 2) currentCoord = 0;
+          currentEPos += sizeof(currentCoord);  
 
-        EEPROM.put(currentEPos, storeZ);   
-        currentEPos += sizeof(storeZ);           
+        log_system_message("Data read from eeprom");
+
+    } else {                      // store settings
+
+      // store flag to show stored settings are valid
+          ts = 69;
+          EEPROM.put(currentEPos, ts);   
+          currentEPos += sizeof(ts);         
+
+      // step through the 3 coordinate systems
+        for (int c = 0; c < 3; c++) {      
+
+          ts = xAdj[c] - xReading;
+          EEPROM.put(currentEPos, ts);              // write demoInt to Eeprom
+          currentEPos += sizeof(ts);                // increment to next free position in eeprom
+
+          ts = yAdj[c] - yReading;
+          EEPROM.put(currentEPos, ts);   
+          currentEPos += sizeof(ts);     
+
+          ts = zAdj[c] - zReading;
+          EEPROM.put(currentEPos, ts);   
+          currentEPos += sizeof(ts);               
+        }
+
+        // current coordinate system in use
+          EEPROM.put(currentEPos, currentCoord);
+          currentEPos += sizeof(currentCoord);     
 
       EEPROM.commit();                                // write the data out (required on esp devices as they simulate eeprom)
+      log_system_message("Data written to eeprom");
     }
 
 }
@@ -1468,14 +1522,14 @@ void handleTest(){
   // ---------------------------- test section here ------------------------------
 
 
-// display stored coordinates from entered gcode
-  client.print("Positions extracted from gcode: <br>");
-  for (int i=0; i < gcodeLineCount; i++) {
-    if (incX) client.print("&ensp; x:" + String(gcodeX[i]) );
-    if (incY) client.print("&ensp; y:" + String(gcodeY[i]) );
-    if (incZ) client.print("&ensp; z:" + String(gcodeZ[i]) );
-    client.println("<br>");
-  }
+// // display stored coordinates from entered gcode
+//   client.print("Positions extracted from gcode: <br>");
+//   for (int i=0; i < gcodeLineCount; i++) {
+//     if (incX) client.print("&ensp; x:" + String(gcodeX[i]) );
+//     if (incY) client.print("&ensp; y:" + String(gcodeY[i]) );
+//     if (incZ) client.print("&ensp; z:" + String(gcodeZ[i]) );
+//     client.println("<br>");
+//   }
 
 
 // temp section
