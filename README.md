@@ -93,7 +93,8 @@ It may also be an idea to coat the rest of the circuit board in some kind of con
 
 At present it is set up to have 4 display pages, buttons can be created and assigned to the pages in the "define the button widgets" section of the sketch.  The caliper readings are displayed on all pages but there are two sizes available (this size is set in "displayReadings").  Button actions are defined in the "buttons.h" file.  It has a demo keypad for entering numbers but it is not yet used for anything.  I plan to add more features later on.  Let me know if there are features you would like me to add? <br><br>
 
-On page 2 there is the option to store the current readings and recall them.  This is stored in eeprom so can be recalled even after the device has been turned off.
+On page 2 there is the option to store the current readings and recall them.  This is stored in eeprom so can be recalled even after the device has been turned off.  <br>
+On page 1 there is a hold button "H" which I created when I was having trouble with interference causing the displays to jump about, this reads the current values, waits a while then restores them, I have left it as it may prove of some use one day?
 
 ## Troubleshooting
 
