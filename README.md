@@ -35,6 +35,7 @@ The cheap calipers only have a range of 150mm although longer 200mm or even 300m
 [PCBway order link](https://www.pcbway.com/project/shareproject/Digital_Caliper_Hack_Mod_new_2021.html)
 
 You can of course buy better quality calipers if you do not trust these cheap ones to be accurate or you can buy similar items from China which are actually designed to be used as a DRO, but it soon starts to get expensive; These cheap calipers really are amazing for the price, they are so cheap that it feels like they are almost being given away and appear to be very accurate.  Also, I find the cheaper ones with a plastic slider are better than metal ones as you do not get issues with the metal contacting the metal of your machine which can cause some issues.  Big Clive has made a nice video showing what is inside them and how to take them apart: &ensp; [Big Clive](https://www.youtube.com/watch?v=fKSSY1gzCEs) <br>
+I have read that because of interference issues this type caliper is not at all suitable to use as a DRO and I was starting to agree as I had a lot of trouble at first with this but I eventually found the solution (see bottom of page for more info.).
 
 One good thing that I was not expecting is you still get two decimal places from these very cheap calipers even though they only display one on their LCD, as can be seen in the pictures above. <br><br>
 
