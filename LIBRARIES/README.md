@@ -8,7 +8,7 @@ The libraries required for the DRO sketch are:
 
 They can all be installed from the library manager in the Arduino IDE <br><br>
 
-The TFT_eSPI library requires some minor modifications so it will work with the Cheap Yellow Display<br>
+Once installed, the TFT_eSPI library requires some minor modifications so it will work with the Cheap Yellow Display<br>
 Once you have installed it copy the files here in to /TFT_eSPI folder where your libraries are located <br><br>
 
 Note: if using the Cheap Yellow Display with two usb ports edit "User_Setup_Select.h" 
