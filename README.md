@@ -16,6 +16,9 @@ As a result, building a three-axis DRO for your milling machine or lathe can set
 I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available was still going to cost me several hundred pounds, which I just couldn’t justify spending. I also suspected that the cheapest DRO on the market would probably fail after a short time anyway ging on past experience of cheap electronics.  Therefore, I decided to see if I can create my own as inexpensively as possible. <br>
 I think it safe to say that I have achieved this goal ! <br><br>
 
+The libraries required for this sketch are detailed [HERE](https://github.com/alanesq/DRO/tree/main/LIBRARIES)<br>
+Note that the "TFT_eSPI" library needs to be modified to work with the CYD and if your CYD has two USB ports there is a further change to this required.
+
 ## Patterns
 
 Rather than a complicated hole pattern facilities on this DRO (for drilling a circle of holes etc.) I decided it would be easier and more versatile to enter the coordinates of the positions required via the web page, these coordinates can then be steped through from the DRO screen (page 4).  <br>
@@ -44,10 +47,6 @@ One good thing that I was not expecting is you still get two decimal places from
 The well known problem with these cheap calipers is the battery goes flat if you do not use them for a while, it turns out that they are producing the data we use here all the time, even when turned off.  I bought one of the longer calipers recently which looks like it is a "new/impoved" design which has got round this issue by turning off the data all together which is very bad news if you want to use it for this project.  So if you are buying calipers I suggest you try to buy the older style ones if you can as the newer ones do not seem to support data, the good news is these will be the cheapest ones.  You can still use the reader from a cheaper caliper on this longer bar if you do have one though.<br>
 Also, I understand that some of these calipers use a different data standard although all the ones I have tried are the same<br>
 
-Make sure to copy the CYD custom UserSetup.h file into the TFT_eSPI library. &ensp; See: [setup instructions](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/blob/main/SETUP.md) <br>
- 
-Make sure your Cheap Yellow Display is not the version with two USB ports as this has a different display (I am looking in to supporting both)<br><br>
- 
 ## Misc info:
 
 Brian Lough's information on the [Cheap Yellow Display](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display)
