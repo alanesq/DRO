@@ -97,6 +97,8 @@ At present it is set up to have 4 display pages, buttons can be created and assi
 On page 2 there is the option to store the current readings and recall them.  This is stored in eeprom so can be recalled even after the device has been turned off.  <br>
 On page 1 there is a hold button "H" which I created when I was having trouble with interference causing the displays to jump about, this reads the current values, waits a while then restores them, I have left it as it may prove of some use one day?
 
+On my lathe I have a stop which I can attach to make sure I don't take the carriage too far, as a temp. test I attached a caliper to this but it actually worked out so well I have kept it this way.  The end of the calipers slider attaches with a strong magnet so if I take the carriage too far it just detaches and re-attaches when it returns. [picture](/pics/lathe1.jpg) <br>
+
 ## Troubleshooting
 
 I have found that the power supply is critical for the calipers in that most switch mode USB power supplies seem to cause them to give random readings.  Many USB power supples will cause the calipers to have randomly changing displays or for start counting up for no apparent reason etc., at best the caliper readings will not be very stable.  I built a linear power supply but even this was not perfect and othjer appliances on the mains would cause the readings to become unstable. <br>
