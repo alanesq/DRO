@@ -11,7 +11,7 @@ They can all be installed from the library manager in the Arduino IDE <br><br>
 Once installed, the TFT_eSPI library requires some minor modifications so it will work with the Cheap Yellow Display<br>
 Once you have installed it copy the files here in to /TFT_eSPI folder where your libraries are located <br><br>
 
-Note: if using the Cheap Yellow Display with two usb ports edit "User_Setup_Select.h" 
+Note: if using the Cheap Yellow Display with two usb ports it has aslightly different display so edit "User_Setup_Select.h" 
 
        comment out :   #include <User_Setup-std.h>            // Standard (single USB port)
   
