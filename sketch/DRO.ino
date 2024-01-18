@@ -33,8 +33,6 @@
   Ensure your Cheap Yellow Display is not the version with two USB ports as this has a different display
 
   I am using floats a lot in this sketch and using comparison operations with them, this only works because I am not doing any calculation
-    operations on them (i.e. only storing the numbers).
-
 
   Libraries used:     https://github.com/PaulStoffregen/XPT2046_Touchscreen
                       https://github.com/Bodmer/TFT_eSPI
@@ -122,7 +120,7 @@
 
   const char* stitle = "SuperLowBudget-DRO";             // title of this sketch
 
-  const char* sversion = "16Jan24";                      // version of this sketch
+  const char* sversion = "18Jan24";                      // version of this sketch
 
   bool wifiEnabled = 0;                                  // if wifi is to be enabled at boot (can be enabled from display menu if turned off here)
   
@@ -133,6 +131,10 @@
 
   const bool invertCaliperDataSignals = 2;               // If using transistors on the data and clock pins the signals will be inverted so set this to 1
   
+  const bool reverseXdirection = 0;                      // If direction of caliper is reversed 
+  const bool reverseYdirection = 0;
+  const bool reverseZdirection = 0;
+
   const int checkDROreadings = 50;                       // how often to refresh DRO readings (ms)  
   
   // web page
@@ -653,7 +655,7 @@ bool refreshCalipers() {
 
   // Digital Caliper - X       
     if (DATA_PIN_X != -1 && millis() - lastReadingTimeX > checkDROreadings) {  // if caliper is present and has not refreshed recently
-          float tRead = readCaliper(CLOCK_PIN_X, DATA_PIN_X);  // read data from caliper (reading over 9999 indicates fail)
+          float tRead = readCaliper(CLOCK_PIN_X, DATA_PIN_X, reverseXdirection);  // read data from caliper (reading over 9999 indicates fail)
           if (tRead != xReading && tRead < 9999.00) {          // if reading has changed
             xReading = tRead;                                  // store result in global variable 
             if (lastReadingTimeX == 0) {xAdj[0] = xReading; xAdj[1] = xReading; xAdj[2] = xReading;}   // first time caliper has been read so zero it
@@ -668,7 +670,7 @@ bool refreshCalipers() {
 
   // Digital Caliper - Y    
     if (DATA_PIN_Y != -1 && millis() - lastReadingTimeY > checkDROreadings) {  // if caliper is present and has not refreshed recently
-          float tRead = readCaliper(CLOCK_PIN_Y, DATA_PIN_Y);  // read data from caliper (reading over 9999 indicates fail)
+          float tRead = readCaliper(CLOCK_PIN_Y, DATA_PIN_Y, reverseYdirection);  // read data from caliper (reading over 9999 indicates fail)
           if (tRead != yReading && tRead < 9999.00) {          // if reading has changed
             yReading = tRead;                                  // store result in global variable 
             if (lastReadingTimeY == 0) {yAdj[0] = yReading; yAdj[1] = yReading; yAdj[2] = yReading;}   // first time caliper has been read so zero it
@@ -683,7 +685,7 @@ bool refreshCalipers() {
 
   // Digital Caliper - Z    
     if (DATA_PIN_Z != -1 && millis() - lastReadingTimeZ > checkDROreadings + 7) {  // if caliper is present and has not refreshed recently
-          float tRead = readCaliper(CLOCK_PIN_Z, DATA_PIN_Z);  // read data from caliper (reading over 9999 indicates fail)
+          float tRead = readCaliper(CLOCK_PIN_Z, DATA_PIN_Z, reverseZdirection);  // read data from caliper (reading over 9999 indicates fail)
           if (tRead != zReading && tRead < 9999.00) {          // if reading has changed  
             zReading = tRead;                                  // store result in global variable
             if (lastReadingTimeZ == 0) {zAdj[0] = zReading; zAdj[1] = zReading; zAdj[2] = zReading;}   // first time caliper has been read so zero it
@@ -1260,7 +1262,7 @@ bool waitPinState(int pin, bool state, int timeout) {
 // The data is sent as 24bits several times a second so we first ensure we are at the start of one of these 
 //    streams by measuring how long the clock pin was high for then we read in the the data
 
-float readCaliper(int clockPin, int dataPin) {
+float readCaliper(int clockPin, int dataPin, bool reverseDirection) {
 
   // settings
     const int longPeriod = 500;                                  // length of time which counts as a long period (microseconds)
@@ -1292,8 +1294,14 @@ float readCaliper(int clockPin, int dataPin) {
     }
 
   // convert result to measurement
-    if (inches) return (value*sign) / 2000.00;               // inches
-    else return (value*sign) / 100.00;                       // mm
+    float tRes;
+    if (inches) tRes = (value * sign) / 2000.00;               // inches
+    else tRes = (value * sign) / 100.00;                       // mm
+
+  // reverse direction if required
+    if (reverseDirection) tRes = -tRes;
+
+  return tRes;
 }
 
 
