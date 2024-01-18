@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------------------
 
 
-          Procedures triggered when a button is pressed on the screen - 16Jan24
+          Procedures triggered when a button is pressed on the screen - 18Jan24
 
           Part of the  "SuperLowBudget-DRO" sketch - https://github.com/alanesq/DRO
 
@@ -174,6 +174,10 @@
     log_system_message("button: recall settings");
     settingsEeprom(0);   // read from eeprom 
     refreshCalipers();   // update display
+    // log time of last reading to prevent first reading zeroing it
+      lastReadingTimeX = millis();            
+      lastReadingTimeY = millis(); 
+      lastReadingTimeZ = millis(); 
   }
 
 
