@@ -74,8 +74,8 @@ Current Wifi Features:
 - Update via OTA: http://x.x.x.x/ota
 
 If just connecting one caliper you could use (GPIO 22 and 27) via the CYD connectors but to find enough GPIO pins to read 3 calipers I had to get a bit more creative; I removed the onboard 3 colour LED and then soldered some ribbon wire directly on to one side of the ESP32 module it's self.  This is not as difficult as you might imagine, if you use a small soldering iron tip and magnification it was pretty easy even with my uncoordinated soldering skills.  Tin the pins first ideally using some extra flux, then attach the wires and use some hot melt glue to hold the ribbon wire in place.  I soldered 8 wires to the ESP module plus two to a nearby connector for the 3.3v power.
- - [GPIO pins to use](https://github.com/alanesq/DRO/blob/main/pics/CYD-gpioPins.jpg)
- - [Image](https://github.com/alanesq/DRO/blob/main/PCB/ribbonCablePins.jpeg) <br>
+ - [GPIO pins available to use](https://github.com/alanesq/DRO/blob/main/pics/CYD-gpioPins.jpg)
+ - [GPIO pins I used](https://github.com/alanesq/DRO/blob/main/PCB/ribbonCablePins.jpeg) <br>
 
 The wiring is not as complex as it might look, it is just a simple transistor on each data pin to convert from 1.5v up to 3.3v for the esp32 to be able to read, I use my CNC router to create the circuit boards but this could be easily built on some strip board etc.  I tried using a level shifter board at first but I don't think it worked very well with the 1.5v levels. <br>
 Note: the transistors to convert the 1.5v signals from the caliper results in the signal levels being inverted so if you use some other method you will need to change 'invertCaliperDataSignals' to 0.  The circuit diagram I used can be seen in the PCB folder along with the files I used to create the circuit boards (Fritzing and CNC router).  To supply the lower voltage to power the caliper I just use a simple voltage divider although just using a series of 3 silicone diodes to drop the voltage may be a better idea?
