@@ -85,7 +85,7 @@ Note: the transistors to convert the 1.5v signals from the caliper results in th
 
 Note: I am using GPIO0 which isn't ideal as it is also attached to the onboard button, but if you do not install the pull-up resistor and use a lower value resistor on the input this seems to work fine (although it can stop the hardware reset working when programming the CYD).
 
-There are connections for GPIO1 and 3 which are the serial pins but could be used as general GPIO if required (it can be programmed by OTA so this would not be a big problem).
+There are connections for GPIO1 and 3 which are the serial pins but could possibly be used as general GPIO if required? (it can be programmed by OTA so this would not be a big problem).
 
 In an attempt to try and make the calipers more robust I have put some insulation tape over the circuit board (where the slider runs along it) as I think the bare circuit board is very vulnerable to damp entering and corroding the board. &ensp; [Picture](https://github.com/alanesq/DRO/blob/main/pics/caliperMod.jpg) <br>
 It may also be an idea to coat the rest of the circuit board in some kind of conformal coating (clear nail varnish?) and maybe some kind of dust seal around the slider where it enters the reader (I believe some come with one fitted).
