@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------------------
 
 
-          Procedures triggered when a button is pressed on the screen - 18Jan24
+          Procedures triggered when a button is pressed on the screen - 19Jan24
 
           Part of the  "SuperLowBudget-DRO" sketch - https://github.com/alanesq/DRO
 
@@ -256,18 +256,51 @@ void threePage1Pressed() {
     verifyNumber();
   }  
 
+  void buttonKeyMinusPressed() {
+    if (keyEnteredNumber.indexOf('-') != -1) {   // number is already negative
+      keyEnteredNumber = keyEnteredNumber.substring(1, keyEnteredNumber.length());
+    } else {
+      keyEnteredNumber = "-" + keyEnteredNumber;
+    }
+    verifyNumber();
+  }  
+
   void buttonKeyCLRPressed() {
     keyEnteredNumber = "";
+    verifyNumber();
   }
 
   void buttonKeyBackPressed() {
     if (keyEnteredNumber.length() < 1) return; // String is empty
     keyEnteredNumber = keyEnteredNumber.substring(0, keyEnteredNumber.length() - 1);
+    verifyNumber();
   }  
 
   void buttonKeyEnterPressed() {
     log_system_message("keypad: ENTER pressed, number entered is " + keyEnteredNumber);
     keyEnteredNumber = "";
+    verifyNumber();
+  }
+
+  // setx
+  void buttonp3setxPressed() {
+    log_system_message("button: setx pressed: " + String(keyEnteredNumberVal));
+    xAdj[currentCoord] = xReading - keyEnteredNumberVal;
+    lastReadingTimeX = millis();    
+  }
+
+  // sety
+  void buttonp3setyPressed() {
+    log_system_message("button: sety pressed: " + String(keyEnteredNumberVal));
+    yAdj[currentCoord] = yReading - keyEnteredNumberVal;
+    lastReadingTimeY = millis();    
+  }
+
+  // setz
+  void buttonp3setzPressed() {
+    log_system_message("button: setz pressed: " + String(keyEnteredNumberVal));
+    zAdj[currentCoord] = zReading - keyEnteredNumberVal;
+    lastReadingTimeZ = millis();    
   }
 
 
