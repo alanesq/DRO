@@ -12,7 +12,7 @@
  *                         Tested in Arduino IDE 2.2.1 with board managers ESP32 2.0.14
  *           Libraries: TFT_eSPI 2.5.34, TFT_eWidget 0.0.5, WifiManager 2.0.16, XPT2046_Touchscreen 1.4
  *
- *                 Included files: standard.h, ota.h, sevenSeg.h, Free_Fonts.h, buttons.h & wifi.h
+ *                 Included files: settings.h, standard.h, ota.h, sevenSeg.h, Free_Fonts.h, buttons.h & wifi.h
  *
  *   If using wifi the first time the ESP starts it will create an access point "ESPDRO" which you need to connect to 
  *    in order to enter your wifi details.  Default password = "password"   (change this in wifi.h)
@@ -91,15 +91,16 @@
       Update via OTA:                     http://x.x.x.x/ota                (default password is 'password')
 
 */
+#include <Arduino.h>                      // required to use Strings 
+
+#include "settings.h"                     // load in settings for the DRO from settings.h file
 
 #if (!defined ESP32)
   #error This code is for the ESP32 based 'Cheap Yellow Display' only
 #endif
 
-#include <esp_task_wdt.h>                 // watchdog timer   - see: https://iotassistant.io/esp32/enable-hardware-watchdog-timer-esp32-arduino-ide/
-#include <Arduino.h>         
+#include <esp_task_wdt.h>                 // watchdog timer   - see: https://iotassistant.io/esp32/enable-hardware-watchdog-timer-esp32-arduino-ide/     
 #include <WiFi.h>
-
 
 // forward declarations
   void log_system_message(String smes);   // in standard.h
@@ -114,134 +115,6 @@
   bool refreshCalipers();
 
 
-// ---------------------------------------------------------------
-//                          -SETTINGS
-// ---------------------------------------------------------------   
-
-  const char* stitle = "SuperLowBudget-DRO";             // title of this sketch
-
-  const char* sversion = "18Jan24";                      // version of this sketch
-
-  bool wifiEnabled = 0;                                  // if wifi is to be enabled at boot (can be enabled from display menu if turned off here)
-  
-  const bool serialDebug = 0;                            // provide debug info on serial port  (disable if using Tx or Rx gpio pins for caliper)
-  const int serialSpeed = 115200;                        // Serial data speed to use  
-  
-  const bool showPress = 0;                              // show touch data on screen 
-
-  const bool invertCaliperDataSignals = 2;               // If using transistors on the data and clock pins the signals will be inverted so set this to 1
-  
-  const bool reverseXdirection = 0;                      // If direction of caliper is reversed 
-  const bool reverseYdirection = 0;
-  const bool reverseZdirection = 0;
-
-  const int checkDROreadings = 50;                       // how often to refresh DRO readings (ms)  
-  
-  // web page
-    const int gcodeTextHeight = 15;                      // Size of text box on main web page for entering gcode
-    const int gcodeTextWidth = 40;
-
-  // CYD - Display settings
-    #define SCREEN_ROTATION 1
-    #define SCREEN_WIDTH 320
-    #define SCREEN_HEIGHT 240
-    #define SCREEN_BACKLIGHT 21
-
-  // Digital Caliper GPIO pins   ( -1 = not in use )
-    #define CLOCK_PIN_X 0     // 0   Note: gpio is the onboard button so not really a good idea to use it but it seems to work ok (it can stop the device rebooting its self)
-    #define DATA_PIN_X  4     // 4
-    
-    #define CLOCK_PIN_Y 17    // 17
-    #define DATA_PIN_Y  16    // 16
-    
-    #define CLOCK_PIN_Z 22    // 22
-    #define DATA_PIN_Z  5     // 5   Note: this pin is used by the SD card (chip select)
-
-    // // testing - single caliper attached via CYD standard connectors (beware that the serial connector power pin is 5v not 3.3v)
-    // #define CLOCK_PIN_X 22  
-    // #define DATA_PIN_X  35   
-    // #define CLOCK_PIN_Y -1  
-    // #define DATA_PIN_Y  -1  
-    // #define CLOCK_PIN_Z -1   
-    // #define DATA_PIN_Z  -1   
-
-  // CYD - Touchscreen settings
-    #define TOUCH_LEFT 200         // touch positions relating to the display (may be better to have some kind of calibration routine?)
-    #define TOUCH_RIGHT 3700
-    #define TOUCH_TOP 200
-    #define TOUCH_BOTTOM 3850
-    #define XPT2046_IRQ 36
-    #define XPT2046_MOSI 32
-    #define XPT2046_MISO 39
-    #define XPT2046_CLK 25
-    #define XPT2046_CS 33       
-    #define TOUCH_CS PIN_D2    
-    
-    
-  // --------------------------------------- Menu/screen settings ---------------------------------------
-
-    
-  // font to use for all buttons  
-    #define MENU_FONT FM9                                // standard Free Mono font - available sizes: 9, 12, 18 or 24
-    #define MENU_SIZE 2                                  // font size (1 or 2)
-
-    // Page selection buttons
-    // Note: to add more pages increase 'numberOfPages', modify the two sections marked with '#noPages' and add procedure to 'buttons.h'
-      const int numberOfPages = 4;
-      const int pageButtonWidth = 32;                    // width of the buttons
-      const int pageButtonSpacing = 6;                   // space between the buttons
-      const int pageButtonHeight = (SCREEN_HEIGHT / numberOfPages) - pageButtonSpacing;  // height of button
-  
-    // DRO readings size/position settings 
-        const int DROdisplaySpacing = 10;                // space between the DRO readings
-        const int DROnoOfDigits1 = 4;                    // number of digits to display in caliper readings (before decimal)
-        const int DROnoOfDigits2 = 2;                    // number of digits to display in caliper readings (after decimal)
-        const int DROwidth = 200;                        // width of DRO reading display   i.e. x position of zero buttons  
-        const int DROheight = 200;                       // Height of the DRO reading display for placement of lower buttons  
-        const int DRObuttonheight = 30;                  // buttons around DRO readings              
-        const int DRObuttonWidth = 35;                     
-        const int DROdbuttonPlacement = 70;              // vertical spacing of the DRO buttons  
-
-    // Hold button
-        const int p1HoldButtonDelay = 5000;              // how long to wait when HOLD button is pressed (ms)
-        
-    // page 2 - misc 
-      const int p2secondColumn = 150;                    // y position of second column of buttons 
-      const int p2buttonSpacing = 8;                     // space between rows of buttons
-
-    // page 3 - numeric keypad 
-      const int noDigitsOnNumEntry = 10;                 // maximum length of entered number
-      const int keyWidth = 45;
-      const int keyHeight = 32;
-      const int keySpacing = 10;
-      const int keyX = 110;                              // position on screen (top left)
-      const int keyY = 30;
-      
-    // page 4 - gcode
-      const int p4ButtonSpacing = 70;                    // button spacing
-      const int p4ButtonGap = 4;                         // gap between buttons
-
-      
-  // ----------------------------------------------------------------------------------------------------
-
-
-  #define WDT_TIMEOUT 60                                 // timeout of watchdog timer (seconds) - i.e. auto restart if sketch stops responding
-
-  #define ENABLE_EEPROM 1                                // if some settings are to be stored in eeprom  (not used)
-
-  #define ENABLE_OTA 1                                   // Enable Over The Air updates (OTA)
-  const String OTAPassword = "password";                 // Password to enable OTA (supplied as - http://<ip address>?pwd=xxxx )
-
-  const char* HomeLink = "/";                            // Where home button on web pages links to (usually "/")
-  const uint16_t ServerPort = 80;                        // ip port to serve web pages on (usually 80)
-
-  int dataRefresh = 2;                                   // Refresh rate of the updating data on root web page (seconds)
-
-  const byte LogNumber = 40;                             // number of entries in the system log
-
-  unsigned long wifiRetryTime = 30;                      // how often to try to reconnect to wifi when connection is lost (seconds)
-
-  
   // -------------------------------------------- CYD DISPLAY --------------------------------------------
 
     #include <SPI.h>
@@ -351,7 +224,11 @@
         ButtonWidget keyCLR = ButtonWidget(&tft); 
         ButtonWidget keyBACK = ButtonWidget(&tft); 
         ButtonWidget keyPoint = ButtonWidget(&tft); 
-        ButtonWidget but6 = ButtonWidget(&tft);   // page 1
+        ButtonWidget keyMinus = ButtonWidget(&tft); 
+        ButtonWidget but6 = ButtonWidget(&tft);     // page 1
+        ButtonWidget p3setx = ButtonWidget(&tft);   // setx
+        ButtonWidget p3sety = ButtonWidget(&tft);   // sety
+        ButtonWidget p3setz = ButtonWidget(&tft);   // setz
 
 
       // page 4
@@ -380,15 +257,15 @@
     // Page 1
 
       // Zero buttons
-      {1, 1, "Z", DROwidth, 0, DRObuttonWidth, DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroX, &zeroXpressed},
-      {1, 1, "Z", DROwidth, DROdbuttonPlacement * 1, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroY, &zeroYpressed},
-      {1, 1, "Z", DROwidth, DROdbuttonPlacement * 2, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroZ, &zeroZpressed},
+      {1, xEnabled, "Z", DROwidth, 0, DRObuttonWidth, DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroX, &zeroXpressed},
+      {1, yEnabled, "Z", DROwidth, DROdbuttonPlacement * 1, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroY, &zeroYpressed},
+      {1, zEnabled, "Z", DROwidth, DROdbuttonPlacement * 2, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroZ, &zeroZpressed},
       {1, 1, "Z", DROwidth, DROheight, DRObuttonWidth * 2 + buttonSpacing,  DRObuttonheight, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zAll, &zAllpressed},
 
       // half buttons
-      {1, 1, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, 0, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfX, &halfXpressed},
-      {1, 1, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, DROdbuttonPlacement * 1, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfY, &halfYpressed},
-      {1, 1, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, DROdbuttonPlacement * 2, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfZ, &halfZpressed},
+      {1, xEnabled, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, 0, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfX, &halfXpressed},
+      {1, yEnabled, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, DROdbuttonPlacement * 1, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfY, &halfYpressed},
+      {1, zEnabled, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, DROdbuttonPlacement * 2, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfZ, &halfZpressed},
       
       // Coordinate select buttons
       {1, 1, "C1", 0, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord1, &coord1pressed},
@@ -422,7 +299,12 @@
       {3, 1, "CLR", keyX + 0 * (keyWidth + keySpacing), keyY + 4 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &keyCLR, &buttonKeyCLRPressed},
       {3, 1, "BACK", keyX + 1 * (keyWidth + keySpacing), keyY + 4 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &keyBACK, &buttonKeyBackPressed},
       {3, 1, ".", keyX + 1 * (keyWidth + keySpacing), keyY + 3 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &keyPoint, &buttonKeyPointPressed},
+      {3, 1, "-", keyX + 2 * (keyWidth + keySpacing), keyY + 3 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &keyMinus, &buttonKeyMinusPressed},
       
+      // set reading
+      {3, xEnabled, "setX", 0, SCREEN_HEIGHT - 3 * (keyHeight + keySpacing), setKeyWidth, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &p3setx, &buttonp3setxPressed},
+      {3, yEnabled, "setY", 0, SCREEN_HEIGHT - 2 * (keyHeight + keySpacing), setKeyWidth, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &p3sety, &buttonp3setyPressed},
+      {3, zEnabled, "setZ", 0, SCREEN_HEIGHT - 1 * (keyHeight + keySpacing), setKeyWidth, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &p3setz, &buttonp3setzPressed},
 
     // page 4
       {4, 1, "Prev", p4ButtonSpacing * 0, SCREEN_HEIGHT - DRObuttonheight, p4ButtonSpacing - p4ButtonGap, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &stepPrev, &buttonKeyStepPrevPressed},
@@ -450,9 +332,7 @@ unsigned long wifiDownTime = 0;         // if wifi connection is lost this recor
 #include "wifi.h"                       // Load the Wifi / NTP stuff
 #include "standard.h"                   // Some standard procedures
 
-#if ENABLE_EEPROM
-  #include <EEPROM.h>                   // for storing settings in eeprom (not used at present)
-#endif
+#include <EEPROM.h>                   // for storing settings in eeprom (not used at present)
 
 #if ENABLE_OTA
   #include "ota.h"                      // Over The Air updates (OTA)
@@ -551,9 +431,7 @@ void setup() {
 
   // if (serialDebug) Serial.setDebugOutput(true);             // to enable extra diagnostic info
 
-  // #if ENABLE_EEPROM
   //   settingsEeprom(0);                                         // read stored settings from eeprom
-  // #endif
 
   if (wifiEnabled) {
     // update screen
@@ -583,12 +461,18 @@ void setup() {
     ts.setRotation(SCREEN_ROTATION);  
 
   // caliper gpio pins
-    pinMode(CLOCK_PIN_X, INPUT);
-    pinMode(DATA_PIN_X, INPUT);
-    pinMode(CLOCK_PIN_Y, INPUT);
-    pinMode(DATA_PIN_Y, INPUT);
-    pinMode(CLOCK_PIN_Z, INPUT);
-    pinMode(DATA_PIN_Z, INPUT);    
+    if (xEnabled) {
+      pinMode(CLOCK_PIN_X, INPUT);
+      pinMode(DATA_PIN_X, INPUT);
+    }
+    if (yEnabled) {
+      pinMode(CLOCK_PIN_Y, INPUT);
+      pinMode(DATA_PIN_Y, INPUT);
+    }
+    if (zEnabled) {
+      pinMode(CLOCK_PIN_Z, INPUT);
+      pinMode(DATA_PIN_Z, INPUT);    
+    }
 
   // initialise buttons
     for (uint8_t b = 0; b < buttonCount; b++) {
@@ -654,7 +538,7 @@ bool refreshCalipers() {
   bool caliperReadOK = 1;                                      // set if any caliper failed to get a reading
 
   // Digital Caliper - X       
-    if (DATA_PIN_X != -1 && millis() - lastReadingTimeX > checkDROreadings) {  // if caliper is present and has not refreshed recently
+    if (xEnabled && CLOCK_PIN_X != -1 &&  millis() - lastReadingTimeX > checkDROreadings) {  // if caliper is present and has not refreshed recently
           float tRead = readCaliper(CLOCK_PIN_X, DATA_PIN_X, reverseXdirection);  // read data from caliper (reading over 9999 indicates fail)
           if (tRead != xReading && tRead < 9999.00) {          // if reading has changed
             xReading = tRead;                                  // store result in global variable 
@@ -669,13 +553,13 @@ bool refreshCalipers() {
     }
 
   // Digital Caliper - Y    
-    if (DATA_PIN_Y != -1 && millis() - lastReadingTimeY > checkDROreadings) {  // if caliper is present and has not refreshed recently
-          float tRead = readCaliper(CLOCK_PIN_Y, DATA_PIN_Y, reverseYdirection);  // read data from caliper (reading over 9999 indicates fail)
-          if (tRead != yReading && tRead < 9999.00) {          // if reading has changed
-            yReading = tRead;                                  // store result in global variable 
-            if (lastReadingTimeY == 0) {yAdj[0] = yReading; yAdj[1] = yReading; yAdj[2] = yReading;}   // first time caliper has been read so zero it
-            refreshDisplayFlag = 1;                            // flag DRO display to refresh
-            lastReadingTimeY = millis();                       // log time of last reading
+    if (yEnabled &&  CLOCK_PIN_Y != -1 && millis() - lastReadingTimeY > checkDROreadings) {   
+          float tRead = readCaliper(CLOCK_PIN_Y, DATA_PIN_Y, reverseYdirection);   
+          if (tRead != yReading && tRead < 9999.00) {    
+            yReading = tRead;    
+            if (lastReadingTimeY == 0) {yAdj[0] = yReading; yAdj[1] = yReading; yAdj[2] = yReading;}    
+            refreshDisplayFlag = 1;  
+            lastReadingTimeY = millis();   
           }
           if (tRead > 9998) {    
             if (serialDebug) Serial.println("Y Caliper read failed: " + String(tRead));    
@@ -684,13 +568,13 @@ bool refreshCalipers() {
     }
 
   // Digital Caliper - Z    
-    if (DATA_PIN_Z != -1 && millis() - lastReadingTimeZ > checkDROreadings + 7) {  // if caliper is present and has not refreshed recently
-          float tRead = readCaliper(CLOCK_PIN_Z, DATA_PIN_Z, reverseZdirection);  // read data from caliper (reading over 9999 indicates fail)
-          if (tRead != zReading && tRead < 9999.00) {          // if reading has changed  
-            zReading = tRead;                                  // store result in global variable
-            if (lastReadingTimeZ == 0) {zAdj[0] = zReading; zAdj[1] = zReading; zAdj[2] = zReading;}   // first time caliper has been read so zero it
-            refreshDisplayFlag = 1;                            // flag DRO display to refresh
-            lastReadingTimeZ = millis();                       // log time of last reading
+    if (zEnabled &&  CLOCK_PIN_Z != -1 && millis() - lastReadingTimeZ > checkDROreadings + 7) {  
+          float tRead = readCaliper(CLOCK_PIN_Z, DATA_PIN_Z, reverseZdirection);  
+          if (tRead != zReading && tRead < 9999.00) {  
+            zReading = tRead; 
+            if (lastReadingTimeZ == 0) {zAdj[0] = zReading; zAdj[1] = zReading; zAdj[2] = zReading;}  
+            refreshDisplayFlag = 1;   
+            lastReadingTimeZ = millis();  
           }
           if (tRead > 9998) {    
             if (serialDebug) Serial.println("Z Caliper read failed: " + String(tRead));    
@@ -928,7 +812,7 @@ void handlePing(){
 // @param   eDirection   1=write, 0=read
 // Note on esp32 this has now been replaced by preferences.h although I still prefer this method - see: by https://randomnerdtutorials.com/esp32-save-data-permanently-preferences/
 
-#if ENABLE_EEPROM
+
 void settingsEeprom(bool eDirection) {
 
     const int dataRequired = 50;   // total size of eeprom space required (bytes)
@@ -1003,7 +887,6 @@ void settingsEeprom(bool eDirection) {
     }
 
 }
-#endif
 
 
 // ----------------------------------------------------------------
@@ -1329,7 +1212,7 @@ void displayReadings() {
       char buff[30];
 
     // x
-      if (DATA_PIN_X != -1) {
+      if (xEnabled && DATA_PIN_X != -1) {
         (lastReadingTimeX > 0) ? tft.setTextColor(TFT_RED, TFT_BLACK) : tft.setTextColor(TFT_BLUE, TFT_BLACK);   // if no data received yet
         sprintf(buff, spa.c_str(), xReading - xAdj[currentCoord] - gcodeDROadjX); 
         if (strlen(buff) == DROnoOfDigits1 + DROnoOfDigits2 +1) tft.drawString(buff, 0, 0);    
@@ -1337,7 +1220,7 @@ void displayReadings() {
       }
 
     // y
-      if (DATA_PIN_Y != -1) {
+      if (yEnabled && DATA_PIN_Y != -1) {
         (lastReadingTimeY > 0) ? tft.setTextColor(TFT_RED, TFT_BLACK) : tft.setTextColor(TFT_BLUE, TFT_BLACK);   // if no data received yet
         sprintf(buff, spa.c_str(), yReading - yAdj[currentCoord] - gcodeDROadjY);
         if (strlen(buff) == DROnoOfDigits1 + DROnoOfDigits2 +1) tft.drawString(buff, 0, tft.fontHeight() );    
@@ -1345,7 +1228,7 @@ void displayReadings() {
       }
 
     // z
-      if (DATA_PIN_Z != -1) {
+      if (zEnabled && DATA_PIN_Z != -1) {
         (lastReadingTimeZ > 0) ? tft.setTextColor(TFT_RED, TFT_BLACK) : tft.setTextColor(TFT_BLUE, TFT_BLACK);   // if no data received yet
         sprintf(buff, spa.c_str(), zReading - zAdj[currentCoord] - gcodeDROadjZ);
         if (strlen(buff) == DROnoOfDigits1 + DROnoOfDigits2 +1) tft.drawString(buff, 0, tft.fontHeight() * 2 );    
