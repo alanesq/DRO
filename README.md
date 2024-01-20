@@ -8,12 +8,12 @@
 As a result, building a three-axis DRO for your milling machine or lathe can set you back less than £30 (around $40). <br><br>
 
 <p align="center" width="100%">
-  <img src="/pics/pics.jpg" /><br><br>
-  <img src="/pics/screenGrabs.jpg" />
-  <img width="450" class="center" src="/pics/webpage.jpg" /><br><br>
+  <img height="200" src="/pics/pics.jpg" /><br><br>
+  <img height="200" src="/pics/screenGrabs.jpg" />
+  <img height="200" class="center" src="/pics/webpage.jpg" /><br><br>
 </p>
 
-I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available was still going to cost me several hundred pounds, which I just couldn’t justify spending. I also suspected that the cheapest DRO on the market would probably fail after a short time anyway ging on past experience of cheap electronics.  Therefore, I decided to see if I can create my own as inexpensively as possible. <br>
+I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available was still going to cost me several hundred pounds, which I just couldn’t justify spending. I also suspected that the cheapest DRO on the market would probably fail after a short time anyway going on my past experience of cheap electronics.  Therefore, I decided to see if I can create my own as inexpensively as possible.  Not only would this save me a lot of money when I do not even know how much I would use one but it means I can modify it to my exact requirements and it will always be easily fixable.<br>
 I think it safe to say that I have achieved this goal ! <br><br>
 
 The libraries required for this sketch are detailed [HERE](https://github.com/alanesq/DRO/tree/main/LIBRARIES)<br>
@@ -46,6 +46,7 @@ One good thing that I was not expecting is you still get two decimal places from
 
 The well known problem with these cheap calipers is the battery goes flat if you do not use them for a while, it turns out that they are producing the data we use here all the time, even when turned off.  I bought one of the longer calipers recently which looks like it is a "new/impoved" design which has got round this issue by turning off the data all together which is very bad news if you want to use it for this project.  So if you are buying calipers I suggest you try to buy the older style ones if you can as the newer ones do not seem to support data, the good news is these will be the cheapest ones.  You can still use the reader from a cheaper caliper on this longer bar if you do have one though.<br>
 Also, I understand that some of these calipers use a different data standard although all the ones I have tried are the same<br>
+I suspect the calipers would not take well to getting wet so you will need to cover them well if this is likely to happen<br>
 
 ## Misc info:
 
