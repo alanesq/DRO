@@ -13,8 +13,8 @@ As a result, building a three-axis DRO for your milling machine or lathe can set
   <img height="200" class="center" src="/pics/webpage.jpg" /><br><br>
 </p>
 
-I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available was still going to cost me several hundred pounds, which I just couldn’t justify spending. I also suspected that the cheapest DRO on the market would probably fail after a short time anyway going on my past experience of cheap electronics.  Therefore, I decided to see if I can create my own as inexpensively as possible.  Not only would this save me a lot of money when I do not even know how much I would use one but it means I can modify it to my exact requirements and it will always be easily fixable.<br>
-I think it safe to say that I have achieved this goal ! <br><br>
+I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available was still going to cost me several hundred pounds, which I just couldn’t justify spending. I also suspected that the cheapest DRO on the market would probably fail after a short time anyway going on my past experience of cheap electronics.  Therefore, I decided to see if I can create my own as inexpensively as possible.  I think it safe to say that I have achieved this goal :-)<br>
+Not only would this save me a lot of money when I do not even know how much I would use one but it means I can modify it to my exact requirements and it will always be easily fixable.<br><br>
 
 The libraries required for this sketch are detailed [HERE](https://github.com/alanesq/DRO/tree/main/LIBRARIES)<br>
 Note that the "TFT_eSPI" library needs to be modified to work with the CYD and if your CYD has two USB ports there is a further change to this required.
