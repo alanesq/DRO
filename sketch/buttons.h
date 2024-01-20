@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------------------
 
 
-          Procedures triggered when a button is pressed on the screen - 19Jan24
+          Procedures triggered when a button is pressed on the screen - 20Jan24
 
           Part of the  "SuperLowBudget-DRO" sketch - https://github.com/alanesq/DRO
 
@@ -105,16 +105,18 @@
     displayReadings();     
   }
 
+  void coord4pressed() { 
+    log_system_message("button: C4");
+    currentCoord = 3;
+    displayReadings();     
+  }  
+
 
   // hold current reading
   void oneHoldPressed() {
     log_system_message("button: hold current reading");
     
-    // refresh readings from calipers 
-      if (!refreshCalipers()) {
-        delay(20);
-        refreshCalipers();
-      }
+    refreshCalipers(2);                          // refresh readings from calipers  
     
     // store current readings
       float tXreading = xReading;
@@ -131,14 +133,10 @@
       delay(p1HoldButtonDelay);                   // wait
       drawScreen(displayingPage);                 // re-draw the screen
 
-    // refresh readings from calipers 
-      if (!refreshCalipers()) {
-        delay(20);
-        refreshCalipers();
-      }    
+    refreshCalipers(2);                          // refresh readings from calipers  
 
     // adjust coordinates to new reading
-      for (int i = 0; i < 3; i++) {
+      for (int i = 0; i < noOfCoordinates; i++) {
         xAdj[i] = xAdj[i] - tXreading + xReading;
         yAdj[i] = yAdj[i] - tYreading + yReading;
         zAdj[i] = zAdj[i] - tZreading + zReading;
@@ -173,7 +171,7 @@
   void twoRecallPressed() {
     log_system_message("button: recall settings");
     settingsEeprom(0);   // read from eeprom 
-    refreshCalipers();   // update display
+    refreshCalipers(2);  // refresh readings from calipers  
     // log time of last reading to prevent first reading zeroing it
       lastReadingTimeX = millis();            
       lastReadingTimeY = millis(); 
