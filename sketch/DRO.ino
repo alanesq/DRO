@@ -1,6 +1,6 @@
 /*******************************************************************************************************************
  *
- *                                              SuperLowBudget-DRO               20Jan23
+ *                                              SuperLowBudget-DRO               21Jan23
  *                                              ------------------
  *
  *          3 Channel DRO using cheap digital calipers and a ESP32-2432S028R (aka Cheap Yellow Display)
@@ -91,8 +91,8 @@
       Update via OTA:                     http://x.x.x.x/ota                (default password is 'password')
 
 */
-#include <Arduino.h>                      // required to use Strings 
 
+#include <Arduino.h>                      // required to use Strings 
 #include "settings.h"                     // load in settings for the DRO from settings.h file
 
 #if (!defined ESP32)
@@ -120,36 +120,34 @@
     #include <SPI.h>
     #include <FS.h>
     #include <XPT2046_Touchscreen.h>
-    #define CALIBRATION_FILE "/TouchCalData1"
-    #define REPEAT_CAL false
 
-    SPIClass mySpi = SPIClass(HSPI);              // note: I had to change VSPI to HSPI
+    SPIClass mySpi = SPIClass(HSPI);            // note: I had to change VSPI to HSPI
     XPT2046_Touchscreen ts(XPT2046_CS, XPT2046_IRQ);  
 
-    #include <TFT_eSPI.h>                         // display driver
-    #include <TFT_eWidget.h>                      // Widget library
-    #include "Free_Fonts.h"                       // Standard fonts info
-    #include "sevenSeg.h"                         // seven segment style font
+    #include <TFT_eSPI.h>                       // display driver
+    #include <TFT_eWidget.h>                    // Widget library
+    #include "Free_Fonts.h"                     // Standard fonts info
+    #include "sevenSeg.h"                       // seven segment style font
     TFT_eSPI tft = TFT_eSPI();
       
-    MeterWidget dro  = MeterWidget(&tft);         // demo meter used at startup
+    MeterWidget dro  = MeterWidget(&tft);       // demo meter used at startup
 
-    float xReading, yReading, zReading;            // store for the current dro readings 
+    float xReading, yReading, zReading;         // store for the current dro readings 
     unsigned long lastReadingTimeX = 0, lastReadingTimeY = 0, lastReadingTimeZ = 0;     // last time caliper data was read
-    unsigned long lastTouch = 0;                   // last time touchscreen button was pressed
+    unsigned long lastTouch = 0;                // last time touchscreen button was pressed
 
     // zero adjustments for calipers (for the coordinate systems)
-      const int noOfCoordinates = 4;       // number of coordinate systems (if more than 4 then additional buttons and procedures will need to be created)
+      const int noOfCoordinates = 4;            // number of coordinate systems (if more than 4 then additional buttons and procedures will need to be created)
       float xAdj[noOfCoordinates] = {0};
       float yAdj[noOfCoordinates] = {0};
       float zAdj[noOfCoordinates] = {0};
-      int currentCoord = 0;     // current one in use (0-2)
+      int currentCoord = 0;                     // current active coordinate (0-2)
     
     // entered gcode
       const int maxGcodeStringLines = 1024;     // maximum number of lines of gcode allowed
       const int estimateAverageLineLength = 30;
       String gcodeEntered;                      // store for the entered gcode 
-      float gcodeX[maxGcodeStringLines], gcodeY[maxGcodeStringLines], gcodeZ[maxGcodeStringLines];      // array of positions extracted fro gcode
+      float gcodeX[maxGcodeStringLines], gcodeY[maxGcodeStringLines], gcodeZ[maxGcodeStringLines];      // array of positions extracted from gcode
       int gcodeLineCount = 0;                   // number of positions extracted from gcode
       bool incX, incY, incZ;                    // which coordinates to process
       int gcodeStepPosition = 1;                // current position through the steps
@@ -217,63 +215,17 @@
       buttonActionCallback action;  // procedure called when button pressed
     };
 
-    // page buttons (on all pages) - #noPages 
-      ButtonWidget pb[] = {&tft, &tft, &tft, &tft};
-            
 
-    // page 1
-      ButtonWidget zeroX = ButtonWidget(&tft);  // zero
-      ButtonWidget zeroY = ButtonWidget(&tft);  
-      ButtonWidget zeroZ = ButtonWidget(&tft);  
-      ButtonWidget zAll = ButtonWidget(&tft);  
-
-      ButtonWidget halfX = ButtonWidget(&tft);  // half
-      ButtonWidget halfY = ButtonWidget(&tft);  
-      ButtonWidget halfZ = ButtonWidget(&tft);  
-
-      ButtonWidget coord1 = ButtonWidget(&tft);  // coordinates
-      ButtonWidget coord2 = ButtonWidget(&tft);  
-      ButtonWidget coord3 = ButtonWidget(&tft);  
-      ButtonWidget coord4 = ButtonWidget(&tft);  
-
-      ButtonWidget hold = ButtonWidget(&tft);    // hold button
- 
-    // page 2
-      ButtonWidget p2r = ButtonWidget(&tft);     // reboot
-      ButtonWidget p2wifi = ButtonWidget(&tft);  // enable wifi
-      ButtonWidget p2store = ButtonWidget(&tft); // store readings
-      ButtonWidget p2recall = ButtonWidget(&tft);// recall readings
- 
-    // page 3
-      // number keypad
-        String keyEnteredNumber = "";      // the number entered on the keypad (String)
-        float keyEnteredNumberVal = 0;     // the above string as an float
-        ButtonWidget key1 = ButtonWidget(&tft); 
-        ButtonWidget key2 = ButtonWidget(&tft); 
-        ButtonWidget key3 = ButtonWidget(&tft); 
-        ButtonWidget key4 = ButtonWidget(&tft); 
-        ButtonWidget key5 = ButtonWidget(&tft); 
-        ButtonWidget key6 = ButtonWidget(&tft); 
-        ButtonWidget key7 = ButtonWidget(&tft); 
-        ButtonWidget key8 = ButtonWidget(&tft); 
-        ButtonWidget key9 = ButtonWidget(&tft); 
-        ButtonWidget key0 = ButtonWidget(&tft); 
-        ButtonWidget keyEnter = ButtonWidget(&tft); 
-        ButtonWidget keyCLR = ButtonWidget(&tft); 
-        ButtonWidget keyBACK = ButtonWidget(&tft); 
-        ButtonWidget keyPoint = ButtonWidget(&tft); 
-        ButtonWidget keyMinus = ButtonWidget(&tft); 
-        ButtonWidget but6 = ButtonWidget(&tft);     // page 1
-        ButtonWidget p3setx = ButtonWidget(&tft);   // setx
-        ButtonWidget p3sety = ButtonWidget(&tft);   // sety
-        ButtonWidget p3setz = ButtonWidget(&tft);   // setz
+  // create the button widgets - there has to be a better way? - ensure there are enough for the number of buttons required (check log to verify)
+    ButtonWidget butnW[] = {&tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, 
+                            &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, 
+                            &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft};   
+    int widgetCount = (sizeof(butnW) / sizeof(*butnW)) - 1;     // counter used for assigning widgets to buttons
 
 
-      // page 4
-        ButtonWidget stepNext = ButtonWidget(&tft); 
-        ButtonWidget stepPrev = ButtonWidget(&tft); 
-        ButtonWidget stepReset = ButtonWidget(&tft); 
-        ButtonWidget stepKBD = ButtonWidget(&tft); 
+  // keypad (Page 3)
+    String keyEnteredNumber = "";      // the number entered on the keypad (String)
+    float keyEnteredNumberVal = 0;     // the above string as an float
 
 
   // ---------------------------------- -define the button widgets --------------------------------------
@@ -287,77 +239,79 @@
     // all pages
       // page selection buttons - #noPages
       //    page, enabled, title, x, y, width, height, border colour, burder thickness, fill colour, pressed colour, button, procedure to run when button is pressed
-      {0, 1, "P1", SCREEN_WIDTH - pageButtonWidth, (pageButtonHeight + pageButtonSpacing) * 0, pageButtonWidth, pageButtonHeight, TFT_WHITE, 1, TFT_SILVER, TFT_BLACK, &pb[0], &OnePage1Pressed},
-      {0, 1, "P2", SCREEN_WIDTH - pageButtonWidth, (pageButtonHeight + pageButtonSpacing) * 1, pageButtonWidth, pageButtonHeight, TFT_WHITE, 1, TFT_SILVER, TFT_BLACK, &pb[1], &OnePage2Pressed},
-      {0, 1, "P3", SCREEN_WIDTH - pageButtonWidth, (pageButtonHeight + pageButtonSpacing) * 2, pageButtonWidth, pageButtonHeight, TFT_WHITE, 1, TFT_SILVER, TFT_BLACK, &pb[2], &OnePage3Pressed},
-      {0, 1, "P4", SCREEN_WIDTH - pageButtonWidth, (pageButtonHeight + pageButtonSpacing) * 3, pageButtonWidth, pageButtonHeight, TFT_WHITE, 1, TFT_SILVER, TFT_BLACK, &pb[3], &OnePage4Pressed},
+      {0, 1, "P1", SCREEN_WIDTH - pageButtonWidth, (pageButtonHeight + pageButtonSpacing) * 0, pageButtonWidth, pageButtonHeight, TFT_WHITE, 1, TFT_SILVER, TFT_BLACK, &butnW[widgetCount--], &OnePage1Pressed},
+      {0, 1, "P2", SCREEN_WIDTH - pageButtonWidth, (pageButtonHeight + pageButtonSpacing) * 1, pageButtonWidth, pageButtonHeight, TFT_WHITE, 1, TFT_SILVER, TFT_BLACK, &butnW[widgetCount--], &OnePage2Pressed},
+      {0, 1, "P3", SCREEN_WIDTH - pageButtonWidth, (pageButtonHeight + pageButtonSpacing) * 2, pageButtonWidth, pageButtonHeight, TFT_WHITE, 1, TFT_SILVER, TFT_BLACK, &butnW[widgetCount--], &OnePage3Pressed},
+      {0, 1, "P4", SCREEN_WIDTH - pageButtonWidth, (pageButtonHeight + pageButtonSpacing) * 3, pageButtonWidth, pageButtonHeight, TFT_WHITE, 1, TFT_SILVER, TFT_BLACK, &butnW[widgetCount--], &OnePage4Pressed},
 
     // Page 1
 
       // Zero buttons
-      {1, xEnabled, "Z", DROwidth, 0, DRObuttonWidth, DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroX, &zeroXpressed},
-      {1, yEnabled, "Z", DROwidth, DROdbuttonPlacement * 1, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroY, &zeroYpressed},
-      {1, zEnabled, "Z", DROwidth, DROdbuttonPlacement * 2, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zeroZ, &zeroZpressed},
-      {1, 1, "Z", DROwidth, DROheight, DRObuttonWidth * 2 + buttonSpacing,  DRObuttonheight, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &zAll, &zAllpressed},
+      {1, xEnabled, "Z", DROwidth, 0, DRObuttonWidth, DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &butnW[widgetCount--], &zeroXpressed},
+      {1, yEnabled, "Z", DROwidth, DROdbuttonPlacement * 1, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &butnW[widgetCount--], &zeroYpressed},
+      {1, zEnabled, "Z", DROwidth, DROdbuttonPlacement * 2, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &butnW[widgetCount--], &zeroZpressed},
+      {1, 1, "Z", DROwidth, DROheight, DRObuttonWidth * 2 + buttonSpacing,  DRObuttonheight, TFT_WHITE, 1, TFT_DARKGREEN, TFT_BLACK, &butnW[widgetCount--], &zAllpressed},
 
       // half buttons
-      {1, xEnabled, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, 0, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfX, &halfXpressed},
-      {1, yEnabled, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, DROdbuttonPlacement * 1, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfY, &halfYpressed},
-      {1, zEnabled, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, DROdbuttonPlacement * 2, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &halfZ, &halfZpressed},
+      {1, xEnabled, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, 0, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &butnW[widgetCount--], &halfXpressed},
+      {1, yEnabled, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, DROdbuttonPlacement * 1, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &butnW[widgetCount--], &halfYpressed},
+      {1, zEnabled, "1/2", DROwidth + DRObuttonWidth + buttonSpacing, DROdbuttonPlacement * 2, DRObuttonWidth,  DRObuttonheight * 2 - buttonSpacing, TFT_WHITE, 1, TFT_DARKCYAN, TFT_BLACK, &butnW[widgetCount--], &halfZpressed},
       
       // Coordinate select buttons
-      {1, 1, "C1", 0, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord1, &coord1pressed},
-      {1, 1, "C2", (DRObuttonWidth + buttonSpacing) * 1, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord2, &coord2pressed},
-      {1, 1, "C3", (DRObuttonWidth + buttonSpacing) * 2, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord3, &coord3pressed},
-      {1, 1, "C4", (DRObuttonWidth + buttonSpacing) * 3, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &coord4, &coord4pressed},
+      {1, 1, "C1", 0, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &butnW[widgetCount--], &coord1pressed},
+      {1, 1, "C2", (DRObuttonWidth + buttonSpacing) * 1, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &butnW[widgetCount--], &coord2pressed},
+      {1, 1, "C3", (DRObuttonWidth + buttonSpacing) * 2, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &butnW[widgetCount--], &coord3pressed},
+      {1, 1, "C4", (DRObuttonWidth + buttonSpacing) * 3, DROheight, DRObuttonWidth,  DRObuttonheight, TFT_WHITE, 1, TFT_MAROON, TFT_BLACK, &butnW[widgetCount--], &coord4pressed},
 
       // hold button
-      {1, 1, "H", (DRObuttonWidth + buttonSpacing) * 4, DROheight, DRObuttonWidth - buttonSpacing,  DRObuttonheight, TFT_WHITE, 1, TFT_RED, TFT_BLACK, &hold, &oneHoldPressed},
+      {1, 1, "H", (DRObuttonWidth + buttonSpacing) * 4, DROheight, DRObuttonWidth - buttonSpacing,  DRObuttonheight, TFT_WHITE, 1, TFT_RED, TFT_BLACK, &butnW[widgetCount--], &oneHoldPressed},
 
     // page 2
     
-      {2, 1, "En. Wifi", 0, SCREEN_HEIGHT - (DRObuttonheight + p2buttonSpacing) * 1, 140, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &p2wifi, &twoWifiPressed},
-      {2, 1, "Reboot", p2secondColumn, SCREEN_HEIGHT - (DRObuttonheight + p2buttonSpacing) * 1, 120, DRObuttonheight, TFT_WHITE, 1, TFT_RED, TFT_BLACK, &p2r, &twoRebootPressed},
-      {2, 1, "Store", p2secondColumn, (DRObuttonheight + p2buttonSpacing) * 0, 120, DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLACK, &p2store, &twoStorePressed},
-      {2, 1, "Recall", p2secondColumn, (DRObuttonheight + p2buttonSpacing) * 1, 120, DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLACK, &p2recall, &twoRecallPressed},
+      {2, 1, "En. Wifi", 0, SCREEN_HEIGHT - (DRObuttonheight + p2buttonSpacing) * 1, 140, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &butnW[widgetCount--], &twoWifiPressed},
+      {2, 1, "Reboot", p2secondColumn, SCREEN_HEIGHT - (DRObuttonheight + p2buttonSpacing) * 1, 120, DRObuttonheight, TFT_WHITE, 1, TFT_RED, TFT_BLACK, &butnW[widgetCount--], &twoRebootPressed},
+      {2, 1, "Store", p2secondColumn, (DRObuttonheight + p2buttonSpacing) * 0, 120, DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLACK, &butnW[widgetCount--], &twoStorePressed},
+      {2, 1, "Recall", p2secondColumn, (DRObuttonheight + p2buttonSpacing) * 1, 120, DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLACK, &butnW[widgetCount--], &twoRecallPressed},
 
     // page 3 
       
       // keypad
-      {3, 1, "1", keyX + 0 * (keyWidth + keySpacing), keyY + 2 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key1, &buttonKey1Pressed},
-      {3, 1, "2", keyX + 1 * (keyWidth + keySpacing), keyY + 2 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key2, &buttonKey2Pressed},
-      {3, 1, "3", keyX + 2 * (keyWidth + keySpacing), keyY + 2 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key3, &buttonKey3Pressed},
-      {3, 1, "4", keyX + 0 * (keyWidth + keySpacing), keyY + 1 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key4, &buttonKey4Pressed},
-      {3, 1, "5", keyX + 1 * (keyWidth + keySpacing), keyY + 1 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key5, &buttonKey5Pressed},
-      {3, 1, "6", keyX + 2 * (keyWidth + keySpacing), keyY + 1 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key6, &buttonKey6Pressed},
-      {3, 1, "7", keyX + 0 * (keyWidth + keySpacing), keyY + 0 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key7, &buttonKey7Pressed},
-      {3, 1, "8", keyX + 1 * (keyWidth + keySpacing), keyY + 0 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key8, &buttonKey8Pressed},
-      {3, 1, "9", keyX + 2 * (keyWidth + keySpacing), keyY + 0 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key9, &buttonKey9Pressed},
-      {3, 1, "0", keyX + 0 * (keyWidth + keySpacing), keyY + 3 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &key0, &buttonKey0Pressed},
-      //{3, 1, "ENTER", keyX + 1 * (keyWidth + keySpacing), keyY + 3 * (keyHeight + keySpacing), keyWidth * 2 + keySpacing, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &keyEnter, &buttonKeyEnterPressed},
-      {3, 1, "CLR", keyX + 0 * (keyWidth + keySpacing), keyY + 4 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &keyCLR, &buttonKeyCLRPressed},
-      {3, 1, "BACK", keyX + 1 * (keyWidth + keySpacing), keyY + 4 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &keyBACK, &buttonKeyBackPressed},
-      {3, 1, ".", keyX + 1 * (keyWidth + keySpacing), keyY + 3 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &keyPoint, &buttonKeyPointPressed},
-      {3, 1, "-", keyX + 2 * (keyWidth + keySpacing), keyY + 3 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &keyMinus, &buttonKeyMinusPressed},
+      {3, 1, "1", keyX + 0 * (keyWidth + keySpacing), keyY + 2 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &butnW[widgetCount--], &buttonKey1Pressed},
+      {3, 1, "2", keyX + 1 * (keyWidth + keySpacing), keyY + 2 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &butnW[widgetCount--], &buttonKey2Pressed},
+      {3, 1, "3", keyX + 2 * (keyWidth + keySpacing), keyY + 2 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &butnW[widgetCount--], &buttonKey3Pressed},
+      {3, 1, "4", keyX + 0 * (keyWidth + keySpacing), keyY + 1 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &butnW[widgetCount--], &buttonKey4Pressed},
+      {3, 1, "5", keyX + 1 * (keyWidth + keySpacing), keyY + 1 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &butnW[widgetCount--], &buttonKey5Pressed},
+      {3, 1, "6", keyX + 2 * (keyWidth + keySpacing), keyY + 1 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &butnW[widgetCount--], &buttonKey6Pressed},
+      {3, 1, "7", keyX + 0 * (keyWidth + keySpacing), keyY + 0 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &butnW[widgetCount--], &buttonKey7Pressed},
+      {3, 1, "8", keyX + 1 * (keyWidth + keySpacing), keyY + 0 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &butnW[widgetCount--], &buttonKey8Pressed},
+      {3, 1, "9", keyX + 2 * (keyWidth + keySpacing), keyY + 0 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &butnW[widgetCount--], &buttonKey9Pressed},
+      {3, 1, "0", keyX + 0 * (keyWidth + keySpacing), keyY + 3 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &butnW[widgetCount--], &buttonKey0Pressed},
+      //{3, 1, "ENTER", keyX + 1 * (keyWidth + keySpacing), keyY + 3 * (keyHeight + keySpacing), keyWidth * 2 + keySpacing, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &butnW[widgetCount--], &buttonKeyEnterPressed},
+      {3, 1, "CLR", keyX + 0 * (keyWidth + keySpacing), keyY + 4 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &butnW[widgetCount--], &buttonKeyCLRPressed},
+      {3, 1, "BACK", keyX + 1 * (keyWidth + keySpacing), keyY + 4 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &butnW[widgetCount--], &buttonKeyBackPressed},
+      {3, 1, ".", keyX + 1 * (keyWidth + keySpacing), keyY + 3 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &butnW[widgetCount--], &buttonKeyPointPressed},
+      {3, 1, "-", keyX + 2 * (keyWidth + keySpacing), keyY + 3 * (keyHeight + keySpacing), keyWidth, keyHeight, TFT_WHITE, 1, TFT_ORANGE, TFT_BLACK, &butnW[widgetCount--], &buttonKeyMinusPressed},
       
       // set reading
-      {3, xEnabled, "setX", 0, SCREEN_HEIGHT - 3 * (keyHeight + keySpacing), setKeyWidth, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &p3setx, &buttonp3setxPressed},
-      {3, yEnabled, "setY", 0, SCREEN_HEIGHT - 2 * (keyHeight + keySpacing), setKeyWidth, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &p3sety, &buttonp3setyPressed},
-      {3, zEnabled, "setZ", 0, SCREEN_HEIGHT - 1 * (keyHeight + keySpacing), setKeyWidth, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &p3setz, &buttonp3setzPressed},
+      {3, xEnabled, "setX", 0, SCREEN_HEIGHT - 3 * (keyHeight + keySpacing), setKeyWidth, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &butnW[widgetCount--], &buttonp3setxPressed},
+      {3, yEnabled, "setY", 0, SCREEN_HEIGHT - 2 * (keyHeight + keySpacing), setKeyWidth, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &butnW[widgetCount--], &buttonp3setyPressed},
+      {3, zEnabled, "setZ", 0, SCREEN_HEIGHT - 1 * (keyHeight + keySpacing), setKeyWidth, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &butnW[widgetCount--], &buttonp3setzPressed},
 
     // page 4
-      {4, 1, "Prev", p4ButtonSpacing * 0, SCREEN_HEIGHT - DRObuttonheight, p4ButtonSpacing - p4ButtonGap, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &stepPrev, &buttonKeyStepPrevPressed},
-      {4, 1, "Next", p4ButtonSpacing * 1, SCREEN_HEIGHT - DRObuttonheight, p4ButtonSpacing - p4ButtonGap, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &stepNext, &buttonKeyStepNextPressed},
-      {4, 1, "Reset", p4ButtonSpacing * 2, SCREEN_HEIGHT - DRObuttonheight, p4ButtonSpacing - p4ButtonGap, DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLACK, &stepReset, &buttonKeyStepResetPressed},
-      {4, 1, "KBD", p4ButtonSpacing * 3, SCREEN_HEIGHT - DRObuttonheight, p4ButtonSpacing - p4ButtonGap, DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLACK, &stepKBD, &buttonKeyStepKBDPressed},
+      {4, 1, "Prev", p4ButtonSpacing * 0, SCREEN_HEIGHT - DRObuttonheight, p4ButtonSpacing - p4ButtonGap, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &butnW[widgetCount--], &buttonKeyStepPrevPressed},
+      {4, 1, "Next", p4ButtonSpacing * 1, SCREEN_HEIGHT - DRObuttonheight, p4ButtonSpacing - p4ButtonGap, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &butnW[widgetCount--], &buttonKeyStepNextPressed},
+      {4, 1, "Reset", p4ButtonSpacing * 2, SCREEN_HEIGHT - DRObuttonheight, p4ButtonSpacing - p4ButtonGap, DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLACK, &butnW[widgetCount--], &buttonKeyStepResetPressed},
+      {4, 1, "KBD", p4ButtonSpacing * 3, SCREEN_HEIGHT - DRObuttonheight, p4ButtonSpacing - p4ButtonGap, DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLACK, &butnW[widgetCount--], &buttonKeyStepKBDPressed},
+      {4, 1, "Store position", p4ButtonSpacing * 0, SCREEN_HEIGHT - DRObuttonheight * 2 - p4ButtonGap, p4ButtonSpacing * 2 - p4ButtonGap, DRObuttonheight, TFT_WHITE, 1, TFT_YELLOW, TFT_BLACK, &butnW[widgetCount--], &buttonStorePosPressed},
+      {4, 1, "Clear all", p4ButtonSpacing * 2, SCREEN_HEIGHT - DRObuttonheight * 2 - p4ButtonGap, p4ButtonSpacing * 2 - p4ButtonGap, DRObuttonheight, TFT_WHITE, 1, TFT_GREEN, TFT_BLACK, &butnW[widgetCount--], &buttonClearStorePressed},
 
 
       // step through gcode
 
     };
     uint8_t buttonCount = sizeof(screenButtons) / sizeof(*screenButtons);     // number of buttons created
-
     
+
   // ----------------------------------------------------------------------------------------------------
     
 
@@ -428,6 +382,8 @@ void startTheWifi() {
 
 void setup() {
 
+  const int MeterSpeed = 20;           // spped of meter movements
+
   if (serialDebug) {           // if serial debug information is enabled
     Serial.begin(serialSpeed); // start serial comms
     //delay(2000);             // gives platformio chance to start serial monitor
@@ -470,13 +426,13 @@ void setup() {
 
   // if (serialDebug) Serial.setDebugOutput(true);             // to enable extra diagnostic info
 
-  //   settingsEeprom(0);                                         // read stored settings from eeprom
+  //   settingsEeprom(0);                                      // read stored settings from eeprom
 
   if (wifiEnabled) {
     // update screen
       tft.setTextColor(TFT_WHITE, TFT_BLACK);
       tft.drawString("Starting wifi ...", 5, sSpacing * 3);   
-      dro.updateNeedle(25, 20);                                // move dial to 25    
+      dro.updateNeedle(25, MeterSpeed);                    // move dial to 25
     startTheWifi();                                            // start wifi
     // update screen
       tft.setTextColor(TFT_WHITE, TFT_BLACK);       
@@ -486,7 +442,7 @@ void setup() {
         tft.drawString("Wifi failed to start", 5, sSpacing * 3);  
         wifiEnabled = 0;
       }  
-      dro.updateNeedle(75, 50);                                // slowly to give time to read IP address
+      dro.updateNeedle(50, MeterSpeed);                    // move dial to 50
   }
 
   // watchdog timer (esp32)
@@ -519,11 +475,10 @@ void setup() {
       screenButtons[b].btn->setPressAction(screenButtons[b].action);      // procedure called when the button is pressed
     }
  
-  // update screen    
-    dro.updateNeedle(100, 18);                                 // move dial to 100
+  dro.updateNeedle(100, MeterSpeed);                 // move dial to 100 
 
   // zero readings from calipers
-    refreshCalipers(3);         // get current readings
+    refreshCalipers(4);         // get current readings (try up to 4 times)
     for (int c=0; c < noOfCoordinates; c++) {
       xAdj[c] = xReading; 
       yAdj[c] = yReading; 
@@ -532,6 +487,10 @@ void setup() {
 
   drawScreen(1);     // draw the screen
 
+  // report number of button widgets 
+    if (widgetCount == 0) log_system_message("Button widget count is correct");
+    if (widgetCount < 0)  log_system_message("ERROR: " + String(-widgetCount) + " more button widgets required!");
+    if (widgetCount > 0)  log_system_message( String(widgetCount) + " too many button widgets have been created");
 }
 
 
@@ -577,61 +536,70 @@ void loop() {
 
 bool refreshCalipers(int cRetry) {
 
-  bool refreshDisplayFlag = 0;                                 // display will be refreshed if this flag is set
-  bool caliperReadOK = 0;                                      // flag if any caliper failed to get a reading
+  bool refreshDisplayFlag = 0;                                   // display will be refreshed if this flag is set
+  int tCount, xOK = 0, yOK = 0, zOK = 0;                         // temp variables
+
+  // Digital Caliper - X   
+    if (xEnabled && CLOCK_PIN_X != -1) {                         // if caliper is present
+      tCount = cRetry;                                           // reset try counter 
+      while (tCount > 0 && xOK == 0) {
+        float tRead = readCaliper(CLOCK_PIN_X, DATA_PIN_X, reverseXdirection);   // read data from caliper (reading over 9999 indicates fail)
+        if (tRead != xReading && tRead < 9999.00) {             // if reading has changed
+          xReading = tRead;                                     // store result in global variable 
+          refreshDisplayFlag = 1;                               // flag DRO display to refresh
+          lastReadingTimeX = millis();                          // log time of last reading
+          xOK = 1;                                              // flag reading received ok
+        }
+        if (tRead > 9998) {    
+          if (serialDebug) Serial.println("X Caliper read failed: " + String(tRead));    
+        }   
+        tCount--;                                                // decrement try counter
+      }  // while
+    } else xOK = 1;
+      
+
+  // Digital Caliper - Y  
+    if (yEnabled && CLOCK_PIN_Y != -1) {                         // if caliper is present
+      tCount = cRetry;                                           // reset try counter 
+      while (tCount > 0 && yOK == 0) {
+        float tRead = readCaliper(CLOCK_PIN_Y, DATA_PIN_Y, reverseYdirection);   // read data from caliper (reading over 9999 indicates fail)
+        if (tRead != yReading && tRead < 9999.00) {             // if reading has changed
+          yReading = tRead;                                     // store result in global variable 
+          refreshDisplayFlag = 1;                               // flag DRO display to refresh
+          lastReadingTimeY = millis();                          // log time of last reading
+          yOK = 1;                                              // flag reading received ok
+        }
+        if (tRead > 9998) {    
+          if (serialDebug) Serial.println("Y Caliper read failed: " + String(tRead));    
+        }   
+        tCount--;                                                // decrement try counter
+      }  // while
+    } else yOK = 1;
 
 
-  while (cRetry > 0 && caliperReadOK == 0) {                   // loop until retry count expired or all calipers received a reading
+  // Digital Caliper - Z
+    if (zEnabled && CLOCK_PIN_Z != -1) {                         // if caliper is present
+      tCount = cRetry;                                           // reset try counter 
+      while (tCount > 0 && zOK == 0) {
+        float tRead = readCaliper(CLOCK_PIN_Z, DATA_PIN_Z, reverseZdirection);   // read data from caliper (reading over 9999 indicates fail)
+        if (tRead != zReading && tRead < 9999.00) {             // if reading has changed
+          zReading = tRead;                                     // store result in global variable 
+          refreshDisplayFlag = 1;                               // flag DRO display to refresh
+          lastReadingTimeZ = millis();                          // log time of last reading
+          zOK = 1;                                              // flag reading received ok
+        }
+        if (tRead > 9998) {    
+          if (serialDebug) Serial.println("Z Caliper read failed: " + String(tRead));    
+        }   
+        tCount--;                                                // decrement try counter
+      }  // while
+    } else zOK = 1;    
 
-    caliperReadOK = 1;
-    cRetry--;
-
-    // Digital Caliper - X       
-      if (xEnabled && CLOCK_PIN_X != -1) {  // if caliper is present and has not refreshed recently
-            float tRead = readCaliper(CLOCK_PIN_X, DATA_PIN_X, reverseXdirection);  // read data from caliper (reading over 9999 indicates fail)
-            if (tRead != xReading && tRead < 9999.00) {          // if reading has changed
-              xReading = tRead;                                  // store result in global variable 
-              refreshDisplayFlag = 1;                            // flag DRO display to refresh
-              lastReadingTimeX = millis();                       // log time of last reading
-            }
-            if (tRead > 9998) {    
-              if (serialDebug) Serial.println("X Caliper read failed: " + String(tRead));    
-              caliperReadOK = 0;
-            }   
-      }
-
-    // Digital Caliper - Y    
-      if (yEnabled &&  CLOCK_PIN_Y != -1) {   
-            float tRead = readCaliper(CLOCK_PIN_Y, DATA_PIN_Y, reverseYdirection);   
-            if (tRead != yReading && tRead < 9999.00) {    
-              yReading = tRead;     
-              refreshDisplayFlag = 1;  
-              lastReadingTimeY = millis();   
-            }
-            if (tRead > 9998) {    
-              if (serialDebug) Serial.println("Y Caliper read failed: " + String(tRead));    
-              caliperReadOK = 0;
-            }            
-      }
-
-    // Digital Caliper - Z    
-      if (zEnabled &&  CLOCK_PIN_Z != -1) {  
-            float tRead = readCaliper(CLOCK_PIN_Z, DATA_PIN_Z, reverseZdirection);  
-            if (tRead != zReading && tRead < 9999.00) {  
-              zReading = tRead; 
-              refreshDisplayFlag = 1;   
-              lastReadingTimeZ = millis();  
-            }
-            if (tRead > 9998) {    
-              if (serialDebug) Serial.println("Z Caliper read failed: " + String(tRead));    
-              caliperReadOK = 0;
-            }       
-      }    
-
-  }   // while loop
 
     if (refreshDisplayFlag) displayReadings();                 // display caliper readings 
-    return caliperReadOK;
+
+    if (xOK == 1 && yOK == 1 && zOK == 1) return 1;
+    else return 0;
 }    
 
 
@@ -811,41 +779,41 @@ void handleData(){
 
     // X
      if (xEnabled && DATA_PIN_X != -1) {
-      sprintf(buff, spa.c_str(), xReading);             // current displayed reading
-      reply += "X:" + String(buff);
+      reply += "X: ";
       // coordinates
         for (int c=0; c < noOfCoordinates; c++) {
           sprintf(buff, spa.c_str(), xReading - xAdj[c]);  
           reply += " C" + String(c+1) + ":" + String(buff);
         }
-      reply += "<br>";
+        sprintf(buff, spa.c_str(), xReading);             // calipers actual reading
+        reply += " Caliper:" + String(buff) + "<br>";      
      }
 
     // Y
      if (yEnabled && DATA_PIN_Y != -1) {
-      sprintf(buff, spa.c_str(), yReading);             // current displayed reading
-      reply += "Y=" + String(buff);
+      reply += "Y: ";
       // coordinates
         for (int c=0; c < noOfCoordinates; c++) {
           sprintf(buff, spa.c_str(), yReading - yAdj[c]);  
           reply += " C" + String(c+1) + ":" + String(buff);
         }
-      reply += "<br>";
+        sprintf(buff, spa.c_str(), yReading);             // calipers actual reading
+        reply += " Caliper:" + String(buff) + "<br>";      
      }
 
     // Z
      if (zEnabled && DATA_PIN_Z != -1) {
-      sprintf(buff, spa.c_str(), zReading);             // current displayed reading
-      reply += "Z=" + String(buff);
+      reply += "Z: ";
       // coordinates
         for (int c=0; c < noOfCoordinates; c++) {
           sprintf(buff, spa.c_str(), zReading - zAdj[c]);  
           reply += " C" + String(c+1) + ":" + String(buff);
         }
-      reply += "<br>";
+        sprintf(buff, spa.c_str(), zReading);             // calipers actual reading
+        reply += " Caliper:" + String(buff) + "<br>";      
      }
 
-     reply += "Current selected coordinate system = " + String(currentCoord + 1);
+     reply += "Current selected coordinate system: C" + String(currentCoord + 1);
      reply += "<br>,";        // end of line
 
    // line3 -  
@@ -1032,7 +1000,7 @@ void pageSpecificOperations() {
 
       // display coordinates
         if (gcodeLineCount > 0) {                                     // if there is data to use
-          tft.drawString(" Position: " + String(gcodeStepPosition) + " of " + String(gcodeLineCount) , 0, belowSmallDRO + lineSpace * 1);
+          tft.drawString(" Position: " + String(gcodeStepPosition) + " of " + String(gcodeLineCount) + "  " , 0, belowSmallDRO + lineSpace * 1);
           // display coordinates
             String tRes = "";
             if (incX) tRes += " X:" + String(gcodeX[gcodeStepPosition - 1], DROnoOfDigits2);
