@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------------------
 
 
-          DRO Settings - 20Jan24
+          DRO Settings - 21Jan24
 
           Part of the  "SuperLowBudget-DRO" sketch - https://github.com/alanesq/DRO
 
@@ -9,9 +9,10 @@
 // -----------------------------------------------------------------------------------------
 */
 
+
   const char* stitle = "SuperLowBudget-DRO";             // title of this sketch
 
-  const char* sversion = "19Jan24";                      // version of this sketch
+  const char* sversion = "21Jan24";                      // version of this sketch
 
   // OTA
     #define ENABLE_OTA 1                                 // Enable Over The Air updates (OTA)
@@ -65,7 +66,7 @@
       const bool reverseZdirection = 0;    
 
     // Caliper gpio pins (set to -1 if not used)
-      #define CLOCK_PIN_X 0     // 0   Note: gpio is the onboard button so not really a good idea to use it but it seems to work (it can stop the device rebooting its self)
+      #define CLOCK_PIN_X 0     // 0   Note: gpio is the onboard button (it can stop the device rebooting after programming)
       #define DATA_PIN_X  4     // 4
       
       #define CLOCK_PIN_Y 17    // 17
