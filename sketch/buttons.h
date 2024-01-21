@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------------------
 
 
-          Procedures triggered when a button is pressed on the screen - 20Jan24
+          Procedures triggered when a button is pressed on the screen - 21Jan24
 
           Part of the  "SuperLowBudget-DRO" sketch - https://github.com/alanesq/DRO
 
@@ -307,12 +307,14 @@ void threePage1Pressed() {
 
   // next position
   void buttonKeyStepNextPressed() {
+    if (gcodeLineCount == 0) return;    // nothing in the store
     gcodeStepPosition++;
     if (gcodeStepPosition > gcodeLineCount) gcodeStepPosition = 1;
   }
 
   // previous position
   void buttonKeyStepPrevPressed() {
+    if (gcodeLineCount == 0) return;    // nothing in the store
     gcodeStepPosition--;
     if (gcodeStepPosition < 1) gcodeStepPosition = gcodeLineCount;       
   }  
@@ -327,6 +329,35 @@ void threePage1Pressed() {
     int numFromKBD = keyEnteredNumber.toInt();
     if (numFromKBD > 0 && numFromKBD <= gcodeLineCount) gcodeStepPosition = numFromKBD;
   }  
+
+  // store current position
+  void buttonStorePosPressed() {           
+     log_system_message("button: store current position pressed");
+     if (gcodeLineCount > maxGcodeStringLines - 1) return;      // no more space
+     if (gcodeLineCount < 0) gcodeLineCount = 0;                // just in case something odd has happened
+     gcodeLineCount++;
+     gcodeStepPosition = gcodeLineCount;                        // move to this new position in gcode steps
+     if (xEnabled && DATA_PIN_X != -1) {
+      incX = 1;                                                 // activate X coordinates in the store
+      gcodeX[gcodeStepPosition - 1] = xReading - xAdj[currentCoord];
+     }
+     if (yEnabled && DATA_PIN_Y != -1) {
+      incY = 1;
+      gcodeY[gcodeStepPosition - 1] = yReading - yAdj[currentCoord];
+     }
+     if (zEnabled && DATA_PIN_Z != -1) {
+      incZ = 1;
+      gcodeZ[gcodeStepPosition - 1] = zReading - zAdj[currentCoord];
+     }     
+     drawScreen(4);      // redraw screen to clear previous text
+  } 
+
+  // clear store
+  void buttonClearStorePressed() {           
+    log_system_message("button: clear store pressed");
+    gcodeLineCount = 0;
+    drawScreen(4);      // redraw screen to clear previous text
+  }    
 
 
 // -----------------------------------------------------------------------------------------
