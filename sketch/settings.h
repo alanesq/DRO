@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------------------
 
 
-          DRO Settings - 21Jan24
+          DRO Settings 
 
           Part of the  "SuperLowBudget-DRO" sketch - https://github.com/alanesq/DRO
 
@@ -10,9 +10,14 @@
 */
 
 
-  const char* stitle = "SuperLowBudget-DRO";             // title of this sketch
+      const char* stitle = "Super Low Budget DRO";             // title of the sketch
+      
+      const char* sversion = "24Jan24";                      // version of the sketch
 
-  const char* sversion = "21Jan24";                      // version of this sketch
+
+
+// ----------------------------------------------------------------------
+
 
   // OTA
     #define ENABLE_OTA 1                                 // Enable Over The Air updates (OTA)
@@ -44,6 +49,9 @@
 
   unsigned long wifiRetryTime = 30;                      // how often to try to reconnect to wifi if connection is lost (seconds)   
 
+  const int noOfCoordinates = 4;                         // number of coordinate systems available
+  int currentCoord = 0;                                  // active coordinate    
+
 
   // CYD - Display 
   
@@ -54,26 +62,33 @@
 
 
   // Digital calipers
+       
   
-    // if caliper is enabled - set to 0 if not in use
-      bool xEnabled = 1;
-      bool yEnabled = 1;
-      bool zEnabled = 1;
+      // structure for the calipers
+      struct caliperStruct {
+        String title;                           // title of caliper (just a single upper case letter is best, e.g. X, Y and Z)
+        bool enabled;                           // if caliper is enabled
+        int clockPIN;                           // gpio pins
+        int dataPIN;
+        bool direction;                         // set to 1 is direction is reversed
+        unsigned long lastReadTime;             // last time a reading was received (millis)
+        float reading;                          // current reading
+        float adj[noOfCoordinates];             // adjustment of caliper reading to displayed reading for each coordinate system
+      };
 
-    // direction of travel - i.e. if direction of caliper is reversed 
-      const bool reverseXdirection = 0;       
-      const bool reverseYdirection = 0;
-      const bool reverseZdirection = 0;    
-
-    // Caliper gpio pins (set to -1 if not used)
-      #define CLOCK_PIN_X 0     // 0   Note: gpio is the onboard button (it can stop the device rebooting after programming)
-      #define DATA_PIN_X  4     // 4
+    // define calipers in use
+      const int caliperCount = 3;               // number of calipers in use (must be at least three as some buttons refer to them, for fewer just set them to disabled)
       
-      #define CLOCK_PIN_Y 17    // 17
-      #define DATA_PIN_Y  16    // 16
-      
-      #define CLOCK_PIN_Z 22    // 22
-      #define DATA_PIN_Z  5     // 5   Note: this pin is used by the SD card (chip select)
+      caliperStruct calipers[] {  
+        // Items: name (single character, upper case), if enabled, clock gpio pin, data gpio pin, direction (1=reversed), 0, 9999, {0}
+        
+        { "X", 1,  0,  4, 0, 0, 9999, {0} },        // Note: pin 0 is the onboard button (it can stop the device rebooting after programming)
+        
+        { "Y", 1, 17, 16, 0, 0, 9999, {0} },
+        
+        { "Z", 1, 22,  5, 0, 0, 9999, {0} }         // Note: pin 5 is used by the SD card (chip select)
+        
+      };
 
 
   // CYD - Touchscreen 
@@ -92,3 +107,4 @@
       
   // ----------------------------------------------------------------------------------------------------
   // end
+

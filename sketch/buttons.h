@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------------------
 
 
-          Procedures triggered when a button is pressed on the screen - 21Jan24
+          Procedures triggered when a button is pressed on the screen - 24Jan24
 
           Part of the  "SuperLowBudget-DRO" sketch - https://github.com/alanesq/DRO
 
@@ -11,7 +11,7 @@
 
 // on all pages
 
-  // switch page
+  // select page
   void OnePage1Pressed() { 
     log_system_message("button: page 1 selected"); 
     drawScreen(1);      // switch to page 1
@@ -19,18 +19,23 @@
 
   void OnePage2Pressed() { 
     log_system_message("button: page 2 selected"); 
-    drawScreen(2);      // switch to page 2
+    drawScreen(2);  
   }
 
   void OnePage3Pressed() { 
     log_system_message("button: page 3 selected"); 
-    drawScreen(3);      // switch to page 3
+    drawScreen(3);   
   }
 
   void OnePage4Pressed() { 
     log_system_message("button: page 4 selected"); 
-    drawScreen(4);      // switch to page 4
+    drawScreen(4);   
   }
+
+  void OnePage5Pressed() {           // note: page5 is not enabled but here as an option (change 'numberOfPages' in DRO.ino)
+    log_system_message("button: page 5 selected"); 
+    drawScreen(5);    
+  }  
 
 
 // -----------------------------------------------------------------------------------------
@@ -40,25 +45,28 @@
   // zero the current position
 
   void zeroXpressed() { 
-    log_system_message("button: zeroX");
-    xAdj[currentCoord] = xReading;    // zero X
+    if (caliperCount < 1) return;
+    log_system_message("button: zero " + calipers[0].title);
+    calipers[0].adj[currentCoord] = calipers[0].reading;    // zero X
   }
 
   void zeroYpressed() { 
-    log_system_message("button: zeroY");
-    yAdj[currentCoord] = yReading;    // zero Y
+    if (caliperCount < 2) return;
+    log_system_message("button: zero " + calipers[1].title);
+    calipers[1].adj[currentCoord] = calipers[1].reading;    // zero Y
   }
 
   void zeroZpressed() { 
-    log_system_message("button: zeroZ");
-    zAdj[currentCoord] = zReading;    // zero Z
+    if (caliperCount < 3) return;
+    log_system_message("button: zero " + calipers[2].title);
+    calipers[2].adj[currentCoord] = calipers[2].reading;    // zero Z
   }
 
   void zAllpressed() { 
     log_system_message("button: zAll");
-    xAdj[currentCoord] = xReading;    // zero X, Y and Z
-    yAdj[currentCoord] = yReading;     
-    zAdj[currentCoord] = zReading;     
+    for (int c=0; c < caliperCount; c++) {
+      calipers[c].adj[currentCoord] = calipers[c].reading;    // zero all
+    }
   }
 
 
@@ -66,21 +74,24 @@
   // half the current displayed value
 
   void halfXpressed() { 
-    log_system_message("button: halfX");
-    float t = (xReading - xAdj[currentCoord]) / 2.0;  // half of current displayed reading
-    xAdj[currentCoord] = xAdj[currentCoord] + t;      
+    if (caliperCount < 1) return;
+    log_system_message("button: half "  + calipers[0].title);
+    float t = (calipers[0].reading - calipers[0].adj[currentCoord]) / 2.0;        // half of current displayed reading
+    calipers[0].adj[currentCoord] = calipers[0].adj[currentCoord] + t;      
   }
 
   void halfYpressed() { 
-    log_system_message("button: halfY");
-    float t = (yReading - yAdj[currentCoord]) / 2.0;   
-    yAdj[currentCoord] = yAdj[currentCoord] + t;   
+    if (caliperCount < 1) return;
+    log_system_message("button: half " + calipers[1].title);
+    float t = (calipers[1].reading - calipers[1].adj[currentCoord]) / 2.0;   
+    calipers[1].adj[currentCoord] = calipers[1].adj[currentCoord] + t;    
   }
 
   void halfZpressed() { 
-    log_system_message("button: halfZ");
-    float t = (zReading - zAdj[currentCoord]) / 2.0;   
-    zAdj[currentCoord] = zAdj[currentCoord] + t;   
+    if (caliperCount < 2) return;
+    log_system_message("button: half " + calipers[2].title);
+    float t = (calipers[2].reading - calipers[2].adj[currentCoord]) / 2.0;   
+    calipers[2].adj[currentCoord] = calipers[2].adj[currentCoord] + t;   
   }
 
 
@@ -88,24 +99,28 @@
   // switch between the 3 coordinates
 
   void coord1pressed() { 
+    if (noOfCoordinates < 1) return;
     log_system_message("button: C1");
     currentCoord = 0;
     displayReadings();      // make sure the display updates
   }
 
   void coord2pressed() { 
+    if (noOfCoordinates < 2) return;
     log_system_message("button: C2");
     currentCoord = 1;
     displayReadings();     
   }
 
   void coord3pressed() { 
+    if (noOfCoordinates < 3) return;
     log_system_message("button: C3");
     currentCoord = 2;
     displayReadings();     
   }
 
   void coord4pressed() { 
+    if (noOfCoordinates < 4) return;
     log_system_message("button: C4");
     currentCoord = 3;
     displayReadings();     
@@ -119,9 +134,10 @@
     refreshCalipers(2);                          // refresh readings from calipers  
     
     // store current readings
-      float tXreading = xReading;
-      float tYreading = yReading;
-      float tZreading = zReading;
+      float tReading[caliperCount];
+      for (int c=0; c < caliperCount; c++) {
+        tReading[c] = calipers[c].reading;
+      }
    
     // display 'HOLD' and wait
       tft.fillScreen(TFT_BLACK);                  // Clear the screen
@@ -133,13 +149,13 @@
       delay(p1HoldButtonDelay);                   // wait
       drawScreen(displayingPage);                 // re-draw the screen
 
-    refreshCalipers(2);                          // refresh readings from calipers  
+    refreshCalipers(2);                           // refresh readings from calipers  
 
     // adjust coordinates to new reading
       for (int i = 0; i < noOfCoordinates; i++) {
-        xAdj[i] = xAdj[i] - tXreading + xReading;
-        yAdj[i] = yAdj[i] - tYreading + yReading;
-        zAdj[i] = zAdj[i] - tZreading + zReading;
+        for (int c=0; c < caliperCount; c++) {
+          calipers[c].adj[i] = calipers[c].adj[i] - tReading[c] + calipers[c].reading;
+        }
       }
   }
 
@@ -173,9 +189,9 @@
     settingsEeprom(0);   // read from eeprom 
     refreshCalipers(2);  // refresh readings from calipers  
     // log time of last reading to prevent first reading zeroing it
-      lastReadingTimeX = millis();            
-      lastReadingTimeY = millis(); 
-      lastReadingTimeZ = millis(); 
+      for (int c=0; c < caliperCount; c++) {
+        calipers[c].lastReadTime = millis();            
+      } 
   }
 
 
@@ -282,23 +298,26 @@ void threePage1Pressed() {
 
   // setx
   void buttonp3setxPressed() {
-    log_system_message("button: setx pressed: " + String(keyEnteredNumberVal));
-    xAdj[currentCoord] = xReading - keyEnteredNumberVal;
-    lastReadingTimeX = millis();    
+    if (noOfCoordinates < 1) return;
+    log_system_message("button: set " + calipers[0].title + " pressed: " + String(keyEnteredNumberVal));
+    calipers[0].adj[currentCoord] = calipers[0].reading - keyEnteredNumberVal;
+    calipers[0].lastReadTime = millis();    
   }
 
   // sety
   void buttonp3setyPressed() {
-    log_system_message("button: sety pressed: " + String(keyEnteredNumberVal));
-    yAdj[currentCoord] = yReading - keyEnteredNumberVal;
-    lastReadingTimeY = millis();    
+    if (noOfCoordinates < 2) return;
+    log_system_message("button: set " + calipers[1].title + " pressed: " + String(keyEnteredNumberVal));
+    calipers[1].adj[currentCoord] = calipers[1].reading - keyEnteredNumberVal;
+    calipers[1].lastReadTime = millis();    
   }
 
   // setz
   void buttonp3setzPressed() {
-    log_system_message("button: setz pressed: " + String(keyEnteredNumberVal));
-    zAdj[currentCoord] = zReading - keyEnteredNumberVal;
-    lastReadingTimeZ = millis();    
+    if (noOfCoordinates < 2) return;
+    log_system_message("button: set " + calipers[2].title + " pressed: " + String(keyEnteredNumberVal));
+    calipers[2].adj[currentCoord] = calipers[2].reading - keyEnteredNumberVal;
+    calipers[2].lastReadTime = millis();    
   }
 
 
@@ -336,19 +355,7 @@ void threePage1Pressed() {
      if (gcodeLineCount > maxGcodeStringLines - 1) return;      // no more space
      if (gcodeLineCount < 0) gcodeLineCount = 0;                // just in case something odd has happened
      gcodeLineCount++;
-     gcodeStepPosition = gcodeLineCount;                        // move to this new position in gcode steps
-     if (xEnabled && DATA_PIN_X != -1) {
-      incX = 1;                                                 // activate X coordinates in the store
-      gcodeX[gcodeStepPosition - 1] = xReading - xAdj[currentCoord];
-     }
-     if (yEnabled && DATA_PIN_Y != -1) {
-      incY = 1;
-      gcodeY[gcodeStepPosition - 1] = yReading - yAdj[currentCoord];
-     }
-     if (zEnabled && DATA_PIN_Z != -1) {
-      incZ = 1;
-      gcodeZ[gcodeStepPosition - 1] = zReading - zAdj[currentCoord];
-     }     
+     gcodeStepPosition = gcodeLineCount;                        // move to this new position in gcode steps 
      drawScreen(4);      // redraw screen to clear previous text
   } 
 

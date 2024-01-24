@@ -1,8 +1,9 @@
 /* -----------------------------------------------------------------------------------------
 
-      seven segment font - 22dec23
+                            Seven segment font - 14Jan24
 
       create these fonts from a Truetype (TTF) font using https://rop.nl/truetype2gfx
+      
 
 // -----------------------------------------------------------------------------------------
 */
