@@ -1,6 +1,6 @@
 /*******************************************************************************************************************
  *
- *                                              SuperLowBudget-DRO               24Jan23
+ *                                              SuperLowBudget-DRO               25Jan23
  *                                              ------------------
  *
  *          3 Channel DRO using cheap digital calipers and a ESP32-2432S028R (aka Cheap Yellow Display)
@@ -759,7 +759,7 @@ void handlePing(){
 
 void settingsEeprom(bool eDirection) {
 
-    const int dataRequired = 50;   // total size of eeprom space required (bytes)
+    const int dataRequired = 60;   // total size of eeprom space required (bytes)
 
     int currentEPos = 0;           // current position in eeprom
     float ts;                      // temp store
