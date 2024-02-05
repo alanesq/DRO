@@ -1,10 +1,11 @@
 /**************************************************************************************************
  *
- *      Wifi / NTP Connections - has the option to use WifiManager - 25Dec23
+ *      Wifi / NTP Connections - has the option to use WifiManager - 03Feb24
  *
  *      part of the BasicWebserver sketch - https://github.com/alanesq/BasicWebserver
  *
  *      Set up wifi for either esp8266 or esp32 plus NTP (network time)
+ *      with the option of specifying Wifi settings, using WifiManager or just using an Access Point
  *
  *      see:  https://nodemcu.readthedocs.io/en/release/modules/wifi/
  *
@@ -21,8 +22,9 @@
 #define WIFIUSED 1                        // flag that wifi.h is in use
 
 // forward declarations
-  void startWifiManager();
-  void startWifi();
+  void startWifiManager();                // Connect to wifi using Wifimanager 
+  void startWifi();                       // Connect to wifi providing login details
+  void startAccessPoint();                // Just act as an access point
   String currentTime(bool);
   bool IsBST();
   void sendNTPpacket();
@@ -30,27 +32,30 @@
   int requestWebPage(String*, String*, int);
   
 
+  
 
 // **************************************** S e t t i n g s ****************************************
 
 
-// Note: If using Wifi Manager use startWifiManager(), for standard connection use startWifi()
-
-
+// Note: set type of wifi used in settings.h 
+  
 // Settings for main wifi (if not using wifi manager)
-  const char *SSID = "<your wifi ssid>";
-  const char *PWD = "<your wifi password>";  
+  const char *SSID = "<wifi name>";
+  const char *PWD = "<wifi password>";  
   const int wifiTimeout = 20;          // timeout when connecting to wifi (seconds)
 
-  
-// Settings for the configuration Portal (Wifi Manager)
+// Settings for the configuration Portal (Wifi Manager) or Access Point if using startAccessPoint()
   const char* AP_SSID = "ESPDRO";
   const char* AP_PASS = "password";
 
-  
+// IP settings if using Access Point
+    IPAddress Ip(192, 168, 4, 1);                          // ip address
+    IPAddress NMask(255, 255, 255, 0);                     // net mask
+
 
 // *************************************************************************************************
 
+    
 
 // ----------------------------------------------------------------
 //                              -Startup
@@ -120,6 +125,8 @@ void configModeCallback(WiFiManager *myWiFiManager) {
 
 void startWifiManager() {
 
+  WiFi.disconnect();
+
   //WiFiManager, Local intialization. Once its business is done, there is no need to keep it around
     WiFiManager wm;
     // wm.resetSettings();                            // wipe stored settings
@@ -160,6 +167,8 @@ void startWifiManager() {
 
 void startWifi() {
 
+  WiFi.disconnect();  
+
   // connect to wifi
     wifiok = 0;
     if (serialDebug) {
@@ -194,6 +203,26 @@ void startWifi() {
 
 }  // startwifi
 
+
+// ----------------------------------------------------------------
+//     -Use own access point rather than connect to a wifi
+// ----------------------------------------------------------------
+// called from main SETUP 
+
+void startAccessPoint() {
+    WiFi.disconnect();  
+    WiFiServer server(ServerPort);
+    if (serialDebug) Serial.print("Starting access point: ");
+    if (serialDebug) Serial.print(AP_SSID);
+    WiFi.softAP(AP_SSID, AP_PASS, 1, 0, 8);          // access point settings (ssid, password, channel, ssid_hidden, max_connections)
+    delay(150);
+    WiFi.softAPConfig(Ip, Ip, NMask);
+    WiFi.mode(WIFI_AP);              // enable as access point only - options are WIFI_AP, WIFI_STA, WIFI_AP_STA or WIFI_OFF
+    IPAddress myIP = WiFi.softAPIP();
+    if (serialDebug) Serial.print(" Access point started - IP ");
+    if (serialDebug) Serial.println(myIP);
+    server.begin();
+}
 
 
 // // ----------------------------------------------------------------

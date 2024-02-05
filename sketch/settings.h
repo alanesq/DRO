@@ -10,22 +10,18 @@
 */
 
 
-      const char* stitle = "Super Low Budget DRO";             // title of the sketch
-      
-      const char* sversion = "24Jan24";                      // version of the sketch
+  const char* stitle = "SuperLowBudget-DRO";             // title of the sketch
 
-
-
-// ----------------------------------------------------------------------
-
+  const char* sversion = "05Feb24";                      // version of the sketch
 
   // OTA
     #define ENABLE_OTA 1                                 // Enable Over The Air updates (OTA)
     const String OTAPassword = "password";               // Password to enable OTA (supplied as - http://<ip address>?pwd=xxxx )
 
   bool wifiEnabled = 0;                                  // if wifi is to be enabled at boot (can be enabled from display menu if turned off here)
-  
-  const bool serialDebug = 0;                            // provide debug info on serial port  (disable if using Tx or Rx gpio pins for caliper)
+  int wifiType = 1;                                      // The type of wifi connection to use  - 1=Use WifiManager, 2=specify wifi credentials, 3=Access point
+
+  const bool serialDebug = 1;                            // provide debug info on serial port  (disable if using Tx or Rx gpio pins for caliper)
   const int serialSpeed = 115200;                        // Serial data speed to use  
   
   const bool showPress = 0;                              // show touch data on screen (for calibration / testing)
@@ -62,9 +58,8 @@
 
 
   // Digital calipers
-       
-  
-      // structure for the calipers
+
+      // structure for the calipers (do not modify)
       struct caliperStruct {
         String title;                           // title of caliper (just a single upper case letter is best, e.g. X, Y and Z)
         bool enabled;                           // if caliper is enabled
@@ -77,7 +72,7 @@
       };
 
     // define calipers in use
-      const int caliperCount = 3;               // number of calipers in use (must be at least three as some buttons refer to them, for fewer just set them to disabled)
+      const int caliperCount = 3;               // number of calipers in use 
       
       caliperStruct calipers[] {  
         // Items: name (single character, upper case), if enabled, clock gpio pin, data gpio pin, direction (1=reversed), 0, 9999, {0}
@@ -102,7 +97,7 @@
     #define XPT2046_MISO 39
     #define XPT2046_CLK 25
     #define XPT2046_CS 33       
-    #define TOUCH_CS PIN_D2    
+    //#define TOUCH_CS PIN_D2    
 
       
   // ----------------------------------------------------------------------------------------------------

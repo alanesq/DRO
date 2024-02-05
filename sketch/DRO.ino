@@ -1,6 +1,6 @@
 /*******************************************************************************************************************
  *
- *                                              SuperLowBudget-DRO               25Jan23
+ *                                              SuperLowBudget-DRO               01feb24
  *                                              ------------------
  *
  *          3 Channel DRO using cheap digital calipers and a ESP32-2432S028R (aka Cheap Yellow Display)
@@ -327,10 +327,12 @@ unsigned long wifiDownTime = 0;           // if wifi connection is lost this rec
 
 void startTheWifi() {
 
-      startWifiManager();                                        // Connect to wifi using wifi manager (see wifi.h)
-      //startWifi();                                             // Connect to wifi using fixed details (see wifi.h)
+      // There are three options for type of wifi
+        if (wifiType == 1) startWifiManager();                                    // Connect to wifi using wifi manager (see wifi.h)
+        if (wifiType == 2) startWifi();                                           // Connect to wifi using fixed details (see wifi.h)
+        if (wifiType == 3) startAccessPoint();                                    // Serve own access point - note: commant out line below
 
-      WiFi.mode(WIFI_STA);     // turn off access point - options are WIFI_AP, WIFI_STA, WIFI_AP_STA or WIFI_OFF
+      //WiFi.mode(WIFI_STA);     // turn off access point - options are WIFI_AP, WIFI_STA, WIFI_AP_STA or WIFI_OFF
 
       // set up web page request handling
         server.on(HomeLink, handleRoot);         // root page
@@ -352,14 +354,19 @@ void startTheWifi() {
 
       // Stop wifi going to sleep (if enabled it can cause wifi to drop out randomly especially on esp8266 boards)
           WiFi.setSleep(false);
-   
+
       // Finished connecting to network
-        if (WiFi.status() == WL_CONNECTED) {
-          log_system_message("Wifi started, ip=" + WiFi.localIP().toString());
-          wifiEnabled = 1;
+        if (wifiType == 1 || wifiType == 2) {
+          if (WiFi.status() == WL_CONNECTED) {
+            log_system_message("Wifi started, ip=" + WiFi.localIP().toString());
+            wifiEnabled = 1;
+          } else {
+            log_system_message("Wifi failed to start");
+            wifiEnabled = 0;
+          }
         } else {
-          log_system_message("Wifi failed to start");
-          wifiEnabled = 0;
+          log_system_message("Access point, ip=" + WiFi.softAPIP().toString());
+          wifiEnabled = 1;
         }
     }
 
@@ -422,15 +429,20 @@ void setup() {
       tft.drawString("Starting wifi ...", 5, sSpacing * 3);   
       dro.updateNeedle(25, MeterSpeed);                        // move dial to 25
     startTheWifi();                                            // start wifi
-    // update screen
-      tft.setTextColor(TFT_WHITE, TFT_BLACK);       
-      if (WiFi.status() == WL_CONNECTED) { 
-        tft.drawString("IP = " + WiFi.localIP().toString() + "      ", 5, sSpacing * 3);  
-      } else {
-        tft.drawString("Wifi failed to start", 5, sSpacing * 3);  
-        wifiEnabled = 0;
-      }  
-      dro.updateNeedle(50, MeterSpeed);                       // move dial to 50
+      // update screen
+        tft.setTextColor(TFT_WHITE, TFT_BLACK);     
+        if (wifiType != 3) {                                   // if connecting to an existing wifi  
+          if (WiFi.status() == WL_CONNECTED) { 
+            tft.drawString("IP = " + WiFi.localIP().toString() + "      ", 5, sSpacing * 3);  
+          } else {
+            tft.drawString("Wifi failed to start", 5, sSpacing * 3);  
+            wifiEnabled = 0;
+          }
+        } else {                                               // if using access point
+            tft.drawString("AP:" + String(AP_SSID) + ", ip:" + WiFi.softAPIP().toString(), 5, sSpacing * 3);  
+            wifiEnabled = 1;
+        }
+        dro.updateNeedle(50, MeterSpeed);                      // move dial to 50
   }
 
   // watchdog timer (esp32)
@@ -443,29 +455,27 @@ void setup() {
     ts.begin(mySpi);
     ts.setRotation(SCREEN_ROTATION);  
 
+  // initialise buttons
+    char tLabel[21]; 
+    for (uint8_t b = 0; b < buttonCount; b++) {
+      screenButtons[b].label.toCharArray(tLabel, 20);                   // convert label from String to char array for the next command
+      screenButtons[b].btn->initButtonUL(screenButtons[b].x, screenButtons[b].y, screenButtons[b].width, screenButtons[b].height, screenButtons[b].outlineColour, screenButtons[b].fillColour, screenButtons[b].textColour, tLabel, 1);
+      screenButtons[b].btn->setPressAction(screenButtons[b].action);    // procedure called when the button is pressed
+    }
+ 
+  dro.updateNeedle(100, MeterSpeed);                 // move dial to 100 
+
   // caliper gpio pins
     for (int x=0; x < caliperCount; x++) {
       pinMode(calipers[0].clockPIN, INPUT);
       pinMode(calipers[0].dataPIN, INPUT);
     }
-
-
-  // initialise buttons
-    char tLabel[20]; 
-    for (uint8_t b = 0; b < buttonCount; b++) {
-      screenButtons[b].label.toCharArray(tLabel, 20);         // convert label from String to char array for the next command
-      screenButtons[b].btn->initButtonUL(screenButtons[b].x, screenButtons[b].y, screenButtons[b].width, screenButtons[b].height, screenButtons[b].outlineColour, screenButtons[b].fillColour, screenButtons[b].textColour, tLabel, 1);
-      screenButtons[b].btn->setPressAction(screenButtons[b].action);      // procedure called when the button is pressed
-    }
- 
-  dro.updateNeedle(100, MeterSpeed);                 // move dial to 100 
-
+    
   // zero caliper readings
     refreshCalipers(4);         // get current readings (try up to 4 times)
     for (int i=0; i < caliperCount; i++) {
       for (int c=0; c < noOfCoordinates; c++) calipers[i].adj[c] = calipers[i].reading;
     }
-
 
   drawScreen(1);     // draw the screen
 
@@ -539,7 +549,7 @@ bool refreshCalipers(int cRetry) {
             if (serialDebug) Serial.println(calipers[c].title + " Caliper read failed: " + String(tRead));    
           }   
           tCount--;                                              // decrement try counter
-          if (tOK[c] == 0) delay(25);                            // delay before retrying
+          if (tOK[c] == 0) delay(2);                             // delay before retrying
         }  // while
       } else tOK[c] = 1;                                         // caliper is disabled so skip it
     }  
@@ -695,7 +705,7 @@ void rootUserInput(WiFiClient &client) {
 void handleData(){
 
    String reply; reply.reserve(500); reply = "";                   // reserve space to cut down on fragmentation
-   char buff[100]; 
+   char buff[200]; 
 
    // line1 - current time
      reply += "<br>Current time: " + currentTime();
@@ -790,7 +800,8 @@ void settingsEeprom(bool eDirection) {
           if (currentCoord < 0 || currentCoord > 2) currentCoord = 0;
           currentEPos += sizeof(currentCoord);  
 
-        log_system_message("Data read from eeprom");
+      if (currentEPos > dataRequired) log_system_message("ERROR: Not enough space reserved for eeprom");
+      else log_system_message("Data read from eeprom");
 
     } else {                      // store settings
 
@@ -813,7 +824,8 @@ void settingsEeprom(bool eDirection) {
           currentEPos += sizeof(currentCoord);     
 
       EEPROM.commit();                                // write the data out (required on esp devices as they simulate eeprom)
-      log_system_message("Data written to eeprom");
+      if (currentEPos > dataRequired) log_system_message("ERROR: Not enough space reserved to store to eeprom");
+      else log_system_message("Data written to eeprom");
     }
 
 }
@@ -850,8 +862,18 @@ void pageSpecificOperations() {
       tft.setFreeFont(FM9);         // standard Free Mono font - available sizes: 9, 12, 18 or 24   
       tft.setTextColor(TFT_RED, TFT_BLACK);
       tft.setTextSize(1);
-      tft.drawString(currentTime() ,0, belowSmallDRO);      
-      if (wifiEnabled) tft.drawString("IP: " + WiFi.localIP().toString() ,0, belowSmallDRO + lineSpace);       
+      if (wifiEnabled) {
+        String tIP;
+        if (wifiType != 3) {
+          // connected to a wifi
+            tft.drawString(currentTime() ,0, belowSmallDRO);      
+            tIP = WiFi.localIP().toString();  
+        } else {
+          // access point
+          tIP =  WiFi.softAPIP().toString() + ":" + String(AP_SSID);  
+        }
+        tft.drawString("IP:" + tIP ,0, belowSmallDRO + lineSpace);    
+      }   
   }    
 
   // -------------------------------------------------------
@@ -906,7 +928,9 @@ void pageSpecificOperations() {
             tft.drawString(" No data to display" , 0, belowSmallDRO + lineSpace * 1);
             if (wifiEnabled) {
               tft.drawString(" To enter data visit", 0, belowSmallDRO + lineSpace * 2);
-              tft.drawString(" http://" + WiFi.localIP().toString(), 0, belowSmallDRO + lineSpace * 3);
+              String tIP = WiFi.localIP().toString();                                            // wifi mode
+              if (tIP == "0.0.0.0") tIP =  WiFi.softAPIP().toString() + ":" + String(AP_SSID);   // access point mode              
+              tft.drawString(" http://" + tIP, 0, belowSmallDRO + lineSpace * 3);
             } else {
               tft.drawString(" Enable wifi to use", 0, belowSmallDRO + lineSpace * 2);
             }
@@ -1131,7 +1155,7 @@ void displayReadings() {
       //tft.setTextPadding(DROwidth);           // this clears the previous text 
       tft.setTextPadding( tft.textWidth("8") * (DROnoOfDigits1 + DROnoOfDigits2) );           // this clears the previous text
 
-    char buff[30];
+    char buff[50];
 
     // calipers
       for (int c=0; c < caliperCount; c++) {
@@ -1296,6 +1320,14 @@ void handleTest(){
 
   // ---------------------------- test section here ------------------------------
 
+
+// testing 
+  // caliper gpio pins
+    for (int x=0; x < caliperCount; x++) {
+      pinMode(calipers[0].clockPIN, INPUT);
+      pinMode(calipers[0].dataPIN, INPUT);
+    }
+    refreshCalipers(4);    
 
 // // display stored coordinates from entered gcode
 //   client.print("Positions extracted from gcode: <br>");
