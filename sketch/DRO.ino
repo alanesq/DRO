@@ -1,6 +1,6 @@
 /*******************************************************************************************************************
  *
- *                                              SuperLowBudget-DRO               01feb24
+ *                                              SuperLowBudget-DRO               06feb24
  *                                              ------------------
  *
  *          3 Channel DRO using cheap digital calipers and a ESP32-2432S028R (aka Cheap Yellow Display)
@@ -467,8 +467,8 @@ void setup() {
 
   // caliper gpio pins
     for (int x=0; x < caliperCount; x++) {
-      pinMode(calipers[0].clockPIN, INPUT);
-      pinMode(calipers[0].dataPIN, INPUT);
+      pinMode(calipers[x].clockPIN, INPUT);
+      pinMode(calipers[x].dataPIN, INPUT);
     }
     
   // zero caliper readings
