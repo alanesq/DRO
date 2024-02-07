@@ -79,7 +79,7 @@ If just connecting one caliper you could use (GPIO 22 and 27) via the CYD connec
  - [GPIO pins I used](https://github.com/alanesq/DRO/blob/main/PCB/ribbonCablePins.jpeg) <br>
 
 The wiring is not as complex as it might look, it is just a simple transistor on each data pin to convert from 1.5v up to 3.3v for the esp32 to be able to read, I use my CNC router to create the circuit boards but this could be easily built on some strip board etc.  I tried using a level shifter board at first but I don't think it worked very well with the 1.5v levels. <br>
-Note: the transistors to convert the 1.5v signals from the caliper results in the signal levels being inverted so if you use some other method you will need to change 'invertCaliperDataSignals' to 0.  The circuit diagram I used can be seen in the PCB folder along with the files I used to create the circuit boards (Fritzing and CNC router).  To supply the lower voltage to power the caliper I just use a simple voltage divider although just using a series of 3 silicone diodes to drop the voltage may be a better idea?
+Note: the transistors to convert the 1.5v signals from the caliper results in the signal levels being inverted so if you use some other method you will need to change 'invertCaliperDataSignals' to 0.  The circuit diagram I used can be seen in the PCB folder along with the files I used to create the circuit boards (Fritzing and CNC router).  To supply the lower voltage to power the caliper I just use a simple voltage divider although after reading in several places what a bad idea this was I tried using a string of diodes instead but this caused the calipers to become very unstable so I converted back.
 
 <img width="50%" src="/PCB/trans.jpg"/><br>
 <img src="/PCB/circuit.jpg"/>
