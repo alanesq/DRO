@@ -12,7 +12,7 @@
 
   const char* stitle = "SuperLowBudget-DRO";             // title of the sketch
 
-  const char* sversion = "05Feb24";                      // version of the sketch
+  const char* sversion = "09Feb24";                      // version of the sketch
 
   // OTA
     #define ENABLE_OTA 1                                 // Enable Over The Air updates (OTA)
@@ -48,9 +48,11 @@
   const int noOfCoordinates = 4;                         // number of coordinate systems available
   int currentCoord = 0;                                  // active coordinate    
 
+  const int maxGcodeStringLines = 1024;                  // maximum number of lines of gcode allowed
+  const int estimateAverageLineLength = 35;              // average line length
+
 
   // CYD - Display 
-  
     #define SCREEN_ROTATION 1
     #define SCREEN_WIDTH 320
     #define SCREEN_HEIGHT 240
