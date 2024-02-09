@@ -50,8 +50,8 @@
 
 String decodeIP(String IPadrs) {
 
-    if (IPadrs == "192.168.1.100") IPadrs = "pc";
-    else if (IPadrs == "192.168.1.101") IPadrs = "laptop";
+    if (IPadrs == "192.168.1.2") IPadrs = "main pc";
+    else if (IPadrs == "192.168.1.3") IPadrs = "laptop";
 
 
     // log last IP client connected
@@ -155,7 +155,7 @@ void webheader(WiFiClient &client, const char* adnlStyle, int refresh) {
     if (refresh > 0) client.printf(" <meta http-equiv='refresh' content='%d'>\n", refresh);
 
  // this is the below section compacted via https://www.textfixer.com/html/compress-html-compression.php
-  client.printf(R"=====(<title>%s</title><style>body {color: black;background-color: #FFFF00;text-align: center;}ul {list-style-type: none; margin: 0; padding: 0; overflow: hidden; background-color: rgb(128, 64, 0);}li {float: left;}li a {display: inline-block; color: white; text-align: center; padding: 30px 20px; text-decoration: none;}li a:hover { background-color: rgb(100, 0, 0);}%s</style></head><body><ul><li><a href='%s'>Home</a></li><li><a href='/log'>Log</a></li><h1> <font color='#FF0000'>%s</font></h1></ul>)=====", stitle, adnlStyle, HomeLink, stitle);
+  client.printf(R"=====( <title>%s</title> <style> body { color: black; background-color: #FFFF00; text-align: center; } ul {list-style-type: none; margin: 0; padding: 0; overflow: hidden; background-color: rgb(128, 64, 0);} li {float: left;} li a {display: inline-block; color: white; text-align: center; padding: 30px 20px; text-decoration: none;} li a:hover { background-color: rgb(100, 0, 0);} %s </style> </head> <body> <ul> <li><a href='%s'>Home</a></li> <li><a href='/log'>Log</a></li> <li><a href='/stored'>Stored Positions</a></li> <h1> <font color='#FF0000'>%s</font></h1> </ul> )=====", stitle, adnlStyle, HomeLink, stitle);
 
 /*
     // HTML / CSS
@@ -178,6 +178,7 @@ void webheader(WiFiClient &client, const char* adnlStyle, int refresh) {
           <ul>
             <li><a href='%s'>Home</a></li>
             <li><a href='/log'>Log</a></li>
+            <li><a href='/stored'>Stored Positions</a></li>
             <h1> <font color='#FF0000'>%s</font></h1>
           </ul>
       )=====", stitle, adnlStyle, HomeLink, stitle);
