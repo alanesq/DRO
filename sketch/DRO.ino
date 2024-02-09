@@ -1,6 +1,6 @@
 /*******************************************************************************************************************
  *
- *                                              SuperLowBudget-DRO               06feb24
+ *                                              SuperLowBudget-DRO               09feb24
  *                                              ------------------
  *
  *          3 Channel DRO using cheap digital calipers and a ESP32-2432S028R (aka Cheap Yellow Display)
@@ -14,7 +14,7 @@
  *
  *                 Included files: settings.h, standard.h, ota.h, sevenSeg.h, Free_Fonts.h, buttons.h & wifi.h
  *
- *   If using wifi the first time the ESP starts it will create an access point "ESPDRO" which you need to connect to 
+ *   If using WifiManager the first time the ESP starts it will create an access point "ESPDRO" which you need to connect to 
  *    in order to enter your wifi details.  Default password = "password"   (change this in wifi.h)
  *    for more info. see: https://www.youtube.com/watch?v=Errh7LEEug0
  *
@@ -93,6 +93,7 @@
 */
 
 #include <Arduino.h>                      // required to use Strings 
+String enteredGcode;                      // store for the entered gcode on web page
 #include "settings.h"                     // load in settings for the DRO from settings.h file
 
 #if (!defined ESP32)
@@ -130,19 +131,16 @@
     #include "sevenSeg.h"                       // seven segment style font
     TFT_eSPI tft = TFT_eSPI();
       
-    MeterWidget dro  = MeterWidget(&tft);       // demo meter used at startup
+    MeterWidget dro  = MeterWidget(&tft);       // Meter used at startup
 
     unsigned long lastTouch = 0;                // last time touchscreen button was pressed
     
-    // entered gcode / stored positions
-      const int maxGcodeStringLines = 1024;     // maximum number of lines of gcode allowed
-      const int estimateAverageLineLength = 30;
-      String gcodeEntered;                      // store for the entered gcode 
-      float gcode[caliperCount][maxGcodeStringLines];      // array of positions extracted from gcode
-      int gcodeLineCount = 0;                   // number of positions extracted from gcode
+    // entered gcode
+      float gcode[caliperCount][maxGcodeStringLines];    // store for positions extracted from the gcode
+      int gcodeLineCount = 0;                   // number of positions that have been extracted from the gcode
       bool inc[caliperCount] = {0};             // which coordinates to process
-      int gcodeStepPosition = 1;                // current position through the steps
-      float gcodeDROadj[caliperCount] = {0};    // temp adjustments to DRO readings for locating position when stepping through gcode
+      int gcodeStepPosition = 1;                // current position in the extracted positions
+      float gcodeDROadj[caliperCount] = {0};    // temp adjustments to DRO readings for locating position when stepping through gcode positions
 
 
 // --------------------------------------- Menu / buttons ---------------------------------------
@@ -309,6 +307,9 @@ bool sTouched = 0;                        // flag if a button is curently presse
 bool OTAEnabled = 0;                      // flag to show if OTA has been enabled (via supply of password on http://x.x.x.x/ota)
 int wifiok = 0;                           // flag if wifi connection is ok 
 unsigned long wifiDownTime = 0;           // if wifi connection is lost this records at what time it was lost
+float DROerrorCode = 8888.0;              // error code used for DRO readings
+bool showPress = 0;                       // show touch data on screen (for calibration / testing)
+bool showDROerrors = 0;                   // show errors on DRO readings display 
 
 #include "wifi.h"                         // Load the Wifi / NTP stuff
 #include "standard.h"                     // Some standard procedures
@@ -342,6 +343,7 @@ void startTheWifi() {
         server.on("/test", handleTest);          // testing page
         server.on("/reboot", handleReboot);      // reboot the esp
         server.on("/touch", handleTouch);        // for simulating a press on the touchscreen
+        server.on("/stored", handelStored);      // display stored coordinates
         //server.onNotFound(handleNotFound);       // invalid page requested
         #if ENABLE_OTA
           server.on("/ota", handleOTA);          // ota updates web page
@@ -377,13 +379,13 @@ void startTheWifi() {
 
 void setup() {
 
-  const int MeterSpeed = 20;           // spped of meter movements
+  const int MeterSpeed = 20;   // spped of meter movements
 
   if (serialDebug) {           // if serial debug information is enabled
     Serial.begin(serialSpeed); // start serial comms
     //delay(2000);             // gives platformio chance to start serial monitor
 
-    Serial.println("\n\n\n");                                    // some line feeds
+    Serial.println("\n\n\n");  // some line feeds
     Serial.println("-----------------------------------");
     Serial.printf("Starting - %s - %s \n", stitle, sversion);
     Serial.println("-----------------------------------");
@@ -416,8 +418,8 @@ void setup() {
       system_message[i].reserve(maxLogEntryLength);
     }
 
-  // reserve memory for the entered gcode store
-    gcodeEntered.reserve(maxGcodeStringLines * estimateAverageLineLength); 
+  // reserve memory for stored gcode
+    enteredGcode.reserve(maxGcodeStringLines * estimateAverageLineLength);        
 
   // if (serialDebug) Serial.setDebugOutput(true);             // to enable extra diagnostic info
 
@@ -470,11 +472,19 @@ void setup() {
       pinMode(calipers[x].clockPIN, INPUT);
       pinMode(calipers[x].dataPIN, INPUT);
     }
-    
-  // zero caliper readings
-    refreshCalipers(4);         // get current readings (try up to 4 times)
-    for (int i=0; i < caliperCount; i++) {
-      for (int c=0; c < noOfCoordinates; c++) calipers[i].adj[c] = calipers[i].reading;
+  
+  // get initial raw readings from calipers
+    for (int c=0; c < caliperCount; c++) {
+      calipers[c].reading = readCaliper(calipers[c].clockPIN, calipers[c].dataPIN, calipers[c].direction);
+      log_system_message("Caliper " + String(c) + "initial reading = " + String(calipers[c].reading));
+    }
+    refreshCalipers(4);          // get readings the official way (up to 4 attenpts each caliper)
+
+  // zero all the readings
+    for (int c=0; c < caliperCount; c++) {
+      for (int i=0; i < noOfCoordinates; i++) {
+        calipers[c].adj[i] = calipers[c].reading;
+      }
     }
 
   drawScreen(1);     // draw the screen
@@ -482,7 +492,7 @@ void setup() {
   // report number of button widgets 
     if (widgetCount == 0) log_system_message("Button widget count is correct");
     if (widgetCount < 0)  log_system_message("ERROR: " + String(-widgetCount) + " more button widgets required!");
-    if (widgetCount > 0)  log_system_message( String(widgetCount) + " too many button widgets have been created");
+    if (widgetCount > 0)  log_system_message( String(widgetCount) + "Note: too many button widgets have been created");
 }
 
 
@@ -507,15 +517,16 @@ void loop() {
       sTouched = 0;                                       // clear screen pressed flag
     }
 
-    // Periodically change the LED status to indicate all is well
-      static repeatTimer ledTimer;                          // set up a repeat timer (see standard.h)
-      if (ledTimer.check(1500)) {                           // repeat at set interval (ms)
-          esp_task_wdt_reset();                             // reset watchdog timer 
-          bool allOK = 1;                                   // if all checks leave this as 1 then the LED is flashed
-          if (!WIFIcheck()) allOK = 0;                      // if wifi connection is not ok
-          if (timeStatus() != timeSet) allOK = 0;           // if NTP time is not updating ok
-          time_t t=now();                                   // read current time to ensure NTP auto refresh keeps triggering (otherwise only triggers when time is required causing a delay in response)
+    // housekeeping
+      static repeatTimer checkTimer;                      // set up a repeat timer (see standard.h)
+      if (checkTimer.check(10000)) {                      // repeat at set interval (ms)
+        esp_task_wdt_reset();                             // reset watchdog timer 
+        WIFIcheck();                                      // check wifi connection is ok
+        timeStatus();                                     // check if NTP time is ok
+        time_t t=now();                                   // read current time to ensure NTP auto refresh keeps triggering (otherwise only triggers when time is required causing a delay in response)
       }
+
+    delay(2);    
 }
 
 
@@ -523,29 +534,29 @@ void loop() {
 //                      -refresh calipers
 // ----------------------------------------------------------------
 // refresh readings from the digital calipers and update display if anything has changed (int = number of times to retry)
-// returns 1 if data received from all calipers
-// Note: The code for each caliper is kept seperate in case any require different treatment (e.g. different type sensor)
+// returns 1 if data received ok from all calipers
 
 bool refreshCalipers(int cRetry) {
 
   bool refreshDisplayFlag = 0;                                   // display will be refreshed if this flag is set
   int tCount                           ;                         // temp variables
-  bool tOK[caliperCount] = {0};                                  // flag if data received form caliper
+  bool tOK[caliperCount] = {0};                                  // flag if data received form caliper ok
 
   // Digital Calipers
-
     for (int c=0; c < caliperCount; c++) {
       if (calipers[c].enabled) {                                 // if caliper is active
         tCount = cRetry;                                         // reset try counter 
         while (tCount > 0 && tOK[c] == 0) {
           float tRead = readCaliper(calipers[c].clockPIN, calipers[c].dataPIN, calipers[c].direction);   // read data from caliper (reading over 9999 indicates fail)
-          if (tRead != calipers[c].reading && tRead < 9999.00) { // if reading has changed
-            calipers[c].reading = tRead;                         // store result in global variable 
-            refreshDisplayFlag = 1;                              // flag DRO display to refresh
-            calipers[c].lastReadTime = millis();                 // log time of last reading
-            tOK[c] = 1;                                          // flag reading received ok
+          if (tRead != calipers[c].reading) { // if reading has changed
+            if (tRead < DROerrorCode || showDROerrors) {           // if reading is not error or show errors is enabled
+              calipers[c].reading = tRead;                         // store result in global variable 
+              refreshDisplayFlag = 1;                              // flag DRO display to refresh
+              calipers[c].lastReadTime = millis();                 // log time of last reading
+              tOK[c] = 1;                                          // flag reading received ok
+            }
           }
-          if (tRead > 9998) {    
+          if (tRead >= DROerrorCode) {    
             if (serialDebug) Serial.println(calipers[c].title + " Caliper read failed: " + String(tRead));    
           }   
           tCount--;                                              // decrement try counter
@@ -555,7 +566,7 @@ bool refreshCalipers(int cRetry) {
     }  
 
     if (refreshDisplayFlag) displayReadings();                   // display caliper readings 
-
+    
     bool tOKres = 1;
     for (int c=0; c < caliperCount; c++) if (tOK[c] == 0) tOKres = 0;
     return tOKres;
@@ -568,7 +579,7 @@ bool refreshCalipers(int cRetry) {
 
 void handleRoot() {
 
-  int rNoLines = 4;      // number of updating information lines to be populated via http://x.x.x.x/data
+  int rNoLines = 3;      // number of updating information lines to be populated via http://x.x.x.x/data
 
   WiFiClient client = server.client();             // open link with client
   webheader(client);                               // html page header  (with extra formatting)
@@ -625,17 +636,24 @@ void handleRoot() {
 
 
     // textbox for entering gcode
-      client.println("LOCATION ASSISTANT<br>");
+      client.println("<br>LOCATION ASSISTANT<br>");
       client.println("Enter list of positions you wish to step through in the format: X10 Y20 Z30<br>");
-      client.println("or you can paste simple gcode &ensp; <a href='https://www.intuwiz.com/drilling.html' target='_top'>GCODE GENERATOR</a><br>");  
+      client.println("or paste gcode &ensp; <a href='https://www.intuwiz.com/drilling.html' target='_new'>GCODE GENERATOR</a><br>");  
       client.println("<textarea id='gcode' name='gcode' rows='" + String(gcodeTextHeight) + "' cols='" + String(gcodeTextWidth) + "'></textarea><br>"); 
 
     // coordinate selection checkboxes
       client.println("Coordinates to process: ");
       for (int c=0; c < caliperCount; c++) {
         if (calipers[c].enabled) client.print("<INPUT type='checkbox' name='" + calipers[c].title + "' value='" + calipers[c].title + "'>" + calipers[c].title + "&ensp;");
-      }
-      client.println("<input type='submit' value='submit'> <br><br>");   
+      } 
+
+    // misc options
+      client.print(R"=====(
+        <INPUT type='submit' value='Action'> <INPUT type='reset'> <br>
+        DIAGNOSTICS: &ensp;
+        Toggle show caliper read fails<INPUT type='radio' name='RADIO1' value='1'> &ensp;
+        Toggle show screen presses<INPUT type='radio' name='RADIO2' value='1'> <br>
+      )=====");
 
 
     // // demo enter a value
@@ -649,7 +667,7 @@ void handleRoot() {
     //   client.println("height: 30px;' name='demobutton' value='Demonstration Button' type='submit'>\n");
 
     // link to github
-      client.println("<a href='https://github.com/alanesq/DRO' target='_top'>Project Github</a>");
+      client.println("<br><a href='https://github.com/alanesq/DRO' target='_new'>PROJECT GITHUB</a>");
 
     // close page
       client.println("</P>");                                // end of section
@@ -666,15 +684,35 @@ void handleRoot() {
 
 void rootUserInput(WiFiClient &client) {
 
-  // entered gcode
-    // checkboxes
-      for (int c=0; c < caliperCount; c++) {
-        (server.hasArg(calipers[c].title)) ? inc[c] = 1 : inc[c] = 0;
-      }
+  // Misc options
+  // if radio button 1 selected - toggle showing of errors on DRO readings
+    if (server.hasArg("RADIO1")) {
+      String RADIOvalue = server.arg("RADIO1");   // read value of the "RADIO" argument
+      if (RADIOvalue == "1") {
+        showDROerrors = !showDROerrors;
+        log_system_message("DRO reading error displaying set to :" + String(showDROerrors));
+      }  
+    }
 
+  // if radio button 2 selected - toggle showing presses on screen
+    if (server.hasArg("RADIO2")) {
+      String RADIOvalue = server.arg("RADIO2");   // read value of the "RADIO" argument
+      if (RADIOvalue == "1") {
+        showPress = !showPress;
+        log_system_message("Show screen presses set to :" + String(showPress));
+      }  
+    }
+
+
+  // entered gcode
     if (server.hasArg("gcode")) {
-      gcodeEntered = server.arg("gcode");   // read value in to global gcode store
-      processGCode(gcodeEntered);           // process the gcode and put resulting coordinates in to global arrays
+      // set coordinates to use
+        for (int c=0; c < caliperCount; c++) {
+          (server.hasArg(calipers[c].title)) ? inc[c] = 1 : inc[c] = 0;
+        }
+      // process the gcode
+        enteredGcode = server.arg("gcode") + "\n";   // read value in to global gcode store
+        processGCode(enteredGcode);                  // process the gcode and put resulting coordinates in to global arrays
     }
 
 
@@ -703,42 +741,41 @@ void rootUserInput(WiFiClient &client) {
 // Note: to change the number of lines displayed update variable 'rNoLines' at the top of handleroot()
 
 void handleData(){
-
-   String reply; reply.reserve(500); reply = "";                   // reserve space to cut down on fragmentation
+  
+  // NOTE - do not use a comma in the text other than to signify end of data line
+   String reply; reply.reserve(600); reply = "";                                // reserve space to cut down on fragmentation
    char buff[200]; 
 
    // line1 - current time
-     reply += "<br>Current time: " + currentTime();
-     reply += "<br>,";        // end of line
+    String cTime = currentTime();
+    if (cTime != "Time Unknown") reply += "<br>Current time: " + cTime;
+    reply += "<br>,";                                                           // comma signifies end of line
 
    // line2 - DRO readings
-     String spa = "%0" + String(DROnoOfDigits1 + DROnoOfDigits2 + 1) + ".2f";             // create sprintf argument for number format (in the format "%07.2f")
-
-    // calipers
-      for (int c=0; c < caliperCount; c++) {
-        if (calipers[c].enabled) {
-          reply += calipers[c].title + ": ";
-          // coordinates
-            for (int i=0; i < noOfCoordinates; i++) {
-              sprintf(buff, spa.c_str(), calipers[c].reading - calipers[c].adj[i]);  
-              reply += " C" + String(i+1) + ":" + String(buff);
-            }
-            sprintf(buff, spa.c_str(), calipers[c].reading);             // calipers actual reading
-            reply += " Caliper:" + String(buff) + "<br>";      
+    String spa = "%0" + String(DROnoOfDigits1 + DROnoOfDigits2 + 1) + ".2f";    // create sprintf argument for number format (in the format "%07.2f")
+    reply += "DRO READINGS";
+    for (int c=0; c < caliperCount; c++) {
+      if (calipers[c].enabled) {
+        reply += "<br>" + calipers[c].title + ":&ensp;";
+        for (int i=0; i < noOfCoordinates; i++) {                               // step through all the coordinate systems
+          if (i == currentCoord) reply += String(colBlue);                      // active coordinate
+          sprintf(buff, spa.c_str(), calipers[c].reading - calipers[c].adj[i]);  
+          reply += "C" + String(i+1) + ":" + String(buff) + "&ensp;";
+          if (i == currentCoord) reply += String(colEnd);   
         }
+        sprintf(buff, spa.c_str(), calipers[c].reading);                        // the calipers actual reading
+        reply += " Caliper:" + String(buff);      
       }
-     reply += ",";        // end of line
+    }
+    //reply += "Current selected coordinate system: C" + String(currentCoord + 1);
+    reply += ",";                                                               // end of line
 
-   // line3 -  
-     reply += "Current selected coordinate system: C" + String(currentCoord + 1);
-     reply += "<br>,";        // end of line   
-     reply += ",";        // end of line
+    // line 3 - misc info.
+      if (showPress) reply += String(colRed) + "<br>Screen press location will be displayed" + String(colEnd);
+      if (showDROerrors) reply += String(colRed) + "<br>Caliper read fails will be displayed (" + String(DROerrorCode, 0) + ")" + String(colEnd);
+      //reply += ",";        // end of line
 
-   // line4 -  
-     
-
-
-   server.send(200, "text/plane", reply); //Send millis value only to client ajax request
+   server.send(200, "text/plane", reply);                                      // Send millis value only to client ajax request
 }
 
 
@@ -1095,26 +1132,26 @@ float readCaliper(int clockPin, int dataPin, bool reverseDirection) {
 
   // settings
     const int longPeriod = 500;                                  // length of time which counts as a long period (microseconds)
-    const int lTimeout = 150;                                    // timeout when waiting for start of data (ms)
-    const int sTimeout = 60;                                     // timeout when reading data (ms)
+    const int lTimeout = 200;                                    // timeout when waiting for start of data (ms) 150
+    const int sTimeout = 100;                                     // timeout when reading data (ms) 60
 
   // logic levels on data and clock pins (if using a transistor to level shift then these will be inverted)
     const bool pinLOW = invertCaliperDataSignals;
     const bool pinHIGH = !pinLOW;
 
   // start of data is preceded by clock being high for long period so verify we are at this point (this is the case most of the time)
-    if (!waitPinState(clockPin, pinHIGH, lTimeout)) return 9999.1;    // if clock is low wait until it is high (9999.x signifies it timed out waiting)
+    if (!waitPinState(clockPin, pinHIGH, lTimeout)) return DROerrorCode + 0.11;    // if clock is low wait until it is high (9999.x signifies it timed out waiting)
     unsigned long tmpTime=micros();                            // start timer
-    if (!waitPinState(clockPin, pinLOW, lTimeout)) return 9999.2;     // wait for clock pin to go low
-    if ((micros() - tmpTime) < longPeriod) return 9999.3;      // verify it was high for a long period signifying start of data 
+    if (!waitPinState(clockPin, pinLOW, lTimeout)) return DROerrorCode + 0.22;     // wait for clock pin to go low
+    if ((micros() - tmpTime) < longPeriod) return DROerrorCode + 0.33;             // verify it was high for a long period signifying start of data 
 
   // start of data confirmed so now read in the data
     int sign = 1;                                              // if the reading is negative (1 or -1)
     int inches = 0;                                            // if data is in inches or mm (0 = mm) 
     long value = 0;                                            // the measurement received  
     for(int i=0;i<24;i++) {                                    // step through the data bits 
-      if (!waitPinState(clockPin, pinLOW, sTimeout)) return 9999.4;      // If clock is not low wait until it is
-      if (!waitPinState(clockPin, pinHIGH, sTimeout)) return 9999.5;     // wait for clock pin to go HIGH (this tells us the next data bit is ready to be read)
+      if (!waitPinState(clockPin, pinLOW, sTimeout)) return DROerrorCode + 0.44;      // If clock is not low wait until it is
+      if (!waitPinState(clockPin, pinHIGH, sTimeout)) return DROerrorCode + 0.55;     // wait for clock pin to go HIGH (this tells us the next data bit is ready to be read)
       if(digitalRead(dataPin) == pinHIGH) {                    // read data bit - if it is 1 then act upon this (0 can be ignored as all bits defult to 0)
           if(i<20) value|=(1<<i);                              // shift the 19 bits in to read value
           if(i==20) sign=-1;                                   // if reading is positive or negative
@@ -1266,10 +1303,12 @@ void processGCode(String &gcodeText) {
           gcodeLineCount ++;
         }
     }
-  }
+  }   // while
 
+  if (gcodeLineCount >= maxGcodeStringLines) log_system_message("Error: gcode exceded maximum length");
   log_system_message(String(gcodeLineCount) + " coordinates extracted from gcode");
 }
+
 
 // ----------------------------------------------------------------
 //                     -process a line of gcode
@@ -1297,6 +1336,49 @@ void processGCodeLine(String gcodeLine, float Pos[]) {
     Serial.println();
   }
 }
+
+
+// ----------------------------------------------------------------
+//           -stored coordinates     i.e. http://x.x.x.x/stored
+// ----------------------------------------------------------------
+// Display the stored coordinates from gcode
+
+void handelStored() {
+
+  WiFiClient client = server.client();          // open link with client
+
+  // log page request including clients IP address
+    IPAddress cip = client.remoteIP();
+    String clientIP = decodeIP(cip.toString());   // check for known IP addresses
+    //log_system_message("Test page requested from: " + clientIP);
+
+  webheader(client);                 // add the standard html header
+  client.println("<br><H2>STORED POSITIONS</H2>");
+
+  if (gcodeLineCount == 0) {
+    client.println("<br>No stored positions to display");
+  } else {
+    // Display stored positions
+    client.println("There are " + String(gcodeLineCount) + " stored positions");
+    for(int l=0; l < gcodeLineCount; l++) {                   // step through all stored positions
+      client.println("<br>" + String(l + 1) + ":&ensp;");
+      if (l == gcodeStepPosition - 1) client.print(String(colBlue));
+      for (int c=0; c < caliperCount; c++) {                  // step through all available axis
+        if (inc[c] == 1) {                                    // if this axis is selected for the gcode
+          client.println(calipers[c].title + String(String(gcode[c][l])) + "&ensp;"  );
+        }
+      }
+      if (l == gcodeStepPosition - 1) client.print(String(colEnd));
+    }
+  }
+  client.println("<br>");
+
+  // end html page
+    webfooter(client);            // add the standard web page footer
+    delay(1);
+    client.stop();
+}
+
 
 // ----------------------------------------------------------------
 //           -testing page     i.e. http://x.x.x.x/test
