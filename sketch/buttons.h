@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------------------
 
 
-          Procedures triggered when a button is pressed on the screen - 24Jan24
+          Procedures triggered when a button is pressed on the screen - 07Feb24
 
           Part of the  "SuperLowBudget-DRO" sketch - https://github.com/alanesq/DRO
 
@@ -46,24 +46,28 @@
 
   void zeroXpressed() { 
     if (caliperCount < 1) return;
+    refreshCalipers(3);    // make sure we have a valid current reading
     log_system_message("button: zero " + calipers[0].title);
     calipers[0].adj[currentCoord] = calipers[0].reading;    // zero X
   }
 
   void zeroYpressed() { 
     if (caliperCount < 2) return;
+    refreshCalipers(3);    
     log_system_message("button: zero " + calipers[1].title);
     calipers[1].adj[currentCoord] = calipers[1].reading;    // zero Y
   }
 
   void zeroZpressed() { 
     if (caliperCount < 3) return;
+    refreshCalipers(3);   
     log_system_message("button: zero " + calipers[2].title);
     calipers[2].adj[currentCoord] = calipers[2].reading;    // zero Z
   }
 
   void zAllpressed() { 
     log_system_message("button: zAll");
+    refreshCalipers(3);   
     for (int c=0; c < caliperCount; c++) {
       calipers[c].adj[currentCoord] = calipers[c].reading;    // zero all
     }
