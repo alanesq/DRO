@@ -38,6 +38,16 @@
 //
 //      tft.setFreeFont(NULL); // Set font to GLCD
 
+
+// Font 1. Original Adafruit 8 pixel font needs ~1820 bytes in FLASH
+// Font 2. Small 16 pixel high font, needs ~3534 bytes in FLASH, 96 characters
+// Font 4. Medium 26 pixel high font, needs ~5848 bytes in FLASH, 96 characters
+// Note the following larger fonts are primarily numeric only!
+// Font 6. Large 48 pixel font, needs ~2666 bytes in FLASH, only characters 1234567890:-.apm
+// Font 7. 7 segment 48 pixel font, needs ~2438 bytes in FLASH, only characters 1234567890:-.
+// Font 8. Large 75 pixel font needs ~3256 bytes in FLASH, only characters 1234567890:-.
+
+
 #define LOAD_GFXFF
 
 #ifdef LOAD_GFXFF // Only include the fonts if LOAD_GFXFF is defined in User_Setup.h

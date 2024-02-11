@@ -50,8 +50,8 @@
 
 String decodeIP(String IPadrs) {
 
-    if (IPadrs == "192.168.1.2") IPadrs = "main pc";
-    else if (IPadrs == "192.168.1.3") IPadrs = "laptop";
+    //if (IPadrs == "192.168.1.100") IPadrs = "PC";
+    //else if (IPadrs == "192.168.1.101") IPadrs = "laptop";
 
 
     // log last IP client connected

@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------------------
 
 
-          Procedures triggered when a button is pressed on the screen - 07Feb24
+          Procedures triggered when a button is pressed on the screen - 10Feb24
 
           Part of the  "SuperLowBudget-DRO" sketch - https://github.com/alanesq/DRO
 
@@ -11,31 +11,31 @@
 
 // on all pages
 
-  // select page
-  void OnePage1Pressed() { 
-    log_system_message("button: page 1 selected"); 
-    drawScreen(1);      // switch to page 1
-  }
+  // page buttons
+    void OnePage1Pressed() { 
+      log_system_message("button: page 1 selected"); 
+      drawScreen(1);      // switch to page 1
+    }
 
-  void OnePage2Pressed() { 
-    log_system_message("button: page 2 selected"); 
-    drawScreen(2);  
-  }
+    void OnePage2Pressed() { 
+      log_system_message("button: page 2 selected"); 
+      drawScreen(2);  
+    }
 
-  void OnePage3Pressed() { 
-    log_system_message("button: page 3 selected"); 
-    drawScreen(3);   
-  }
+    void OnePage3Pressed() { 
+      log_system_message("button: page 3 selected"); 
+      drawScreen(3);   
+    }
 
-  void OnePage4Pressed() { 
-    log_system_message("button: page 4 selected"); 
-    drawScreen(4);   
-  }
+    void OnePage4Pressed() { 
+      log_system_message("button: page 4 selected"); 
+      drawScreen(4);   
+    }
 
-  void OnePage5Pressed() {           // note: page5 is not enabled but here as an option (change 'numberOfPages' in DRO.ino)
-    log_system_message("button: page 5 selected"); 
-    drawScreen(5);    
-  }  
+    void OnePage5Pressed() {           // note: page5 is not enabled but here as an option (change 'numberOfPages' in DRO.ino)
+      log_system_message("button: page 5 selected"); 
+      drawScreen(5);    
+    }  
 
 
 // -----------------------------------------------------------------------------------------
@@ -44,124 +44,124 @@
   //  ------------- zero -----------------
   // zero the current position
 
-  void zeroXpressed() { 
-    if (caliperCount < 1) return;
-    refreshCalipers(3);    // make sure we have a valid current reading
-    log_system_message("button: zero " + calipers[0].title);
-    calipers[0].adj[currentCoord] = calipers[0].reading;    // zero X
-  }
-
-  void zeroYpressed() { 
-    if (caliperCount < 2) return;
-    refreshCalipers(3);    
-    log_system_message("button: zero " + calipers[1].title);
-    calipers[1].adj[currentCoord] = calipers[1].reading;    // zero Y
-  }
-
-  void zeroZpressed() { 
-    if (caliperCount < 3) return;
-    refreshCalipers(3);   
-    log_system_message("button: zero " + calipers[2].title);
-    calipers[2].adj[currentCoord] = calipers[2].reading;    // zero Z
-  }
-
-  void zAllpressed() { 
-    log_system_message("button: zAll");
-    refreshCalipers(3);   
-    for (int c=0; c < caliperCount; c++) {
-      calipers[c].adj[currentCoord] = calipers[c].reading;    // zero all
+    void zeroXpressed() { 
+      if (caliperCount < 1) return;
+      refreshCalipers(3);    // make sure we have a valid current reading
+      log_system_message("button: zero " + calipers[0].title);
+      calipers[0].adj[currentCoord] = calipers[0].reading;    // zero X
     }
-  }
+
+    void zeroYpressed() { 
+      if (caliperCount < 2) return;
+      refreshCalipers(3);    
+      log_system_message("button: zero " + calipers[1].title);
+      calipers[1].adj[currentCoord] = calipers[1].reading;    // zero Y
+    }
+
+    void zeroZpressed() { 
+      if (caliperCount < 3) return;
+      refreshCalipers(3);   
+      log_system_message("button: zero " + calipers[2].title);
+      calipers[2].adj[currentCoord] = calipers[2].reading;    // zero Z
+    }
+
+    void zAllpressed() { 
+      log_system_message("button: zAll");
+      refreshCalipers(3);   
+      for (int c=0; c < caliperCount; c++) {
+        calipers[c].adj[currentCoord] = calipers[c].reading;    // zero all
+      }
+    }
 
 
   //  ------------- half -----------------
   // half the current displayed value
 
-  void halfXpressed() { 
-    if (caliperCount < 1) return;
-    log_system_message("button: half "  + calipers[0].title);
-    float t = (calipers[0].reading - calipers[0].adj[currentCoord]) / 2.0;        // half of current displayed reading
-    calipers[0].adj[currentCoord] = calipers[0].adj[currentCoord] + t;      
-  }
+    void halfXpressed() { 
+      if (caliperCount < 1) return;
+      log_system_message("button: half "  + calipers[0].title);
+      float t = (calipers[0].reading - calipers[0].adj[currentCoord]) / 2.0;        // half of current displayed reading
+      calipers[0].adj[currentCoord] = calipers[0].adj[currentCoord] + t;      
+    }
 
-  void halfYpressed() { 
-    if (caliperCount < 1) return;
-    log_system_message("button: half " + calipers[1].title);
-    float t = (calipers[1].reading - calipers[1].adj[currentCoord]) / 2.0;   
-    calipers[1].adj[currentCoord] = calipers[1].adj[currentCoord] + t;    
-  }
+    void halfYpressed() { 
+      if (caliperCount < 1) return;
+      log_system_message("button: half " + calipers[1].title);
+      float t = (calipers[1].reading - calipers[1].adj[currentCoord]) / 2.0;   
+      calipers[1].adj[currentCoord] = calipers[1].adj[currentCoord] + t;    
+    }
 
-  void halfZpressed() { 
-    if (caliperCount < 2) return;
-    log_system_message("button: half " + calipers[2].title);
-    float t = (calipers[2].reading - calipers[2].adj[currentCoord]) / 2.0;   
-    calipers[2].adj[currentCoord] = calipers[2].adj[currentCoord] + t;   
-  }
+    void halfZpressed() { 
+      if (caliperCount < 2) return;
+      log_system_message("button: half " + calipers[2].title);
+      float t = (calipers[2].reading - calipers[2].adj[currentCoord]) / 2.0;   
+      calipers[2].adj[currentCoord] = calipers[2].adj[currentCoord] + t;   
+    }
 
 
   //  ------------- coordinates -----------------
   // switch between the 3 coordinates
 
-  void coord1pressed() { 
-    if (noOfCoordinates < 1) return;
-    log_system_message("button: C1");
-    currentCoord = 0;
-    displayReadings();      // make sure the display updates
-  }
+    void coord1pressed() { 
+      if (noOfCoordinates < 1) return;
+      log_system_message("button: C1");
+      currentCoord = 0;
+      displayReadings();      // make sure the display updates
+    }
 
-  void coord2pressed() { 
-    if (noOfCoordinates < 2) return;
-    log_system_message("button: C2");
-    currentCoord = 1;
-    displayReadings();     
-  }
+    void coord2pressed() { 
+      if (noOfCoordinates < 2) return;
+      log_system_message("button: C2");
+      currentCoord = 1;
+      displayReadings();     
+    }
 
-  void coord3pressed() { 
-    if (noOfCoordinates < 3) return;
-    log_system_message("button: C3");
-    currentCoord = 2;
-    displayReadings();     
-  }
+    void coord3pressed() { 
+      if (noOfCoordinates < 3) return;
+      log_system_message("button: C3");
+      currentCoord = 2;
+      displayReadings();     
+    }
 
-  void coord4pressed() { 
-    if (noOfCoordinates < 4) return;
-    log_system_message("button: C4");
-    currentCoord = 3;
-    displayReadings();     
-  }  
+    void coord4pressed() { 
+      if (noOfCoordinates < 4) return;
+      log_system_message("button: C4");
+      currentCoord = 3;
+      displayReadings();     
+    }  
 
 
   // hold current reading
-  void oneHoldPressed() {
-    log_system_message("button: hold current reading");
-    
-    refreshCalipers(2);                          // refresh readings from calipers  
-    
-    // store current readings
-      float tReading[caliperCount];
-      for (int c=0; c < caliperCount; c++) {
-        tReading[c] = calipers[c].reading;
-      }
-   
-    // display 'HOLD' and wait
-      tft.fillScreen(TFT_BLACK);                  // Clear the screen
-      tft.setFreeFont(FM9);                       // standard Free Mono font - available sizes: 9, 12, 18 or 24
-      tft.setTextSize(2);                         // 1 or 2
-      const int sSpacing = 22;                    // line spacing
-      tft.setTextColor(TFT_RED, TFT_BLACK);
-      tft.drawString("H O L D !", 60, 50);       
-      delay(p1HoldButtonDelay);                   // wait
-      drawScreen(displayingPage);                 // re-draw the screen
-
-    refreshCalipers(2);                           // refresh readings from calipers  
-
-    // adjust coordinates to new reading
-      for (int i = 0; i < noOfCoordinates; i++) {
+    void oneHoldPressed() {
+      log_system_message("button: hold current reading");
+      
+      refreshCalipers(2);                          // refresh readings from calipers  
+      
+      // store current readings
+        float tReading[caliperCount];
         for (int c=0; c < caliperCount; c++) {
-          calipers[c].adj[i] = calipers[c].adj[i] - tReading[c] + calipers[c].reading;
+          tReading[c] = calipers[c].reading;
         }
-      }
-  }
+    
+      // display 'HOLD' and wait
+        tft.fillScreen(TFT_BLACK);                  // Clear the screen
+        tft.setFreeFont(FM9);                       // standard Free Mono font - available sizes: 9, 12, 18 or 24
+        tft.setTextSize(2);                         // 1 or 2
+        const int sSpacing = 22;                    // line spacing
+        tft.setTextColor(TFT_RED, TFT_BLACK);
+        tft.drawString("H O L D !", 60, 50);       
+        delay(p1HoldButtonDelay);                   // wait
+        drawScreen(displayingPage);                 // re-draw the screen
+
+      refreshCalipers(2);                           // refresh readings from calipers  
+
+      // adjust coordinates to new reading
+        for (int i = 0; i < noOfCoordinates; i++) {
+          for (int c=0; c < caliperCount; c++) {
+            calipers[c].adj[i] = calipers[c].adj[i] - tReading[c] + calipers[c].reading;
+          }
+        }
+    }
 
 
 // -----------------------------------------------------------------------------------------
@@ -203,13 +203,13 @@
 // page 3
 
 // switch to page 1
-void threePage1Pressed() { 
-  log_system_message("button: screen 1");
-  drawScreen(1);
-}
+  void threePage1Pressed() { 
+    log_system_message("button: screen 1");
+    drawScreen(1);
+  }
 
-// neumeric keypad 
-// curently only used by page 4 to jump to position
+  // neumeric keypad 
+  // curently only used by page 4 to jump to position
 
   // check entered number is valid and convert to a float
   void verifyNumber() {          
@@ -365,8 +365,7 @@ void threePage1Pressed() {
 
   // clear store
   void buttonClearStorePressed() {           
-    log_system_message("button: clear store pressed");
-    gcodeLineCount = 0;
+    clearGcode();
     drawScreen(4);      // redraw screen to clear previous text
   }    
 

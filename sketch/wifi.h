@@ -32,20 +32,20 @@
   int requestWebPage(String*, String*, int);
   
 
-  
 
 // **************************************** S e t t i n g s ****************************************
 
 
-// Note: set type of wifi used in settings.h 
-  
+// Note: If using Wifi Manager use startWifiManager(), for standard connection use startWifi()
+
+
 // Settings for main wifi (if not using wifi manager)
-  const char *SSID = "<wifi name>";
-  const char *PWD = "<wifi password>";  
+  const char *SSID = "ssid here";
+  const char *PWD = "password here";  
   const int wifiTimeout = 20;          // timeout when connecting to wifi (seconds)
 
 // Settings for the configuration Portal (Wifi Manager) or Access Point if using startAccessPoint()
-  const char* AP_SSID = "ESPDRO";
+  const char* AP_SSID = "SLBDRO";
   const char* AP_PASS = "password";
 
 // IP settings if using Access Point
@@ -55,7 +55,6 @@
 
 // *************************************************************************************************
 
-    
 
 // ----------------------------------------------------------------
 //                              -Startup

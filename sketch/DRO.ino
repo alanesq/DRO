@@ -1,6 +1,6 @@
 /*******************************************************************************************************************
  *
- *                                              SuperLowBudget-DRO               09feb24
+ *                                              SuperLowBudget-DRO               11feb24
  *                                              ------------------
  *
  *          3 Channel DRO using cheap digital calipers and a ESP32-2432S028R (aka Cheap Yellow Display)
@@ -9,8 +9,7 @@
  *                                      https://github.com/alanesq/DRO
  *
  *
- *                         Tested in Arduino IDE 2.2.1 with board managers ESP32 2.0.14
- *           Libraries: TFT_eSPI 2.5.34, TFT_eWidget 0.0.5, WifiManager 2.0.16, XPT2046_Touchscreen 1.4
+ *                         Tested in Arduino IDE 2.3.0 with Espressif board manager ESP32 2.0.14
  *
  *                 Included files: settings.h, standard.h, ota.h, sevenSeg.h, Free_Fonts.h, buttons.h & wifi.h
  *
@@ -24,24 +23,14 @@
  *
  ********************************************************************************************************************
 
-  3 Channel DRO using cheap digital calipers and a ESP32-2432S028R  (Cheap Yellow Display)
-    see: https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display
-
-  Make sure to copy the UserSetup.h file into the TFT_eSPI library.    
-    see: https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/blob/main/SETUP.md
-
-  Ensure your Cheap Yellow Display is not the version with two USB ports as this has a different display
-
-  I am using floats a lot in this sketch and using comparison operations with them, this only works because I am not doing any calculation
-
-  Libraries used:     https://github.com/PaulStoffregen/XPT2046_Touchscreen
-                      https://github.com/Bodmer/TFT_eSPI
-                      https://github.com/Bodmer/TFT_eWidget
-                      https://github.com/tzapu/WiFiManager             
+  Libraries used:     https://github.com/PaulStoffregen/XPT2046_Touchscreen - 1.4
+                      https://github.com/Bodmer/TFT_eSPI - 2.5.34
+                      https://github.com/Bodmer/TFT_eWidget - 0.0.5
+                      https://github.com/tzapu/WiFiManager - 2.0.16         
 
 
-  Ribbon cable (soldered to one side of the esp32 module, 3 colour LED removed)
-  https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/blob/main/PINS.md
+  Ribbon cable soldered to one side of the esp32 module: https://github.com/alanesq/DRO/blob/main/PCB/ribbonCablePins.jpeg
+  The 3 colour LED should be removed.
     3.3v      (from nearby connector)
     gnd       (from nearby connector)
     gpio 0    Caliper X clock
@@ -89,6 +78,7 @@
       Log of activity:                    http://x.x.x.x/log
       Testing code:                       http://x.x.x.x/test               (see 'handleTest()' at bottom of page)
       Update via OTA:                     http://x.x.x.x/ota                (default password is 'password')
+      List stored positions               http://x.x.x.x/stored
 
 */
 
@@ -114,6 +104,7 @@ String enteredGcode;                      // store for the entered gcode on web 
   void displayReadings();
   void startTheWifi();
   bool refreshCalipers(int);
+  void clearGcode();
 
 
   // -------------------------------------------- CYD DISPLAY --------------------------------------------
@@ -473,21 +464,21 @@ void setup() {
       pinMode(calipers[x].dataPIN, INPUT);
     }
   
-  // get initial raw readings from calipers
-    for (int c=0; c < caliperCount; c++) {
-      calipers[c].reading = readCaliper(calipers[c].clockPIN, calipers[c].dataPIN, calipers[c].direction);
-      log_system_message("Caliper " + String(c) + "initial reading = " + String(calipers[c].reading));
+  // get readings from calipers
+    if (!refreshCalipers(3)) {    
+      delay(2000);                // give calipers a chance to start-up (test to attempt to stop calipers failing to start if not used for a while - 10Feb24)
+      refreshCalipers(5);
     }
-    refreshCalipers(4);          // get readings the official way (up to 4 attenpts each caliper)
 
-  // zero all the readings
+  // zero all DRO readings
     for (int c=0; c < caliperCount; c++) {
+      log_system_message("Axis " + calipers[c].title + " initial reading: " + String(calipers[c].reading));
       for (int i=0; i < noOfCoordinates; i++) {
         calipers[c].adj[i] = calipers[c].reading;
       }
     }
 
-  drawScreen(1);     // draw the screen
+  drawScreen(1);     // display page 1 on CYD
 
   // report number of button widgets 
     if (widgetCount == 0) log_system_message("Button widget count is correct");
@@ -579,8 +570,6 @@ bool refreshCalipers(int cRetry) {
 
 void handleRoot() {
 
-  int rNoLines = 3;      // number of updating information lines to be populated via http://x.x.x.x/data
-
   WiFiClient client = server.client();             // open link with client
   webheader(client);                               // html page header  (with extra formatting)
 
@@ -601,42 +590,39 @@ void handleRoot() {
 // ---------------------------------------------------------------------------------------------
 //  info which is periodically updated using AJAX - https://www.w3schools.com/xml/ajax_intro.asp
 
-// insert empty lines which are later populated via vbscript with live data from http://x.x.x.x/data in the form of comma separated text
-  for (int i = 0; i < rNoLines; i++) {
-    client.println("<span id='uline" + String(i) + "'></span><br>");
-  }
+  // insert area which is later populated via vbscript with live data from http://x.x.x.x/data 
+    client.println("<br><span id='uline' style='display: inline-block; min-height: 110px;'></span><br>");
 
-// Javascript - to periodically update the above info lines from http://x.x.x.x/data
-// This is the below javascript code compacted to save flash memory via https://www.textfixer.com/html/compress-html-compression.php
-   client.printf(R"=====(  <script> function getData() { var xhttp = new XMLHttpRequest(); xhttp.onreadystatechange = function() { if (this.readyState == 4 && this.status == 200) { var receivedArr = this.responseText.split(','); for (let i = 0; i < receivedArr.length; i++) { document.getElementById('uline' + i).innerHTML = receivedArr[i]; } } }; xhttp.open('GET', 'data', true); xhttp.send();} getData(); setInterval(function() { getData(); }, %d); </script> )=====", dataRefresh * 1000);
+
+  // Javascript - to periodically update the above info lines from http://x.x.x.x/data
+    // get from http://x.x.x.x/data and populate the blank lines in html above
+
+  // this is the below section compacted via https://www.textfixer.com/html/compress-html-compression.php
+    client.printf(R"=====( <script> function getData() { var xhttp = new XMLHttpRequest(); xhttp.onreadystatechange = function() { if (this.readyState == 4 && this.status == 200) { document.getElementById('uline').innerHTML = this.responseText; } }; xhttp.open('GET', 'data', true); xhttp.send();} getData(); setInterval(function() { getData(); }, %d); </script> )=====", dataRefresh * 1000);
+
 /*
-  // get a comma seperated list from http://x.x.x.x/data and populate the blank lines in html above
-  client.printf(R"=====(
-     <script>
-        function getData() {
-          var xhttp = new XMLHttpRequest();
-          xhttp.onreadystatechange = function() {
-          if (this.readyState == 4 && this.status == 200) {
-            var receivedArr = this.responseText.split(',');
-            for (let i = 0; i < receivedArr.length; i++) {
-              document.getElementById('uline' + i).innerHTML = receivedArr[i];
+    client.printf(R"=====(
+      <script>
+          function getData() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+              document.getElementById('uline').innerHTML = this.responseText;
             }
-          }
-        };
-        xhttp.open('GET', 'data', true);
-        xhttp.send();}
-        getData();
-        setInterval(function() { getData(); }, %d);
-     </script>
-  )=====", dataRefresh * 1000);
+          };
+          xhttp.open('GET', 'data', true);
+          xhttp.send();}
+          getData();
+          setInterval(function() { getData(); }, %d);
+      </script>
+    )=====", dataRefresh * 1000);
 */
-
 
 // ---------------------------------------------------------------------------------------------
 
 
     // textbox for entering gcode
-      client.println("<br>LOCATION ASSISTANT<br>");
+      client.println("<br>STORED POSITIONS<br>");
       client.println("Enter list of positions you wish to step through in the format: X10 Y20 Z30<br>");
       client.println("or paste gcode &ensp; <a href='https://www.intuwiz.com/drilling.html' target='_new'>GCODE GENERATOR</a><br>");  
       client.println("<textarea id='gcode' name='gcode' rows='" + String(gcodeTextHeight) + "' cols='" + String(gcodeTextWidth) + "'></textarea><br>"); 
@@ -644,35 +630,24 @@ void handleRoot() {
     // coordinate selection checkboxes
       client.println("Coordinates to process: ");
       for (int c=0; c < caliperCount; c++) {
-        if (calipers[c].enabled) client.print("<INPUT type='checkbox' name='" + calipers[c].title + "' value='" + calipers[c].title + "'>" + calipers[c].title + "&ensp;");
+        if (calipers[c].enabled) client.print(calipers[c].title + "<INPUT type='checkbox' name='GA" + calipers[c].title + "' value='1'>&ensp;");
       } 
 
-    // misc options
-      client.print(R"=====(
-        <INPUT type='submit' value='Action'> <INPUT type='reset'> <br>
-        DIAGNOSTICS: &ensp;
-        Toggle show caliper read fails<INPUT type='radio' name='RADIO1' value='1'> &ensp;
-        Toggle show screen presses<INPUT type='radio' name='RADIO2' value='1'> <br>
+    // misc option radio buttons
+      client.println(R"=====(
+        <INPUT type='submit' value='Action'><INPUT type='reset'><br>
+        Toggle show caliper read fails<INPUT type='radio' name='RADIO1' value='1'>&ensp;
+        Toggle show screen presses<INPUT type='radio' name='RADIO1' value='2'>&ensp;
+        Clear stored positions<INPUT type='radio' name='RADIO1' value='3'><br>
       )=====");
-
-
-    // // demo enter a value
-    //   client.println("<br><br>Enter a value: <input type='number' style='width: 40px' name='value1' title='additional info which pops up'> ");
-    //   client.println("<input type='submit' name='submit'>");
-
-    // // demo standard button
-    // //    'name' is what is tested for above to detect when button is pressed, 'value' is the text displayed on the button
-    //   client.println("<br><br><input style='");
-    //   // if ( x == 1 ) client.println("background-color:red; ");      // to change button color depending on state
-    //   client.println("height: 30px;' name='demobutton' value='Demonstration Button' type='submit'>\n");
 
     // link to github
       client.println("<br><a href='https://github.com/alanesq/DRO' target='_new'>PROJECT GITHUB</a>");
 
     // close page
-      client.println("</P>");                                // end of section
-      client.println("</form>\n");                           // end form section (used by buttons etc.)
-      webfooter(client);                                     // html page footer
+      client.println("</P>");           // end of section
+      client.println("</form>");        // end form section (used by buttons etc.)
+      webfooter(client);                // html page footer
       delay(3);
       client.stop();
 }
@@ -684,52 +659,49 @@ void handleRoot() {
 
 void rootUserInput(WiFiClient &client) {
 
-  // Misc options
-  // if radio button 1 selected - toggle showing of errors on DRO readings
+  // Misc option radio1 buttons
     if (server.hasArg("RADIO1")) {
-      String RADIOvalue = server.arg("RADIO1");   // read value of the "RADIO" argument
+      String RADIOvalue = server.arg("RADIO1");   // read value of the "RADIO1" argument
+
+      // Show DRO errors
       if (RADIOvalue == "1") {
         showDROerrors = !showDROerrors;
         log_system_message("DRO reading error displaying set to :" + String(showDROerrors));
       }  
-    }
 
-  // if radio button 2 selected - toggle showing presses on screen
-    if (server.hasArg("RADIO2")) {
-      String RADIOvalue = server.arg("RADIO2");   // read value of the "RADIO" argument
-      if (RADIOvalue == "1") {
+      // show touch press position 
+      if (RADIOvalue == "2") {
         showPress = !showPress;
         log_system_message("Show screen presses set to :" + String(showPress));
       }  
+
+      // clear stored positions
+      if (RADIOvalue == "3") {
+        clearGcode();
+      }  
     }
 
-
-  // entered gcode
+  // gcode / stored positions
     if (server.hasArg("gcode")) {
-      // set coordinates to use
-        for (int c=0; c < caliperCount; c++) {
-          (server.hasArg(calipers[c].title)) ? inc[c] = 1 : inc[c] = 0;
-        }
-      // process the gcode
-        enteredGcode = server.arg("gcode") + "\n";   // read value in to global gcode store
-        processGCode(enteredGcode);                  // process the gcode and put resulting coordinates in to global arrays
+      enteredGcode = server.arg("gcode");          // read gcode text
+      if (enteredGcode != "") {      
+        // set coordinates to use from radio buttons
+          bool tFlag = 0;
+          for (int c=0; c < caliperCount; c++) {
+            if (server.arg("GA" + calipers[c].title) == "1") {    // if this axis is selected
+              inc[c] = 1;
+              tFlag = 1;
+            } else {
+              inc[c] = 0;
+            }
+          }
+        // process the gcode 
+          if (tFlag) {                                            // if at least one axis has been selected
+            enteredGcode += "\n";
+            processGCode(enteredGcode);                           // process the gcode and put resulting coordinates in to global arrays
+          }
+      }
     }
-
-
-
-  // // if demo value1 was entered
-  //   if (server.hasArg("value1")) {
-  //   String Tvalue = server.arg("value1");   // read value
-  //   if (Tvalue != NULL) {
-  //     int val = Tvalue.toInt();
-  //     log_system_message("Value entered on root page = " + Tvalue );
-  //   }
-  // }
-
-  //   // if demo button "demobutton" was pressed
-  //     if (server.hasArg("demobutton")) {
-  //         log_system_message("demo button was pressed");
-  //     }
 }
 
 
@@ -737,21 +709,17 @@ void rootUserInput(WiFiClient &client) {
 //     -data web page requested     i.e. http://x.x.x.x/data
 // ----------------------------------------------------------------
 // the root web page requests this periodically via Javascript in order to display updating information.
-// information in the form of comma seperated text is supplied which are then inserted in to blank lines on the web page
-// Note: to change the number of lines displayed update variable 'rNoLines' at the top of handleroot()
 
 void handleData(){
-  
-  // NOTE - do not use a comma in the text other than to signify end of data line
+
    String reply; reply.reserve(600); reply = "";                                // reserve space to cut down on fragmentation
-   char buff[200]; 
+   char buff[200];                                                              // used for formatting of caliper readings
 
-   // line1 - current time
+   // current time
     String cTime = currentTime();
-    if (cTime != "Time Unknown") reply += "<br>Current time: " + cTime;
-    reply += "<br>,";                                                           // comma signifies end of line
+    if (cTime != "Time Unknown") reply += "<br>Current time: " + cTime + "<br><br>";
 
-   // line2 - DRO readings
+   // DRO readings
     String spa = "%0" + String(DROnoOfDigits1 + DROnoOfDigits2 + 1) + ".2f";    // create sprintf argument for number format (in the format "%07.2f")
     reply += "DRO READINGS";
     for (int c=0; c < caliperCount; c++) {
@@ -760,20 +728,20 @@ void handleData(){
         for (int i=0; i < noOfCoordinates; i++) {                               // step through all the coordinate systems
           if (i == currentCoord) reply += String(colBlue);                      // active coordinate
           sprintf(buff, spa.c_str(), calipers[c].reading - calipers[c].adj[i]);  
-          reply += "C" + String(i+1) + ":" + String(buff) + "&ensp;";
+          reply += "C" + String(i+1) + ":" + String(buff) + "&ensp; &ensp;";
           if (i == currentCoord) reply += String(colEnd);   
         }
         sprintf(buff, spa.c_str(), calipers[c].reading);                        // the calipers actual reading
-        reply += " Caliper:" + String(buff);      
+        reply += " Raw:" + String(buff);      
       }
     }
-    //reply += "Current selected coordinate system: C" + String(currentCoord + 1);
-    reply += ",";                                                               // end of line
+    reply += "<br><br>";
 
-    // line 3 - misc info.
-      if (showPress) reply += String(colRed) + "<br>Screen press location will be displayed" + String(colEnd);
-      if (showDROerrors) reply += String(colRed) + "<br>Caliper read fails will be displayed (" + String(DROerrorCode, 0) + ")" + String(colEnd);
-      //reply += ",";        // end of line
+    // misc info.
+      if (showPress) reply += String(colRed) + "<br>Touch screen data will be displayed" + String(colEnd);
+      if (showDROerrors) reply += String(colRed) + "<br>Axis read fails will be displayed (code: " + String(DROerrorCode, 0) + ")" + String(colEnd);
+      if (OTAEnabled) reply += String(colRed) + "<br>OTA is enabled" + String(colEnd);
+      if (gcodeLineCount != 0) reply += "<br>There are " + String(gcodeLineCount) + " stored positions in memory";
 
    server.send(200, "text/plane", reply);                                      // Send millis value only to client ajax request
 }
@@ -788,12 +756,11 @@ void handlePing(){
   WiFiClient client = server.client();             // open link with client
 
   // log page request including clients IP address
-  IPAddress cip = client.remoteIP();
-  String clientIP = decodeIP(cip.toString());   // check for known IP addresses
-  log_system_message("Ping page requested from: " + clientIP);
+    IPAddress cip = client.remoteIP();
+    String clientIP = decodeIP(cip.toString());   // check for known IP addresses
+    log_system_message("Ping page requested from: " + clientIP);
 
-  String message = "ok";
-  server.send(200, "text/plain", message);   // send reply as plain text
+  server.send(200, "text/plain", "ok");   // send reply as plain text
 }
 
 
@@ -803,25 +770,25 @@ void handlePing(){
 // @param   eDirection   1=write, 0=read
 // Note on esp32 this has now been replaced by preferences.h although I still prefer this method - see: by https://randomnerdtutorials.com/esp32-save-data-permanently-preferences/
 
-
 void settingsEeprom(bool eDirection) {
 
     const int dataRequired = 60;   // total size of eeprom space required (bytes)
 
     int currentEPos = 0;           // current position in eeprom
-    float ts;                      // temp store
+    float ts;                      // temp stores
+    byte tts;
 
     EEPROM.begin(dataRequired);
 
     if (eDirection == 0) {         // read settings
 
-      // read flag to show stored settings are valid
-        EEPROM.get(currentEPos,  ts);   
-        if (ts != 69) {
+      // read number of coordinates and veryfy this is correct
+        EEPROM.get(currentEPos,  tts);   
+        if (tts != noOfCoordinates) {
           log_system_message("Error: invalid data read from eeprom");
           return;     
         }
-        currentEPos += sizeof(ts);          
+        currentEPos += sizeof(tts);          
 
       // step through the coordinate systems
         for (int c = 0; c < noOfCoordinates; c++) {
@@ -842,10 +809,9 @@ void settingsEeprom(bool eDirection) {
 
     } else {                      // store settings
 
-      // store flag to show stored settings are valid
-          ts = 69;
-          EEPROM.put(currentEPos, ts);   
-          currentEPos += sizeof(ts);         
+      // number of coordinates to store
+          EEPROM.put(currentEPos, noOfCoordinates);     // byte
+          currentEPos += sizeof(noOfCoordinates);         
 
       // step through the coordinate systems
         for (int c = 0; c < noOfCoordinates; c++) {
@@ -864,7 +830,6 @@ void settingsEeprom(bool eDirection) {
       if (currentEPos > dataRequired) log_system_message("ERROR: Not enough space reserved to store to eeprom");
       else log_system_message("Data written to eeprom");
     }
-
 }
 
 
@@ -915,7 +880,7 @@ void pageSpecificOperations() {
 
   // -------------------------------------------------------
 
-  // page 3: demo keypad
+  // page 3: keypad
 
     // display number ented via keypad
       if (displayingPage == 3) {
@@ -1050,12 +1015,11 @@ void actionScreenTouch(TS_Point p) {
     Serial.print(p.y);
     Serial.println();  
   }
-
 }
 
 
 // ----------------------------------------------------------------
-//               -highlight active buttons 
+//               -highlight active buttons on CYD
 // ----------------------------------------------------------------
 // i.e. identify which buttons are acive
 
@@ -1063,12 +1027,12 @@ void highlightActiveButtons() {
   tft.setFreeFont(MENU_FONT);     
   tft.setTextSize(MENU_SIZE);    
 
-  // page
+  // page buttons
     for (uint8_t b = 0; b < buttonCount; b++) {
       if (String(screenButtons[b].label) == "P" + String(displayingPage)) screenButtons[b].btn->drawSmoothButton(true);
     }    
 
-  // coordinate system
+  // coordinate system buttons
     if (displayingPage == 1) {
       for (uint8_t b = 0; b < buttonCount; b++) {
         if (String(screenButtons[b].label) == "C" + String(currentCoord + 1)) screenButtons[b].btn->drawSmoothButton(true);
@@ -1078,7 +1042,7 @@ void highlightActiveButtons() {
 
 
 // ----------------------------------------------------------------
-//                     -draw the screen
+//                   -draw the screen on CYD
 // ----------------------------------------------------------------
 // screen = page number to show
 
@@ -1106,11 +1070,8 @@ void drawScreen(int screen) {
 }
 
 
-//      ***************************  Calipers  *****************************
-
-
 // ----------------------------------------------------------------
-//         -wait for gpio pin to be at specified state 
+//        -wait for gpio pin to be at the specified state 
 // ----------------------------------------------------------------
 // returns 0 if it times out (used by 'read caliper data')
 
@@ -1350,13 +1311,13 @@ void handelStored() {
   // log page request including clients IP address
     IPAddress cip = client.remoteIP();
     String clientIP = decodeIP(cip.toString());   // check for known IP addresses
-    //log_system_message("Test page requested from: " + clientIP);
+    log_system_message("Stored positions list page requested from: " + clientIP);
 
   webheader(client);                 // add the standard html header
   client.println("<br><H2>STORED POSITIONS</H2>");
 
   if (gcodeLineCount == 0) {
-    client.println("<br>No stored positions to display");
+    client.println("<br>No stored positions to display<br>");
   } else {
     // Display stored positions
     client.println("There are " + String(gcodeLineCount) + " stored positions");
@@ -1381,6 +1342,18 @@ void handelStored() {
 
 
 // ----------------------------------------------------------------
+//                       -clear stored gcode 
+// ----------------------------------------------------------------
+
+void clearGcode() {
+    gcodeLineCount = 0;                                      // set number of positions stored to zero
+    gcodeStepPosition = 0;                                   // set current position in list to be zero
+    for (int c=0; c < caliperCount; c++) gcode[c][0] = 0;    // set first entry to zero
+    log_system_message("Stored positions have been cleared");
+}
+
+
+// ----------------------------------------------------------------
 //           -testing page     i.e. http://x.x.x.x/test
 // ----------------------------------------------------------------
 // Use this area for experimenting/testing code
@@ -1401,24 +1374,6 @@ void handleTest(){
 
 
   // ---------------------------- test section here ------------------------------
-
-
-// testing 
-  // caliper gpio pins
-    for (int x=0; x < caliperCount; x++) {
-      pinMode(calipers[0].clockPIN, INPUT);
-      pinMode(calipers[0].dataPIN, INPUT);
-    }
-    refreshCalipers(4);    
-
-// // display stored coordinates from entered gcode
-//   client.print("Positions extracted from gcode: <br>");
-//   for (int i=0; i < gcodeLineCount; i++) {
-//     if (incX) client.print("&ensp; x:" + String(gcodeX[i]) );
-//     if (incY) client.print("&ensp; y:" + String(gcodeY[i]) );
-//     if (incZ) client.print("&ensp; z:" + String(gcodeZ[i]) );
-//     client.println("<br>");
-//   }
 
 
 // // turn backloight off then on
