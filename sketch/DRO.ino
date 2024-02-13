@@ -1,6 +1,6 @@
 /*******************************************************************************************************************
  *
- *                                              SuperLowBudget-DRO               11feb24
+ *                                              SuperLowBudget-DRO               13feb24
  *                                              ------------------
  *
  *          3 Channel DRO using cheap digital calipers and a ESP32-2432S028R (aka Cheap Yellow Display)
@@ -82,13 +82,15 @@
 
 */
 
-#include <Arduino.h>                      // required to use Strings 
-String enteredGcode;                      // store for the entered gcode on web page
-#include "settings.h"                     // load in settings for the DRO from settings.h file
-
 #if (!defined ESP32)
   #error This code is for the ESP32 based 'Cheap Yellow Display' only
 #endif
+
+#include <Arduino.h>                      // required to use Strings 
+String enteredGcode;                      // store for the entered gcode on web page
+float DROerrorCode = 9999.00;             // Value stored in readings to indicate it is invalid
+float DROerrorCodeReduced = DROerrorCode - 999;   // value used to compare error code to (to get round floating point weirdness)
+#include "settings.h"                     // load in settings for the DRO from settings.h file
 
 #include <esp_task_wdt.h>                 // watchdog timer   - see: https://iotassistant.io/esp32/enable-hardware-watchdog-timer-esp32-arduino-ide/     
 #include <WiFi.h>
@@ -101,10 +103,14 @@ String enteredGcode;                      // store for the entered gcode on web 
   void settingsEeprom(bool eDirection);
   void handleTest();
   void drawScreen(int);      
-  void displayReadings();
+  void displayReadings(bool clearFirst = 0);
   void startTheWifi();
   bool refreshCalipers(int);
   void clearGcode();
+  void plotGraph(WiFiClient &client, int axis1, int axis2);
+  float mapf(float x, float in_min, float in_max, float out_min, float out_max);
+  void loadTestPositions();
+  
 
 
   // -------------------------------------------- CYD DISPLAY --------------------------------------------
@@ -298,7 +304,6 @@ bool sTouched = 0;                        // flag if a button is curently presse
 bool OTAEnabled = 0;                      // flag to show if OTA has been enabled (via supply of password on http://x.x.x.x/ota)
 int wifiok = 0;                           // flag if wifi connection is ok 
 unsigned long wifiDownTime = 0;           // if wifi connection is lost this records at what time it was lost
-float DROerrorCode = 8888.0;              // error code used for DRO readings
 bool showPress = 0;                       // show touch data on screen (for calibration / testing)
 bool showDROerrors = 0;                   // show errors on DRO readings display 
 
@@ -466,7 +471,7 @@ void setup() {
   
   // get readings from calipers
     if (!refreshCalipers(3)) {    
-      delay(2000);                // give calipers a chance to start-up (test to attempt to stop calipers failing to start if not used for a while - 10Feb24)
+      delay(1000);                // give calipers a chance to start-up (test to attempt to stop calipers failing to start if not used for a while - 10Feb24)
       refreshCalipers(5);
     }
 
@@ -539,15 +544,13 @@ bool refreshCalipers(int cRetry) {
         tCount = cRetry;                                         // reset try counter 
         while (tCount > 0 && tOK[c] == 0) {
           float tRead = readCaliper(calipers[c].clockPIN, calipers[c].dataPIN, calipers[c].direction);   // read data from caliper (reading over 9999 indicates fail)
-          if (tRead != calipers[c].reading) { // if reading has changed
-            if (tRead < DROerrorCode || showDROerrors) {           // if reading is not error or show errors is enabled
-              calipers[c].reading = tRead;                         // store result in global variable 
-              refreshDisplayFlag = 1;                              // flag DRO display to refresh
-              calipers[c].lastReadTime = millis();                 // log time of last reading
-              tOK[c] = 1;                                          // flag reading received ok
-            }
+          if (tRead != calipers[c].reading) {                    // if reading has changed
+            calipers[c].reading = tRead;                         // store result in global variable 
+            refreshDisplayFlag = 1;                              // flag DRO display to refresh
+            calipers[c].lastReadTime = millis();                 // log time of last reading
+            tOK[c] = 1;                                          // flag reading received ok
           }
-          if (tRead >= DROerrorCode) {    
+          if (tRead > DROerrorCodeReduced) {    
             if (serialDebug) Serial.println(calipers[c].title + " Caliper read failed: " + String(tRead));    
           }   
           tCount--;                                              // decrement try counter
@@ -624,7 +627,7 @@ void handleRoot() {
     // textbox for entering gcode
       client.println("<br>STORED POSITIONS<br>");
       client.println("Enter list of positions you wish to step through in the format: X10 Y20 Z30<br>");
-      client.println("or paste gcode &ensp; <a href='https://www.intuwiz.com/drilling.html' target='_new'>GCODE GENERATOR</a><br>");  
+      client.println("or paste gcode &ensp; <a href='https://www.intuwiz.com/drilling.html' target='_new'>INTUWIZ ONLINE GCODE GENERATOR</a><br>");  
       client.println("<textarea id='gcode' name='gcode' rows='" + String(gcodeTextHeight) + "' cols='" + String(gcodeTextWidth) + "'></textarea><br>"); 
 
     // coordinate selection checkboxes
@@ -635,10 +638,11 @@ void handleRoot() {
 
     // misc option radio buttons
       client.println(R"=====(
-        <INPUT type='submit' value='Action'><INPUT type='reset'><br>
-        Toggle show caliper read fails<INPUT type='radio' name='RADIO1' value='1'>&ensp;
+        <INPUT type='submit' value='Action'>&ensp;<INPUT type='reset'><br>
+        Toggle show read errors<INPUT type='radio' name='RADIO1' value='1'>&ensp;
         Toggle show screen presses<INPUT type='radio' name='RADIO1' value='2'>&ensp;
-        Clear stored positions<INPUT type='radio' name='RADIO1' value='3'><br>
+        Load demo positions<INPUT type='radio' name='RADIO1' value='3'>&ensp;
+        Clear stored positions<INPUT type='radio' name='RADIO1' value='4'><br>
       )=====");
 
     // link to github
@@ -677,6 +681,11 @@ void rootUserInput(WiFiClient &client) {
 
       // clear stored positions
       if (RADIOvalue == "3") {
+        loadTestPositions();
+      }  
+
+      // clear stored positions
+      if (RADIOvalue == "4") {
         clearGcode();
       }  
     }
@@ -739,7 +748,7 @@ void handleData(){
 
     // misc info.
       if (showPress) reply += String(colRed) + "<br>Touch screen data will be displayed" + String(colEnd);
-      if (showDROerrors) reply += String(colRed) + "<br>Axis read fails will be displayed (code: " + String(DROerrorCode, 0) + ")" + String(colEnd);
+      if (showDROerrors) reply += String(colRed) + "<br>Axis read errors will be displayed" + String(colEnd);
       if (OTAEnabled) reply += String(colRed) + "<br>OTA is enabled" + String(colEnd);
       if (gcodeLineCount != 0) reply += "<br>There are " + String(gcodeLineCount) + " stored positions in memory";
 
@@ -905,7 +914,13 @@ void pageSpecificOperations() {
       // set position coordinates on DRO 
         for (int c=0; c < caliperCount; c++) {
           gcodeDROadj[c] = 0;
-          if (inc[c]) gcodeDROadj[c] = gcode[c][gcodeStepPosition - 1];  
+          if (inc[c]) {                                                 // if this axis is selected for the gcode
+             if (gcode[c][gcodeStepPosition - 1] < DROerrorCodeReduced) {          // if it is a valid reading
+               gcodeDROadj[c] = gcode[c][gcodeStepPosition - 1];  
+             } else {
+               gcodeDROadj[c] = DROerrorCode;                           // invalid data
+             }
+          }
         }
 
       // page title
@@ -913,15 +928,22 @@ void pageSpecificOperations() {
         tft.setTextColor(TFT_RED, TFT_BLACK);
         tft.setTextSize(1);
         tft.drawString("  STEP THROUGH" , rightOfSmallDRO, lineSpace * 0);
-        tft.drawString("  COORDINATES" , rightOfSmallDRO, lineSpace * 1);
+        tft.drawString("  STORED" , rightOfSmallDRO, lineSpace * 1);
+        tft.drawString("  POSITIONS" , rightOfSmallDRO, lineSpace * 2);
 
       // display coordinates
         if (gcodeLineCount > 0) {                                     // if there is data to use
-          tft.drawString(" Position: " + String(gcodeStepPosition) + " of " + String(gcodeLineCount) + "  " , 0, belowSmallDRO + lineSpace * 1);
+          tft.drawString(" Position: " + String(gcodeStepPosition) + " of " + String(gcodeLineCount) + "   " , 0, belowSmallDRO + lineSpace * 1);
           // display coordinates
             String tRes = "";
             for (int c=0; c < caliperCount; c++) {
-              if (inc[c]) tRes += " " + calipers[c].title + ":" + String(gcode[c][gcodeStepPosition - 1], DROnoOfDigits2);
+              if (inc[c]) {
+                if (gcode[c][gcodeStepPosition - 1] < DROerrorCodeReduced) {
+                  tRes += " " + calipers[c].title + ":" + String(gcode[c][gcodeStepPosition - 1], DROnoOfDigits2);
+                } else {    // invalid reading
+                  tRes += " " + calipers[c].title + ":-.--";
+                }
+              }
             }
             tft.setTextPadding(SCREEN_WIDTH - pageButtonWidth);       // this clears the previous text 
             tft.drawString(tRes, 0, belowSmallDRO + lineSpace * 3);
@@ -937,6 +959,7 @@ void pageSpecificOperations() {
               tft.drawString(" Enable wifi to use", 0, belowSmallDRO + lineSpace * 2);
             }
         }
+        displayReadings(1);     // display readings with clear display flag set (so invalid readings leave a blank)
       } 
 }
 
@@ -1136,31 +1159,42 @@ float readCaliper(int clockPin, int dataPin, bool reverseDirection) {
 //                   -display caliper readings
 // ----------------------------------------------------------------
 
-void displayReadings() {
+void displayReadings(bool clearFirst) {
 
-    const unsigned long warningTimeLimit = 2000;       // if caliper reading has not updated in this time change display to blue (ms)
+    const unsigned long warningTimeLimit = 2000;    // if caliper reading has not updated in this time change display to blue (ms)
 
     // create sprint argument  (in the format "%07.2f")
       String spa = "%0" + String(DROnoOfDigits1 + DROnoOfDigits2 + 1) + "." + String(DROnoOfDigits2) + "f";    // https://alvinalexander.com/programming/printf-format-cheat-sheet/
    
     // font size
-      if (displayingPage == 1) tft.setFreeFont(&sevenSeg35pt7b);         // seven segment style font from sevenSeg.h  
+      if (displayingPage == 1) tft.setFreeFont(&sevenSeg35pt7b);                                   // seven segment style font from sevenSeg.h  
       else tft.setFreeFont(&sevenSeg16pt7b);
 
     // Cheap Yellow Display
       tft.setTextColor(TFT_RED, TFT_BLACK);
       tft.setTextSize(1);
-      //tft.setTextPadding(DROwidth);           // this clears the previous text 
-      tft.setTextPadding( tft.textWidth("8") * (DROnoOfDigits1 + DROnoOfDigits2) );           // this clears the previous text
+      tft.setTextPadding( tft.textWidth("8") * (DROnoOfDigits1 + DROnoOfDigits2) );                // this clears the previous text
 
     char buff[50];
 
     // calipers
       for (int c=0; c < caliperCount; c++) {
+        if (clearFirst) tft.drawString(" ", 0, c * tft.fontHeight());                             // clear display first if requested
         if (calipers[c].enabled) {
-          sprintf(buff, spa.c_str(), calipers[c].reading - calipers[c].adj[currentCoord] - gcodeDROadj[c]); 
-          if (strlen(buff) == DROnoOfDigits1 + DROnoOfDigits2 +1) tft.drawString(buff, 0, c * tft.fontHeight());    
-          else if (serialDebug) Serial.println("Invalid reading from " + calipers[c].title + " " + String(buff));          
+          float tReading = calipers[c].reading - calipers[c].adj[currentCoord] - gcodeDROadj[c];   // calculate current reading
+          sprintf(buff, spa.c_str(), tReading);    
+          // display the reading if it is valid and the expected length
+            if (tReading < DROerrorCodeReduced && strlen(buff) == DROnoOfDigits1 + DROnoOfDigits2 + 1) {
+              tft.drawString(buff, 0, c * tft.fontHeight());    
+            } else {      // invalid reading
+              if (showDROerrors) {
+                String tErr = String(tReading, 1);                  // convert reading to a String
+                tErr = tErr.substring(tErr.indexOf('.') + 1);       // extract just the decimal part (error code)
+                tErr = "----." + tErr;
+                tft.drawString(tErr.c_str(), 0, c * tft.fontHeight());  
+              }  
+              if (serialDebug) Serial.println("Invalid reading from " + calipers[c].title + " " + String(buff));          
+            }
         }
       }
    
@@ -1228,43 +1262,44 @@ void handleTouch() {
 
 void processGCode(String &gcodeText) {
   
-  if (gcodeText == "") return;            // if text is blank
+  if (gcodeText == "") return;              // if text is blank
 
-  float t[caliperCount] = {0};            // extracted position
-  float pt[caliperCount] = {99999999.0};  // previous position extracted
+  float t[caliperCount] = {};               // extracted position
+  float pt[caliperCount] = {};              // previous position extracted
+  for (int c=0; c < caliperCount; c++) pt[c] = DROerrorCode;     // set initial state
 
   // Split the G-code string into lines and process each line
-  int startPos = 0;
-  int endPos = 0;
-  gcodeLineCount = 0;                                      // global variable storing number of coordinates extracted from the gcode
+    int startPos = 0;
+    int endPos = 0;
+    gcodeLineCount = 0;                       // global variable storing number of coordinates extracted from the gcode
 
-  while (endPos != -1 && gcodeLineCount < maxGcodeStringLines) {
-    endPos = gcodeText.indexOf('\n', startPos);
-    if (endPos != -1) {
-      String gcodeLine = gcodeText.substring(startPos, endPos);
-      processGCodeLine(gcodeLine, t);             // pass the line of gcode which updates position of x,y,z based upon this line (99999999 = not found)
-      startPos = endPos + 1;
+    while (endPos != -1 && gcodeLineCount < maxGcodeStringLines) {
 
-      // process line if different to previous coordinate
-        bool tFlag = 0;   
+      endPos = gcodeText.indexOf('\n', startPos);
+      if (endPos != -1) {
+        String gcodeLine = gcodeText.substring(startPos, endPos);
+        processGCodeLine(gcodeLine, t);       // pass the line of gcode which updates position of x,y,z based upon this line (99999999 = not found)
+        startPos = endPos + 1;
 
-        for (int c=0; c < caliperCount; c++) { 
-          if (inc[c] == 1 && t[c] < 9999999) {                   // if this coordinate is active and a reading for this axis has been extracted from this line
-            if (pt[c] != t[c]) {                                 // if reading is different to the previous one
-              // new reading 
-                pt[c] = t[c];
-                // log_system_message("new position for " + calipers[c].title + " = " + String(t[c]) );         // for debugging
-                tFlag = 1;          
+        // process line if different to previous coordinate
+          bool tFlag = 0;   
+          for (int c=0; c < caliperCount; c++) { 
+            if (inc[c] == 1 && t[c] < DROerrorCodeReduced) {       // if this coordinate is active and a reading for this axis has been extracted from this line
+              if (pt[c] != t[c]) {                                 // if reading is different to the previous one
+                // new reading 
+                  pt[c] = t[c];
+                  // log_system_message("new position for " + calipers[c].title + " = " + String(t[c]) );         // temp line for debugging
+                  tFlag = 1;          
+              }
             }
           }
-        }
 
-        if (tFlag == 1) {
-          for (int c=0; c < caliperCount; c++) gcode[c][gcodeLineCount] = pt[c];
-          gcodeLineCount ++;
-        }
-    }
-  }   // while
+          if (tFlag == 1) {        // add data to list of positions
+            for (int c=0; c < caliperCount; c++) gcode[c][gcodeLineCount] = pt[c];
+            gcodeLineCount ++;
+          }
+      }
+    }   // while
 
   if (gcodeLineCount >= maxGcodeStringLines) log_system_message("Error: gcode exceded maximum length");
   log_system_message(String(gcodeLineCount) + " coordinates extracted from gcode");
@@ -1275,17 +1310,18 @@ void processGCode(String &gcodeText) {
 //                     -process a line of gcode
 // ----------------------------------------------------------------
 // This takes a String containing a line of basic gcode and updates positions -  It simply finds an 'x', 'y' or 'z' in the string and extracts the number following it
-// if not found it returns 999.69
 
-void processGCodeLine(String gcodeLine, float Pos[]) {
+void processGCodeLine(String &gcodeLine, float Pos[]) {
 
   // extract values
   gcodeLine.toUpperCase();                                         // convert gcode line to upper case
   for (int c=0; c < caliperCount; c++) {      
-    int PosIndex = gcodeLine.indexOf(calipers[c].title);           // search for caliper on the line          
-    if (PosIndex != -1) {   
-      Pos[c] = gcodeLine.substring(PosIndex + 1).toFloat();        // found so read the value 
-    } else Pos[c] = 99999999.0;                                    // not found 
+    Pos[c] = DROerrorCode;
+    int PosIndex = gcodeLine.indexOf(calipers[c].title);           // search for axis title in the line          
+    if (PosIndex != -1) {                                          // if axis was found
+      float tRead = gcodeLine.substring(PosIndex + 1).toFloat();   // read the value 
+      if (tRead > -DROerrorCodeReduced && tRead < DROerrorCodeReduced) Pos[c] = gcodeLine.substring(PosIndex + 1).toFloat();  
+    }
   }
 
   if (serialDebug) {
@@ -1314,30 +1350,137 @@ void handelStored() {
     log_system_message("Stored positions list page requested from: " + clientIP);
 
   webheader(client);                 // add the standard html header
-  client.println("<br><H2>STORED POSITIONS</H2>");
 
   if (gcodeLineCount == 0) {
-    client.println("<br>No stored positions to display<br>");
-  } else {
-    // Display stored positions
-    client.println("There are " + String(gcodeLineCount) + " stored positions");
-    for(int l=0; l < gcodeLineCount; l++) {                   // step through all stored positions
-      client.println("<br>" + String(l + 1) + ":&ensp;");
-      if (l == gcodeStepPosition - 1) client.print(String(colBlue));
-      for (int c=0; c < caliperCount; c++) {                  // step through all available axis
-        if (inc[c] == 1) {                                    // if this axis is selected for the gcode
-          client.println(calipers[c].title + String(String(gcode[c][l])) + "&ensp;"  );
+    client.println("<H2>STORED POSITIONS</H2>");
+    client.println("<br>No stored positions to display<br><br>");
+    webfooter(client);            // add the standard web page footer
+    delay(1);
+    client.stop();
+    return;
+  } 
+
+  client.println("<H2>There are " + String(gcodeLineCount) + " stored positions</h2>");
+
+  // deside which axis can be plotted (max of 2)
+    int axis1=-1, axis2=-1;       // which axis will be plotted
+    for (int c=0; c < caliperCount; c++) {
+      if (inc[c] == 1) {
+        if (axis1 == -1) axis1 = c;
+        else if (axis2 == -1) {
+          axis2 = c;
+          break;   // exit loop as both axis now assigned
         }
       }
-      if (l == gcodeStepPosition - 1) client.print(String(colEnd));
     }
-  }
-  client.println("<br>");
+    plotGraph(client, axis1, axis2);    // plot a graph of the stored positions 
+
+  // display positions as a list
+    // create html table
+      client.println("<br><table style='text-align: left; margin-left: auto; margin-right: auto; background-color: #D0D000; width: 260px; padding-left: 30px;'>");
+    for(int l=0; l < gcodeLineCount; l++) {                     // step through all stored positions                
+        client.println("<tr><td>" + String(l + 1) + "</td>");   // position number
+        for (int c=0; c < caliperCount; c++) {                  // step through all available axis
+          if (inc[c] == 1) {                                    // if this axis is selected for the gcode
+            if (gcode[c][l] < DROerrorCodeReduced) {            // if it is a valid reading
+              client.println("<td>" + calipers[c].title + String(String(gcode[c][l])) + "</td>");
+            } else {     
+              client.println("<td>" + calipers[c].title + "--.--</td>");   
+            }
+          }
+        }
+        client.println("</tr>");                                // end of row
+    }
+    client.println("</table>");                             // end of html table
 
   // end html page
     webfooter(client);            // add the standard web page footer
     delay(1);
     client.stop();
+}
+
+
+//
+// plot a graph of the stored locations
+//
+void plotGraph(WiFiClient &client, int axis1, int axis2) {
+    if (axis1 == -1) return;                   // no axis selected for plotting
+
+    const bool plotAsText = 1;                 // If points on graph are plotted as text or dots
+    int canvasWid = 400, canvasHei = 400;      // size of canvas (best to have them both the same or it distorts the scale)
+    const int pixelSize = 5;                   // size of plotted points
+    const int textSize = 5;                    // size of text
+    if (axis2 == -1) canvasHei = 40;           // if only plotting one axis
+
+    // find the min and max values
+    float resMin = 999999, resMax = -999999;
+    for (int l = 0; l < gcodeLineCount; l++) {
+        if (axis1 != -1) {
+            if (gcode[axis1][l] < resMin && gcode[axis1][l] < DROerrorCodeReduced) resMin = gcode[axis1][l];
+            if (gcode[axis1][l] > resMax && gcode[axis1][l] < DROerrorCodeReduced) resMax = gcode[axis1][l];
+        }
+        if (axis2 != -1) {
+            if (gcode[axis2][l] < resMin && gcode[axis2][l] < DROerrorCodeReduced) resMin = gcode[axis2][l];
+            if (gcode[axis2][l] > resMax && gcode[axis2][l] < DROerrorCodeReduced) resMax = gcode[axis2][l];
+        }
+    }    
+
+    // Axis assignment info.
+      if (axis2 == -1) client.print(calipers[axis1].title);
+      else client.print(calipers[axis1].title + " = Horizontal, " + calipers[axis2].title + " = Vertical");
+      client.println("<br>");
+
+    // create html canvas and show first axis
+    client.println("<div><canvas id='graph' width='" + String (canvasWid + 20) + "' height='" + String (canvasHei) + "'></canvas></div>");
+    client.printf(R"=====(
+        <script>
+            var canvas = document.getElementById("graph");
+            var ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#0000FF";
+            ctx.textAlign = "center";
+            ctx.fillText(%.2f, 30, canvas.height - 17);
+            ctx.fillText(%.2f, canvas.width - 20, canvas.height - 17);            
+    )=====", resMin, resMax);
+
+    // if plotting a second axis 
+    if (axis2 != -1) client.printf(R"=====(
+            ctx.fillText(%.2f, 30, 20);     
+            ctx.fillStyle = "#000000"; 
+    )=====", resMax);
+/*
+            // code to draw x and y axis lines
+              ctx.beginPath();
+                ctx.moveTo(30, 15);
+                ctx.lineTo(30, canvas.height - 20);
+                ctx.lineTo(canvas.width - 30, canvas.height - 20);
+              ctx.stroke();
+*/        
+
+    // Plot positions on html canvas
+    float tempX, tempY;
+    client.println("ctx.fillStyle = \"#FF0000\";");         // set colour of position
+    for (int l = 0; l < gcodeLineCount; l++) {
+        tempX = 0; tempY = textSize;
+        if (axis1 != -1) tempX = mapf(gcode[axis1][l], resMin, resMax, 30, canvasWid);
+        if (axis2 != -1) tempY = mapf(gcode[axis2][l], resMin, resMax, canvasHei - 20, 10);
+        if (plotAsText) {
+          client.println("ctx.fillText(" + String(l + 1) + "," + String(tempX) + "," + String(tempY + textSize) + ");");  // number
+        } else {
+          client.println("ctx.fillRect(" + String(tempX) + "," + String(tempY + pixelSize) + "," + String(pixelSize) + "," + String(pixelSize) + ");");  // box
+        }
+    }
+    client.println("</script>");
+
+}
+
+
+//
+// Map function for float
+//
+float mapf(float x, float in_min, float in_max, float out_min, float out_max) {
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
 
@@ -1350,6 +1493,52 @@ void clearGcode() {
     gcodeStepPosition = 0;                                   // set current position in list to be zero
     for (int c=0; c < caliperCount; c++) gcode[c][0] = 0;    // set first entry to zero
     log_system_message("Stored positions have been cleared");
+}
+
+
+// ----------------------------------------------------------------
+//           -load demonstartion gcode positions
+// ----------------------------------------------------------------
+
+void loadTestPositions() {
+
+  if (caliperCount < 2) {
+    log_system_message("Error: not enough axes available to use the demo data");
+    return;
+  }
+
+  // set first 2 axes as active
+    for (int c=0; c < caliperCount; c++) inc[c] = 0;        
+    inc[0] = 1;  inc[1] = 1;
+
+  // load demo data in to system (18 point circle)
+    enteredGcode = R"=====(
+      X30.00 Y0.00
+      X28.19 Y10.26
+      X22.98 Y19.28
+      X15.00 Y25.98
+      X5.21 Y29.54
+      X-5.21 Y29.54
+      X-15.00 Y25.98
+      X-22.98 Y19.28
+      X-28.19 Y10.26
+      X-30.00 Y0.00
+      X-28.19 Y-10.26
+      X-22.98 Y-19.28
+      X-15.00 Y-25.98
+      X-5.21 Y-29.54
+      X5.21 Y-29.54
+      X15.00 Y-25.98
+      X22.98 Y-19.28
+      X28.19 Y-10.26
+      X0.00 Y0.00   
+
+    )=====";
+
+  // process the data
+    processGCode(enteredGcode); 
+
+  log_system_message("Demo positions loaded in to memory");
 }
 
 

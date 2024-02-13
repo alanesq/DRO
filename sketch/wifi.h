@@ -40,13 +40,13 @@
 
 
 // Settings for main wifi (if not using wifi manager)
-  const char *SSID = "ssid here";
-  const char *PWD = "password here";  
+  const char *SSID = "<ssid here>";
+  const char *PWD = "<password here>";  
   const int wifiTimeout = 20;          // timeout when connecting to wifi (seconds)
 
 // Settings for the configuration Portal (Wifi Manager) or Access Point if using startAccessPoint()
-  const char* AP_SSID = "SLBDRO";
-  const char* AP_PASS = "password";
+    const char* AP_SSID = "SLBDRO";
+    const char* AP_PASS = "password";
 
 // IP settings if using Access Point
     IPAddress Ip(192, 168, 4, 1);                          // ip address

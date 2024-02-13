@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------------------
 
 
-          Procedures triggered when a button is pressed on the screen - 10Feb24
+          Procedures triggered when a button is pressed on the screen - 13Feb24
 
           Part of the  "SuperLowBudget-DRO" sketch - https://github.com/alanesq/DRO
 
@@ -303,6 +303,7 @@
   // setx
   void buttonp3setxPressed() {
     if (noOfCoordinates < 1) return;
+    if (keyEnteredNumberVal >= DROerrorCodeReduced || keyEnteredNumberVal <= -(DROerrorCodeReduced / 10) ) return;     // number beyond limit
     log_system_message("button: set " + calipers[0].title + " pressed: " + String(keyEnteredNumberVal));
     calipers[0].adj[currentCoord] = calipers[0].reading - keyEnteredNumberVal;
     calipers[0].lastReadTime = millis();    
@@ -311,6 +312,7 @@
   // sety
   void buttonp3setyPressed() {
     if (noOfCoordinates < 2) return;
+    if (keyEnteredNumberVal >= DROerrorCodeReduced || keyEnteredNumberVal <= -(DROerrorCodeReduced / 10) ) return;     // number beyond limit
     log_system_message("button: set " + calipers[1].title + " pressed: " + String(keyEnteredNumberVal));
     calipers[1].adj[currentCoord] = calipers[1].reading - keyEnteredNumberVal;
     calipers[1].lastReadTime = millis();    
@@ -319,6 +321,7 @@
   // setz
   void buttonp3setzPressed() {
     if (noOfCoordinates < 2) return;
+    if (keyEnteredNumberVal >= DROerrorCodeReduced || keyEnteredNumberVal <= -(DROerrorCodeReduced / 10) ) return;     // number beyond limit
     log_system_message("button: set " + calipers[2].title + " pressed: " + String(keyEnteredNumberVal));
     calipers[2].adj[currentCoord] = calipers[2].reading - keyEnteredNumberVal;
     calipers[2].lastReadTime = millis();    
@@ -360,6 +363,10 @@
      if (gcodeLineCount < 0) gcodeLineCount = 0;                // just in case something odd has happened
      gcodeLineCount++;
      gcodeStepPosition = gcodeLineCount;                        // move to this new position in gcode steps 
+      for (int c=0; c < caliperCount; c++) {
+        inc[c] = 1;                                           // enable axis in stored data list
+        gcode[c][gcodeStepPosition - 1] = calipers[c].reading - calipers[c].adj[currentCoord];       // store current position
+      }
      drawScreen(4);      // redraw screen to clear previous text
   } 
 

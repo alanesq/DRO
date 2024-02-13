@@ -50,17 +50,17 @@
 
 String decodeIP(String IPadrs) {
 
-    //if (IPadrs == "192.168.1.100") IPadrs = "PC";
-    //else if (IPadrs == "192.168.1.101") IPadrs = "laptop";
+//// Specify known IP addresses here  
+//  if (IPadrs == "192.168.1.100") IPadrs = "Main PC";
+//  else if (IPadrs == "192.168.1.101") IPadrs = "Laptop";
 
+  // log last IP client connected
+    if (IPadrs != lastClient) {
+      lastClient = IPadrs;
+      log_system_message("New IP client connected: " + IPadrs);
+    }
 
-    // log last IP client connected
-      if (IPadrs != lastClient) {
-        lastClient = IPadrs;
-        log_system_message("New IP client connected: " + IPadrs);
-      }
-
-    return IPadrs;
+  return IPadrs;
 }
 
 

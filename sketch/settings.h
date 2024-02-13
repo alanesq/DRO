@@ -11,23 +11,24 @@
 
 // -----------------------------------------------------------------------------------------
 */
-      
+
       
       // Sketch version
       
-                const char* stitle = "Super Low Budget DRO";   
+                const char* stitle = "Super Low Budget DRO";  
                 
-                const char* sversion = "11Feb24";              
+                const char* sversion = "13Feb24";                      
+
 
 
 // ----------------------------------------------------------------------
 
-                
-  bool wifiEnabled = 0;                                  // if wifi is enabled at startup (can be enabled via the menu if set to 0) 
-  int wifiType = 1;                                      // trype of wifi to use (1=uses WifiManager, 2=SSID and Password set manually, 3=Act as Access Point)
+      
+  // Wifi 
+    bool wifiEnabled = 1;                                // If wifi is enabled at startup (it can be enabled via the menu if set to zero here)
+    int wifiType = 1;                                    // 1=use Wifimanager,2=specify wifi credentials (in wifi.h), 3=create an access point
 
   // OTA
-    #define ENABLE_OTA 1                                 // Enable Over The Air updates (OTA)
     const String OTAPassword = "password";               // Password to enable OTA (supplied as - http://<ip address>?pwd=xxxx )
 
   const bool serialDebug = 0;                            // provide debug info on serial port  (disable if using Tx or Rx gpio pins for caliper)
@@ -55,8 +56,8 @@
   const byte noOfCoordinates = 4;                        // number of coordinate systems available
   int currentCoord = 0;                                  // active coordinate    (0 to noOfCoordinates - 1)
   
-  const int maxGcodeStringLines = 1024;                  // maximum number of lines of gcode allowed
-  const int estimateAverageLineLength = 35;              // average line length
+  const int maxGcodeStringLines = 512;                   // maximum number of lines of gcode allowed
+  const int estimateAverageLineLength = 30;              // average line length
 
   // CYD - Display 
     #define SCREEN_ROTATION 1
