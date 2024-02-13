@@ -105,7 +105,7 @@ float DROerrorCodeReduced = DROerrorCode - 999;   // value used to compare error
   void drawScreen(int);      
   void displayReadings(bool clearFirst = 0);
   void startTheWifi();
-  bool refreshCalipers(int);
+  bool refreshCalipers(int cRetry, bool display = 1); 
   void clearGcode();
   void plotGraph(WiFiClient &client, int axis1, int axis2);
   float mapf(float x, float in_min, float in_max, float out_min, float out_max);
@@ -470,9 +470,9 @@ void setup() {
     }
   
   // get readings from calipers
-    if (!refreshCalipers(3)) {    
-      delay(1000);                // give calipers a chance to start-up (test to attempt to stop calipers failing to start if not used for a while - 10Feb24)
-      refreshCalipers(5);
+    if (!refreshCalipers(3,0)) {         // read calipers - returns true if data received from all      
+      delay(1000);                       // give calipers a chance to start-up and try again
+      refreshCalipers(6,0);
     }
 
   // zero all DRO readings
@@ -532,7 +532,7 @@ void loop() {
 // refresh readings from the digital calipers and update display if anything has changed (int = number of times to retry)
 // returns 1 if data received ok from all calipers
 
-bool refreshCalipers(int cRetry) {
+bool refreshCalipers(int cRetry, bool display) {
 
   bool refreshDisplayFlag = 0;                                   // display will be refreshed if this flag is set
   int tCount                           ;                         // temp variables
@@ -559,7 +559,7 @@ bool refreshCalipers(int cRetry) {
       } else tOK[c] = 1;                                         // caliper is disabled so skip it
     }  
 
-    if (refreshDisplayFlag) displayReadings();                   // display caliper readings 
+    if (refreshDisplayFlag && display) displayReadings();        // display caliper readings 
     
     bool tOKres = 1;
     for (int c=0; c < caliperCount; c++) if (tOK[c] == 0) tOKres = 0;
