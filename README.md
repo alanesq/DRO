@@ -107,6 +107,8 @@ I had considered using a linear regulator to power the CYD from the 5v USB to cu
 
 I sometimes find that if the DRO has not been used for a while the calipers don't seem to power up in the correct state which can result in one or more of them not responding, if you turn the DRO off for a few seconds then back on this usually resolves the issue.  I guess they are not designed to have the battery removed, I guess this could be resolved by having the DRO have control of the power to the capipers so it can power cycle them at power on, I may look in to this at some point.<br>
 
+If you are getting a reading of 9999.xx this is the number displayed when there was a problem reading the caliper, the xx number indicates at what point in the sketch the error was detected.  Most likely issues are the two data lines are swapped or the caiper is using a different data format.<br>
+
 If you find the CYD reboots as soon as a button is pressed this is probably becuase the User_Setup.h file has not been copied over for the "TFT_eSPI" library [see here](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display/blob/main/SETUP.md)
 Note: I have had issues where I change something in the library settings and even when I change it back it no longer works.  This is becuase the Arduino IDE doesn't re-compile everything, every time so to get it to re-compile I changed the dev board to something else then back again (just closing and re-opening the IDE may have worked?)
 
