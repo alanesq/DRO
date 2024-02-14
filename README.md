@@ -2,10 +2,10 @@
 
 <br>My homemade ESP32 based DRO which conists of:
  - [Cheap Yellow Display](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display) &ensp; (A.K.A. ESP32-2432S028R) which costs around £12 from Aliexpress
- - Digital calipers which cost under £5 each on eBay or Aliexpress
+ - Digital calipers which cost under £5 each on eBay or Aliexpress (I have even bought some for £3.20 each)
  - Plus a few transistors, general wiring etc... 
 
-As a result, building a three-axis DRO for your milling machine or lathe can set you back less than £30 (around $40). <br><br>
+As a result, building a three-axis DRO for your milling machine or lathe can set you back less than £25 (around $30). <br><br>
 
 <p align="center" width="100%">
   <img height="200" src="/pics/pics.jpg" /><br><br>
