@@ -123,4 +123,4 @@ I tried all sorts of things to try and improve this but after a lot of experimen
 
 If you use this sketch please let me know how you get on and if you have any suggestions for improvments etc.  - alanesq@disroot.org
 
-<br><img height="300px" src="/pics/lathe1.jpg" /><br>
+<br><img width="90%" src="/pics/lathe1.jpg" /><br>
