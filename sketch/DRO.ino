@@ -1,6 +1,6 @@
 /*******************************************************************************************************************
  *
- *                                              SuperLowBudget-DRO               13feb24
+ *                                              SuperLowBudget-DRO               17feb24
  *                                              ------------------
  *
  *          3 Channel DRO using cheap digital calipers and a ESP32-2432S028R (aka Cheap Yellow Display)
@@ -88,8 +88,6 @@
 
 #include <Arduino.h>                      // required to use Strings 
 String enteredGcode;                      // store for the entered gcode on web page
-float DROerrorCode = 9999.00;             // Value stored in readings to indicate it is invalid
-float DROerrorCodeReduced = DROerrorCode - 999;   // value used to compare error code to (to get round floating point weirdness)
 #include "settings.h"                     // load in settings for the DRO from settings.h file
 
 #include <esp_task_wdt.h>                 // watchdog timer   - see: https://iotassistant.io/esp32/enable-hardware-watchdog-timer-esp32-arduino-ide/     
@@ -181,25 +179,32 @@ float DROerrorCodeReduced = DROerrorCode - 999;   // value used to compare error
       const int p4ButtonGap = 4;                         // gap between buttons
 
     
-    int displayingPage = 1;        // which screen page is live
+    int displayingPage = 1;           // which screen page is live
 
-    typedef void (*buttonActionCallback)(void);   
+    typedef void (*buttonActionCallback)(void);   // create a function pointer
     
     // struct to create a button
     struct buttonStruct {
-      int page;                    // which screen page it belongs to (0 = show on all pages)
-      bool enabled;                // if this button is enabled
-      String label;                // buttons title
-      int16_t x, y;                // location on screen (top left)
+      int page;                       // which screen page it belongs to (0 = show on all pages)
+      bool enabled;                   // if this button is enabled
+      String label;                   // buttons title
+      int16_t x, y;                   // location on screen (top left)
       uint16_t width, height;
       uint16_t outlineColour;
       uint16_t outlineThickness;
       uint16_t fillColour;
       uint16_t textColour;
-      ButtonWidget* btn;            // button object (widget)
-      buttonActionCallback action;  // procedure called when button pressed
+      ButtonWidget* btn;               // button object (widget)
+      buttonActionCallback action;     // procedure called when button pressed
     };
 
+
+  // // create button widgets - better technique but I think this would need to be in setup?
+  //   const int numberOfWidgets = 45;    // the number of buttons required
+  //   ButtonWidget butnW[numberOfWidgets] = {nullptr};
+  //   for (int i = 0; i < numberOfWidgets; ++i) {
+  //     buttonWidgets[i] = new ButtonWidget(&tft);
+  //   }    
 
   // create the button widgets - there has to be a better way? - ensure there are enough for the number of buttons required (check log to verify)
     ButtonWidget butnW[] = { &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, &tft, 
@@ -407,7 +412,7 @@ void setup() {
 
   // display a demo meter    see: https://github.com/Bodmer/TFT_eWidget/blob/main/examples/Meters/Analogue_meters/Analogue_meters.ino
     dro.setZones(75, 100, 50, 75, 25, 50, 0, 25);   
-    dro.analogMeter(40, 95, 100.0, "STARTUP", "0", "25", "50", "75", "100"); 
+    dro.analogMeter(40, 95, 100.0, "STARTUP", "0", "25", "50", "75", "100");       // start at 0
 
   // reserve memory for the log to reduce stack fragmentation (yes, I use Strings - deal with it ;-)
     for (int i=0; i < LogNumber; i++) { 
@@ -461,34 +466,43 @@ void setup() {
       screenButtons[b].btn->setPressAction(screenButtons[b].action);    // procedure called when the button is pressed
     }
  
-  dro.updateNeedle(100, MeterSpeed);                 // move dial to 100 
-
+  dro.updateNeedle(75, MeterSpeed);     // move dial to 75
+  //delay(1000); 
+  //tft.fillScreen(TFT_BLACK);             // Clear the screen 
+  
   // caliper gpio pins
     for (int x=0; x < caliperCount; x++) {
-      pinMode(calipers[x].clockPIN, INPUT);
-      pinMode(calipers[x].dataPIN, INPUT);
+      if (calipers[x].enabled) {
+        pinMode(calipers[x].clockPIN, INPUT);
+        pinMode(calipers[x].dataPIN, INPUT);
+      }
     }
   
-  // get readings from calipers
-    if (!refreshCalipers(3,0)) {         // read calipers - returns true if data received from all      
-      delay(1000);                       // give calipers a chance to start-up and try again
-      refreshCalipers(6,0);
+  // get readings from calipers     
+    int tCount = 4;                      // Maximum number of attempts
+    bool q = 0;
+    while (tCount > 0 && q == 0) {
+      q = refreshCalipers(3,0);          // Read calipers, returns TRUE if all calipers returned valid data (max 3 attempts per caliper and do not display result on screen)
+      if (q == 0) delay(600);            // if not all calipers have returned a valid reading
+      tCount --;
     }
+    if (q ==0) log_system_message("Error: problem reading callipers");
 
   // zero all DRO readings
     for (int c=0; c < caliperCount; c++) {
-      log_system_message("Axis " + calipers[c].title + " initial reading: " + String(calipers[c].reading));
+      if (calipers[c].enabled) log_system_message("Axis " + calipers[c].title + " initial reading: " + String(calipers[c].reading));
       for (int i=0; i < noOfCoordinates; i++) {
         calipers[c].adj[i] = calipers[c].reading;
       }
     }
 
-  drawScreen(1);     // display page 1 on CYD
+  dro.updateNeedle(100, MeterSpeed);    // move dial to 100 
+  drawScreen(1);                        // display page 1 on CYD
 
-  // report number of button widgets 
+  // report number of button widgets (as no way to auto create the correct number as far as I am aware?)
     if (widgetCount == 0) log_system_message("Button widget count is correct");
     if (widgetCount < 0)  log_system_message("ERROR: " + String(-widgetCount) + " more button widgets required!");
-    if (widgetCount > 0)  log_system_message( String(widgetCount) + "Note: too many button widgets have been created");
+    if (widgetCount > 0)  log_system_message( "Note: " + String(widgetCount) + " too many button widgets have been created");
 }
 
 
@@ -500,10 +514,10 @@ void loop() {
 
   if(wifiEnabled) server.handleClient();                  // service any web page requests
 
-  refreshCalipers(1);                                     // refresh readings from calipers  
+  refreshCalipers(2);                                     // refresh readings from calipers 
 
   // Touch screen
-    bool st = ts.touched();                               // discover if screen is pressed
+    bool st = ts.touched();                               // discover if touch screen is pressed
     if (st && !sTouched) {                                // if touchscreen is pressed and is not already flagged as pressed
       actionScreenTouch(ts.getPoint());                   // call procedure for when screen has been pressed
       sTouched = 1;                                       // flag that the screen is curently pressed
@@ -515,54 +529,58 @@ void loop() {
 
     // housekeeping
       static repeatTimer checkTimer;                      // set up a repeat timer (see standard.h)
-      if (checkTimer.check(10000)) {                      // repeat at set interval (ms)
+      if (checkTimer.check(8000)) {                       // repeat at set interval (ms)
         esp_task_wdt_reset();                             // reset watchdog timer 
         WIFIcheck();                                      // check wifi connection is ok
         timeStatus();                                     // check if NTP time is ok
         time_t t=now();                                   // read current time to ensure NTP auto refresh keeps triggering (otherwise only triggers when time is required causing a delay in response)
-      }
-
-    delay(2);    
+      }  
 }
 
 
 // ----------------------------------------------------------------
 //                      -refresh calipers
 // ----------------------------------------------------------------
-// refresh readings from the digital calipers and update display if anything has changed (int = number of times to retry)
-// returns 1 if data received ok from all calipers
+// refresh readings from the digital calipers and update display if anything has changed (int = number of times to retry reading caliper)
+// returns 1 if data received ok from all calipers.  
+// if display set to false the screen is not updated but the reading is stored even if in error state
 
 bool refreshCalipers(int cRetry, bool display) {
 
-  bool refreshDisplayFlag = 0;                                   // display will be refreshed if this flag is set
-  int tCount                           ;                         // temp variables
-  bool tOK[caliperCount] = {0};                                  // flag if data received form caliper ok
+  bool refreshDisplayFlag = 0;                                     // display will be refreshed if this flag is set
+  int tCount                           ;                           // temp variables
+  bool tOK[caliperCount];                                          // flag if data received form caliper ok
+  for (int i=0; i < caliperCount; i++) tOK[i] = 0;
 
   // Digital Calipers
     for (int c=0; c < caliperCount; c++) {
-      if (calipers[c].enabled) {                                 // if caliper is active
-        tCount = cRetry;                                         // reset try counter 
+      if (calipers[c].enabled) {                                   // if caliper is active
+        tCount = cRetry;                                           // reset try counter 
         while (tCount > 0 && tOK[c] == 0) {
-          float tRead = readCaliper(calipers[c].clockPIN, calipers[c].dataPIN, calipers[c].direction);   // read data from caliper (reading over 9999 indicates fail)
-          if (tRead != calipers[c].reading) {                    // if reading has changed
-            calipers[c].reading = tRead;                         // store result in global variable 
-            refreshDisplayFlag = 1;                              // flag DRO display to refresh
-            calipers[c].lastReadTime = millis();                 // log time of last reading
-            tOK[c] = 1;                                          // flag reading received ok
-          }
-          if (tRead > DROerrorCodeReduced) {    
-            if (serialDebug) Serial.println(calipers[c].title + " Caliper read failed: " + String(tRead));    
+          float tRead = readCaliper(c);                            // read data from caliper 
+          if (tRead < lowestAllowedReading || tRead > highestAllowedReading) calipers[c].error = 1;     // verify reading is in valid range
+          if (calipers[c].error == 0) {                            // if caliper read data ok 
+            tOK[c] = 1;                                            // flag reading received 
+            if (tRead != calipers[c].reading  || calipers[c].lastReadTime == 0) {                       // if reading has changed or this is forst reading
+              calipers[c].reading = tRead;                         // store result in global variable 
+              refreshDisplayFlag = 1;                              // flag DRO display to update
+              calipers[c].lastReadTime = millis();                 // log time of last reading received
+            }
+          } else {
+            // read error
+              if (serialDebug) Serial.println(calipers[c].title + " Caliper read failed: " + String(tRead));    
+              if (showDROerrors) refreshDisplayFlag = 1;           // if show errors set then flag to display the error
           }   
-          tCount--;                                              // decrement try counter
-          if (tOK[c] == 0) delay(2);                             // delay before retrying
+          tCount --;                                               // decrement try counter
+          if (tOK[c] == 0) delay(11);                              // delay before retrying
         }  // while
-      } else tOK[c] = 1;                                         // caliper is disabled so skip it
+      } else tOK[c] = 1;                                           // caliper is disabled so skip it
     }  
 
-    if (refreshDisplayFlag && display) displayReadings();        // display caliper readings 
+    if (refreshDisplayFlag && display) displayReadings();          // display caliper readings 
     
     bool tOKres = 1;
-    for (int c=0; c < caliperCount; c++) if (tOK[c] == 0) tOKres = 0;
+    for (int c=0; c < caliperCount; c++) if (tOK[c] == 0 && calipers[c].enabled) tOKres = 0;
     return tOKres;
 }    
 
@@ -731,20 +749,38 @@ void handleData(){
    // DRO readings
     String spa = "%0" + String(DROnoOfDigits1 + DROnoOfDigits2 + 1) + ".2f";    // create sprintf argument for number format (in the format "%07.2f")
     reply += "DRO READINGS";
-    for (int c=0; c < caliperCount; c++) {
-      if (calipers[c].enabled) {
-        reply += "<br>" + calipers[c].title + ":&ensp;";
-        for (int i=0; i < noOfCoordinates; i++) {                               // step through all the coordinate systems
-          if (i == currentCoord) reply += String(colBlue);                      // active coordinate
-          sprintf(buff, spa.c_str(), calipers[c].reading - calipers[c].adj[i]);  
-          reply += "C" + String(i+1) + ":" + String(buff) + "&ensp; &ensp;";
-          if (i == currentCoord) reply += String(colEnd);   
-        }
-        sprintf(buff, spa.c_str(), calipers[c].reading);                        // the calipers actual reading
-        reply += " Raw:" + String(buff);      
+    // create html table
+      int cWidth = 100 * (noOfCoordinates + 1);                                 // table width
+      reply += "<br><table style='text-align: centre; margin-left: auto; margin-right: auto; background-color: #D0D000; width: " + String(cWidth) + "px; table-layout: fixed;'>"; 
+    // table column titles
+      reply += "<tr><th></th>";
+      for (int i=0; i < noOfCoordinates; i++) {   
+        reply += "<th>C" + String(i + 1) + "</th>";
       }
-    }
-    reply += "<br><br>";
+      reply += "<th>Raw</th></tr><tr>";
+
+    // display readings  
+      for (int c=0; c < caliperCount; c++) {                                    // step through each caliper
+        if (calipers[c].enabled) {
+          reply += "<th>" + calipers[c].title + "</th>";
+          for (int i=0; i < noOfCoordinates; i++) {                             // step through each coordinate systems
+            reply += "</td><td>";                                               // next table column
+            float tReading = calipers[c].reading - calipers[c].adj[i];          // calculate current reading
+            sprintf(buff, spa.c_str(), tReading);                               // format the reading for display
+            // display the reading 
+              if (i == currentCoord) reply += String(colBlue);                  // if the active coordinate
+              if ( (tReading >= lowestAllowedReading && tReading <= highestAllowedReading && calipers[c].lastReadTime != 0) || showDROerrors) 
+                reply += String(buff);
+              if (i == currentCoord) reply += String(colEnd);     
+          }
+          reply += "</td><td>";
+          if (calipers[c].lastReadTime != 0) reply += String(calipers[c].reading);      // raw caliper reading
+          else reply += "No-data";
+          if (showDROerrors && calipers[c].error != 0) reply += ":Error" + String(calipers[c].error);
+          reply += "</td></tr>";                                                // next table row
+        }
+      }
+    reply += "</table>";                                                        // end of html table
 
     // misc info.
       if (showPress) reply += String(colRed) + "<br>Touch screen data will be displayed" + String(colEnd);
@@ -914,13 +950,7 @@ void pageSpecificOperations() {
       // set position coordinates on DRO 
         for (int c=0; c < caliperCount; c++) {
           gcodeDROadj[c] = 0;
-          if (inc[c]) {                                                 // if this axis is selected for the gcode
-             if (gcode[c][gcodeStepPosition - 1] < DROerrorCodeReduced) {          // if it is a valid reading
-               gcodeDROadj[c] = gcode[c][gcodeStepPosition - 1];  
-             } else {
-               gcodeDROadj[c] = DROerrorCode;                           // invalid data
-             }
-          }
+          if (inc[c]) gcodeDROadj[c] = gcode[c][gcodeStepPosition - 1];           // if this axis is selected for the gcode
         }
 
       // page title
@@ -937,13 +967,7 @@ void pageSpecificOperations() {
           // display coordinates
             String tRes = "";
             for (int c=0; c < caliperCount; c++) {
-              if (inc[c]) {
-                if (gcode[c][gcodeStepPosition - 1] < DROerrorCodeReduced) {
-                  tRes += " " + calipers[c].title + ":" + String(gcode[c][gcodeStepPosition - 1], DROnoOfDigits2);
-                } else {    // invalid reading
-                  tRes += " " + calipers[c].title + ":-.--";
-                }
-              }
+              if (inc[c]) tRes += " " + calipers[c].title + ":" + String(gcode[c][gcodeStepPosition - 1], DROnoOfDigits2);
             }
             tft.setTextPadding(SCREEN_WIDTH - pageButtonWidth);       // this clears the previous text 
             tft.drawString(tRes, 0, belowSmallDRO + lineSpace * 3);
@@ -1099,9 +1123,9 @@ void drawScreen(int screen) {
 // returns 0 if it times out (used by 'read caliper data')
 
 bool waitPinState(int pin, bool state, int timeout) {
-  unsigned long tTimer = millis();  
-  while(digitalRead(pin) != state && millis() - tTimer < timeout) { }
-  if (millis() - tTimer >= timeout) return 0;
+  unsigned long timeoutMicros = micros() + timeout;      // what micros() will be when timeout is reached
+  while(digitalRead(pin) != state && micros() < timeoutMicros) { }
+  if (micros() >= timeoutMicros) return 0;
   return 1;
 }
 
@@ -1109,34 +1133,51 @@ bool waitPinState(int pin, bool state, int timeout) {
 // ----------------------------------------------------------------
 //                       -read caliper data
 // ----------------------------------------------------------------
-// The data is sent as 24bits several times a second so we first ensure we are at the start of one of these 
+// The data is sent continually as a 24bit data stream.  The data takes 9ms with a 115ms gap between (i.e. around 8 times a second) 
 //    streams by measuring how long the clock pin was high for then we read in the the data
 
-float readCaliper(int clockPin, int dataPin, bool reverseDirection) {
+float readCaliper(int caliperNumber) {
 
-  // settings
-    const int longPeriod = 500;                                  // length of time which counts as a long period (microseconds)
-    const int lTimeout = 200;                                    // timeout when waiting for start of data (ms) 150
-    const int sTimeout = 100;                                     // timeout when reading data (ms) 60
+  // data timings (microseconds)
+    const int longPeriod = 900;                                // minimum length of time which counts as a long period  
+    const int lTimeout = 125000;                               // timeout when waiting for start of data  
+    const int sTimeout = 800;                                  // timeout when reading data bits 
 
   // logic levels on data and clock pins (if using a transistor to level shift then these will be inverted)
     const bool pinLOW = invertCaliperDataSignals;
-    const bool pinHIGH = !pinLOW;
+    const bool pinHIGH = !invertCaliperDataSignals;
+
+  calipers[caliperNumber].error = 0;                           // reset caliper read error flag
 
   // start of data is preceded by clock being high for long period so verify we are at this point (this is the case most of the time)
-    if (!waitPinState(clockPin, pinHIGH, lTimeout)) return DROerrorCode + 0.11;    // if clock is low wait until it is high (9999.x signifies it timed out waiting)
+    if (!waitPinState(calipers[caliperNumber].clockPIN, pinHIGH, lTimeout)) {       // if clock is low wait until it is high
+      calipers[caliperNumber].error = 2;
+      return calipers[caliperNumber].reading;                                       // return previous reading  
+    }
     unsigned long tmpTime=micros();                            // start timer
-    if (!waitPinState(clockPin, pinLOW, lTimeout)) return DROerrorCode + 0.22;     // wait for clock pin to go low
-    if ((micros() - tmpTime) < longPeriod) return DROerrorCode + 0.33;             // verify it was high for a long period signifying start of data 
+    if (!waitPinState(calipers[caliperNumber].clockPIN, pinLOW, lTimeout)) {        // wait for clock pin to go low
+        calipers[caliperNumber].error = 3;
+        return calipers[caliperNumber].reading;                                     // return previous reading  
+    }
+    if ((micros() - tmpTime) < longPeriod) {                   // verify it was high for a long period signifying start of data 
+      calipers[caliperNumber].error = 4;
+      return calipers[caliperNumber].reading;                          // return previous reading     
+    }
 
   // start of data confirmed so now read in the data
     int sign = 1;                                              // if the reading is negative (1 or -1)
     int inches = 0;                                            // if data is in inches or mm (0 = mm) 
     long value = 0;                                            // the measurement received  
     for(int i=0;i<24;i++) {                                    // step through the data bits 
-      if (!waitPinState(clockPin, pinLOW, sTimeout)) return DROerrorCode + 0.44;      // If clock is not low wait until it is
-      if (!waitPinState(clockPin, pinHIGH, sTimeout)) return DROerrorCode + 0.55;     // wait for clock pin to go HIGH (this tells us the next data bit is ready to be read)
-      if(digitalRead(dataPin) == pinHIGH) {                    // read data bit - if it is 1 then act upon this (0 can be ignored as all bits defult to 0)
+      if (!waitPinState(calipers[caliperNumber].clockPIN, pinLOW, sTimeout)) {      // If clock is not low wait until it is
+        calipers[caliperNumber].error = 5;
+        return calipers[caliperNumber].reading;                                             // return previous reading 
+      }      
+      if (!waitPinState(calipers[caliperNumber].clockPIN, pinHIGH, sTimeout)) {     // wait for clock pin to go HIGH (this tells us the next data bit is ready to be read)
+        calipers[caliperNumber].error = 6;
+        return calipers[caliperNumber].reading;                                             // return previous reading 
+      }        
+      if(digitalRead(calipers[caliperNumber].dataPIN) == pinHIGH) {                 // read data bit - if it is 1 then act upon this (0 can be ignored as all bits defult to 0)
           if(i<20) value|=(1<<i);                              // shift the 19 bits in to read value
           if(i==20) sign=-1;                                   // if reading is positive or negative
           if(i==23) inches=1;                                  // if reading is in inches or mm
@@ -1149,7 +1190,7 @@ float readCaliper(int clockPin, int dataPin, bool reverseDirection) {
     else tRes = (value * sign) / 100.00;                       // mm
 
   // reverse direction if required
-    if (reverseDirection) tRes = -tRes;
+    if (calipers[caliperNumber].direction) tRes = -tRes;
 
   return tRes;
 }
@@ -1181,18 +1222,22 @@ void displayReadings(bool clearFirst) {
       for (int c=0; c < caliperCount; c++) {
         if (clearFirst) tft.drawString(" ", 0, c * tft.fontHeight());                             // clear display first if requested
         if (calipers[c].enabled) {
-          float tReading = calipers[c].reading - calipers[c].adj[currentCoord] - gcodeDROadj[c];   // calculate current reading
-          sprintf(buff, spa.c_str(), tReading);    
-          // display the reading if it is valid and the expected length
-            if (tReading < DROerrorCodeReduced && strlen(buff) == DROnoOfDigits1 + DROnoOfDigits2 + 1) {
+          float tReading = calipers[c].reading - calipers[c].adj[currentCoord] - gcodeDROadj[c];  // calculate current reading
+          sprintf(buff, spa.c_str(), tReading);                                                   // format the reading for display
+
+          // display the most recent reading if it is valid
+            if (tReading >= lowestAllowedReading && tReading <= highestAllowedReading && calipers[c].lastReadTime != 0) {
               tft.drawString(buff, 0, c * tft.fontHeight());    
-            } else {      // invalid reading
-              if (showDROerrors) {
-                String tErr = String(tReading, 1);                  // convert reading to a String
-                tErr = tErr.substring(tErr.indexOf('.') + 1);       // extract just the decimal part (error code)
-                tErr = "----." + tErr;
-                tft.drawString(tErr.c_str(), 0, c * tft.fontHeight());  
-              }  
+            } 
+
+          // if show errors is set
+            if (showDROerrors) {                                            // if a read error is flagged
+              if (calipers[c].error != 0) {
+                  String tErr = "Error" + String(calipers[c].error);
+                  tft.drawString(tErr.c_str(), 0, c * tft.fontHeight());    // show error code            
+              } else if (tReading >= lowestAllowedReading && tReading <= highestAllowedReading) {
+                tft.drawString(buff, 0, c * tft.fontHeight());              // show the invalid reading
+              }
               if (serialDebug) Serial.println("Invalid reading from " + calipers[c].title + " " + String(buff));          
             }
         }
@@ -1255,6 +1300,7 @@ void handleTouch() {
   server.send(200, "text/plain", message);   // send reply as plain text    
 }
 
+
 // ----------------------------------------------------------------
 //                        -process gcode 
 // ----------------------------------------------------------------
@@ -1266,7 +1312,7 @@ void processGCode(String &gcodeText) {
 
   float t[caliperCount] = {};               // extracted position
   float pt[caliperCount] = {};              // previous position extracted
-  for (int c=0; c < caliperCount; c++) pt[c] = DROerrorCode;     // set initial state
+  for (int c=0; c < caliperCount; c++) pt[c] = highestAllowedReading * 10.0;     // set initial state to invalid reading
 
   // Split the G-code string into lines and process each line
     int startPos = 0;
@@ -1274,18 +1320,17 @@ void processGCode(String &gcodeText) {
     gcodeLineCount = 0;                       // global variable storing number of coordinates extracted from the gcode
 
     while (endPos != -1 && gcodeLineCount < maxGcodeStringLines) {
-
-      endPos = gcodeText.indexOf('\n', startPos);
-      if (endPos != -1) {
-        String gcodeLine = gcodeText.substring(startPos, endPos);
-        processGCodeLine(gcodeLine, t);       // pass the line of gcode which updates position of x,y,z based upon this line (99999999 = not found)
-        startPos = endPos + 1;
+      endPos = gcodeText.indexOf('\n', startPos);       // find next line
+      if (endPos != -1) {                               // if not end of text
+        String gcodeLine = gcodeText.substring(startPos, endPos);    // extract the line
+        processGCodeLine(gcodeLine, t);                 // pass the line of gcode which updates position of x,y,z based upon this line (99999999 = not found)
+        startPos = endPos + 1;                          // move starting mosition to next line
 
         // process line if different to previous coordinate
           bool tFlag = 0;   
           for (int c=0; c < caliperCount; c++) { 
-            if (inc[c] == 1 && t[c] < DROerrorCodeReduced) {       // if this coordinate is active and a reading for this axis has been extracted from this line
-              if (pt[c] != t[c]) {                                 // if reading is different to the previous one
+            if (inc[c] == 1) {                          // if this coordinate is active 
+              if (pt[c] != t[c] && t[c] < highestAllowedReading && t[c] > lowestAllowedReading) {   // if reading is valid and different to the previous one
                 // new reading 
                   pt[c] = t[c];
                   // log_system_message("new position for " + calipers[c].title + " = " + String(t[c]) );         // temp line for debugging
@@ -1301,7 +1346,7 @@ void processGCode(String &gcodeText) {
       }
     }   // while
 
-  if (gcodeLineCount >= maxGcodeStringLines) log_system_message("Error: gcode exceded maximum length");
+  if (gcodeLineCount >= maxGcodeStringLines) log_system_message("Error: gcode exceded maximum line length");
   log_system_message(String(gcodeLineCount) + " coordinates extracted from gcode");
 }
 
@@ -1316,11 +1361,15 @@ void processGCodeLine(String &gcodeLine, float Pos[]) {
   // extract values
   gcodeLine.toUpperCase();                                         // convert gcode line to upper case
   for (int c=0; c < caliperCount; c++) {      
-    Pos[c] = DROerrorCode;
+    Pos[c] = 0.0;
     int PosIndex = gcodeLine.indexOf(calipers[c].title);           // search for axis title in the line          
-    if (PosIndex != -1) {                                          // if axis was found
-      float tRead = gcodeLine.substring(PosIndex + 1).toFloat();   // read the value 
-      if (tRead > -DROerrorCodeReduced && tRead < DROerrorCodeReduced) Pos[c] = gcodeLine.substring(PosIndex + 1).toFloat();  
+    if (PosIndex != -1) {  
+      // if axis was found
+        float tRead = gcodeLine.substring(PosIndex + 1).toFloat(); // read the value 
+        Pos[c] = gcodeLine.substring(PosIndex + 1).toFloat();      // convert the text to a float
+    } else {
+      // axis not found
+        Pos[c] = highestAllowedReading * 10.0;                     // invalid reading
     }
   }
 
@@ -1377,24 +1426,19 @@ void handelStored() {
 
   // display positions as a list
     // create html table
-      client.println("<br><table style='text-align: left; margin-left: auto; margin-right: auto; background-color: #D0D000; width: 260px; padding-left: 30px;'>");
+      const int cWidth = 280;                                   // table width
+      client.println("<br><table style='text-align: centre; margin-left: auto; margin-right: auto; background-color: #D0D000; width: " + String(cWidth) + "px; table-layout: fixed;'>"); 
     for(int l=0; l < gcodeLineCount; l++) {                     // step through all stored positions                
         client.println("<tr><td>" + String(l + 1) + "</td>");   // position number
         for (int c=0; c < caliperCount; c++) {                  // step through all available axis
-          if (inc[c] == 1) {                                    // if this axis is selected for the gcode
-            if (gcode[c][l] < DROerrorCodeReduced) {            // if it is a valid reading
-              client.println("<td>" + calipers[c].title + String(String(gcode[c][l])) + "</td>");
-            } else {     
-              client.println("<td>" + calipers[c].title + "--.--</td>");   
-            }
-          }
+          if (inc[c] == 1) client.println("<td>" + calipers[c].title + String(String(gcode[c][l])) + "</td>");
         }
         client.println("</tr>");                                // end of row
     }
-    client.println("</table>");                             // end of html table
+    client.println("</table>");                                 // end of html table
 
   // end html page
-    webfooter(client);            // add the standard web page footer
+    webfooter(client);                  // add the standard web page footer
     delay(1);
     client.stop();
 }
@@ -1416,12 +1460,12 @@ void plotGraph(WiFiClient &client, int axis1, int axis2) {
     float resMin = 999999, resMax = -999999;
     for (int l = 0; l < gcodeLineCount; l++) {
         if (axis1 != -1) {
-            if (gcode[axis1][l] < resMin && gcode[axis1][l] < DROerrorCodeReduced) resMin = gcode[axis1][l];
-            if (gcode[axis1][l] > resMax && gcode[axis1][l] < DROerrorCodeReduced) resMax = gcode[axis1][l];
+            if (gcode[axis1][l] < resMin) resMin = gcode[axis1][l];
+            if (gcode[axis1][l] > resMax) resMax = gcode[axis1][l];
         }
         if (axis2 != -1) {
-            if (gcode[axis2][l] < resMin && gcode[axis2][l] < DROerrorCodeReduced) resMin = gcode[axis2][l];
-            if (gcode[axis2][l] > resMax && gcode[axis2][l] < DROerrorCodeReduced) resMax = gcode[axis2][l];
+            if (gcode[axis2][l] < resMin) resMin = gcode[axis2][l];
+            if (gcode[axis2][l] > resMax) resMax = gcode[axis2][l];
         }
     }    
 
@@ -1563,6 +1607,16 @@ void handleTest(){
 
 
   // ---------------------------- test section here ------------------------------
+
+
+
+// time reading of calipers
+    unsigned long qt = micros();
+    bool q = refreshCalipers(1,0);
+    qt = micros() - qt;      
+    if (q) client.print("<br>All calipers read ok, time taken to read them was " + String(qt) + " microseconds");
+    else client.print("<br>Reading of calipers failed");
+    client.println("<br>");
 
 
 // // turn backloight off then on

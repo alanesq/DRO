@@ -12,24 +12,21 @@
 // -----------------------------------------------------------------------------------------
 */
 
+
+                const char* stitle = "Super Low Budget DRO";    
+
       
-      // Sketch version
-      
-                const char* stitle = "Super Low Budget DRO";  
-                
-                const char* sversion = "13Feb24";                      
+                const char* sversion = "18Feb24";              
 
 
 
 // ----------------------------------------------------------------------
 
       
-  // Wifi 
-    bool wifiEnabled = 1;                                // If wifi is enabled at startup (it can be enabled via the menu if set to zero here)
-    int wifiType = 1;                                    // 1=use Wifimanager,2=specify wifi credentials (in wifi.h), 3=create an access point
+  bool wifiEnabled = 0;                                 // If wifi is enabled by default (can be enabled in DRO menu)
+  int wifiType = 1;                                     // Type of wifi to use (1=WifiManager, 2=manual wifi credentials, 3=access point)      
 
-  // OTA
-    const String OTAPassword = "password";               // Password to enable OTA (supplied as - http://<ip address>?pwd=xxxx )
+  const String OTAPassword = "password";                // Password to enable OTA (supplied as - http://<ip address>?pwd=xxxx )
 
   const bool serialDebug = 0;                            // provide debug info on serial port  (disable if using Tx or Rx gpio pins for caliper)
   const int serialSpeed = 115200;                        // Serial data speed to use  
@@ -68,7 +65,10 @@
 
   // Digital calipers
 
-      // structure for the calipers
+    float highestAllowedReading = 9999.00;     // readings outside this range are flagged as an error
+    float lowestAllowedReading  = -999.00;
+
+    // structure for the calipers
       struct caliperStruct {
         const String title;                     // title of caliper (just a single upper case letter is best, e.g. X, Y and Z)
         const bool enabled;                     // if caliper is enabled
@@ -77,6 +77,7 @@
         bool direction;                         // set to 1 is direction is reversed
         unsigned long lastReadTime;             // last time a reading was received (millis)
         float reading;                          // current reading
+        int error;                              // error status (0=ok)
         float adj[noOfCoordinates];             // adjustment of caliper reading to displayed reading for each coordinate system
       };
 
@@ -84,13 +85,14 @@
       const int caliperCount = 3;               // number of calipers below
       
       caliperStruct calipers[] {  
-        // Items: name (single character, upper case), if enabled, clock gpio pin, data gpio pin, direction (1=reversed), 0, 9999, {0}
+        // Items: Axis name (single character, upper case), if enabled, clock gpio pin, data gpio pin, direction (1=reversed), 0, 0.0, 0, {0.0}
+        // NOTE: Some of the menus and buttons expect there to be 3 axes but you can set the enabled to '0' if they are not required
+
+        { "X", 1,  0,  4, 0, 0, 0.0, 0, {0.0} },        // Note: pin 0 is the onboard button (it can stop the device rebooting after programming)
         
-        { "X", 1,  0,  4, 0, 0, 9999, {0} },        // Note: pin 0 is the onboard button (it can stop the device rebooting after programming)
+        { "Y", 1, 17, 16, 0, 0, 0.0, 0, {0.0} },
         
-        { "Y", 1, 17, 16, 0, 0, 9999, {0} },
-        
-        { "Z", 1, 22,  5, 0, 0, 9999, {0} }         // Note: pin 5 is used by the SD card (chip select)
+        { "Z", 1, 22,  5, 0, 0, 0.0, 0, {0.0} }         // Note: pin 5 is used by the SD card (chip select)
         
       };
 

@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------------------
 
 
-          Procedures triggered when a button is pressed on the screen - 13Feb24
+          Procedures triggered when a button is pressed on the screen - 18Feb24
 
           Part of the  "SuperLowBudget-DRO" sketch - https://github.com/alanesq/DRO
 
@@ -194,7 +194,8 @@
     refreshCalipers(2);  // refresh readings from calipers  
     // log time of last reading to prevent first reading zeroing it
       for (int c=0; c < caliperCount; c++) {
-        calipers[c].lastReadTime = millis();            
+        calipers[c].lastReadTime = millis();      
+        calipers[c].error = 0;         
       } 
   }
 
@@ -214,8 +215,8 @@
   // check entered number is valid and convert to a float
   void verifyNumber() {          
     if (keyEnteredNumber.length() > noDigitsOnNumEntry) keyEnteredNumber = "";       // too long
-    keyEnteredNumberVal = keyEnteredNumber.toFloat();                // convert to a float
-    if (serialDebug) Serial.println("Number entered: " + String(keyEnteredNumberVal, DROnoOfDigits1 + DROnoOfDigits2));
+    keyEnteredNumberVal = keyEnteredNumber.toFloat();                                // convert to a float
+    if (serialDebug) Serial.println("Number entered: " + String(keyEnteredNumberVal, DROnoOfDigits1 + DROnoOfDigits2 + 1));
   }
 
   void buttonKey1Pressed() {
@@ -289,7 +290,7 @@
   }
 
   void buttonKeyBackPressed() {
-    if (keyEnteredNumber.length() < 1) return; // String is empty
+    if (keyEnteredNumber.length() < 1) return;   // String is empty
     keyEnteredNumber = keyEnteredNumber.substring(0, keyEnteredNumber.length() - 1);
     verifyNumber();
   }  
@@ -302,29 +303,50 @@
 
   // setx
   void buttonp3setxPressed() {
-    if (noOfCoordinates < 1) return;
-    if (keyEnteredNumberVal >= DROerrorCodeReduced || keyEnteredNumberVal <= -(DROerrorCodeReduced / 10) ) return;     // number beyond limit
-    log_system_message("button: set " + calipers[0].title + " pressed: " + String(keyEnteredNumberVal));
+    if (noOfCoordinates < 1) {
+      log_system_message("button: set x pressed - axis not available");
+      return;    
+    }
+    if (keyEnteredNumberVal > 9999.9 || keyEnteredNumberVal < -999.0) {
+      log_system_message("button: set x pressed - out of range");
+      return;    
+    }
+    log_system_message("button: set x pressed: " + String(keyEnteredNumberVal));
     calipers[0].adj[currentCoord] = calipers[0].reading - keyEnteredNumberVal;
-    calipers[0].lastReadTime = millis();    
+    calipers[0].lastReadTime = millis(); 
+    calipers[0].error = 0;   
   }
 
   // sety
   void buttonp3setyPressed() {
-    if (noOfCoordinates < 2) return;
-    if (keyEnteredNumberVal >= DROerrorCodeReduced || keyEnteredNumberVal <= -(DROerrorCodeReduced / 10) ) return;     // number beyond limit
-    log_system_message("button: set " + calipers[1].title + " pressed: " + String(keyEnteredNumberVal));
+    if (noOfCoordinates < 2) {
+      log_system_message("button: set y pressed - axis not available");
+      return;  
+    }
+    if (keyEnteredNumberVal > 9999.9 || keyEnteredNumberVal < -999.0) {
+      log_system_message("button: set y pressed - out of range");
+      return;     // number beyond limit
+    }
+    log_system_message("button: set y pressed: " + String(keyEnteredNumberVal));
     calipers[1].adj[currentCoord] = calipers[1].reading - keyEnteredNumberVal;
     calipers[1].lastReadTime = millis();    
+    calipers[1].error = 0;   
   }
 
   // setz
   void buttonp3setzPressed() {
-    if (noOfCoordinates < 2) return;
-    if (keyEnteredNumberVal >= DROerrorCodeReduced || keyEnteredNumberVal <= -(DROerrorCodeReduced / 10) ) return;     // number beyond limit
-    log_system_message("button: set " + calipers[2].title + " pressed: " + String(keyEnteredNumberVal));
+    if (noOfCoordinates < 3) {
+      log_system_message("button: set z pressed - axis not available");
+      return;     // number beyond limit
+    }
+    if (keyEnteredNumberVal > 9999.9 || keyEnteredNumberVal < -999.0) {
+      log_system_message("button: set z pressed - out of range");
+      return;     // number beyond limit
+    }
+    log_system_message("button: set z pressed: " + String(keyEnteredNumberVal));
     calipers[2].adj[currentCoord] = calipers[2].reading - keyEnteredNumberVal;
     calipers[2].lastReadTime = millis();    
+    calipers[2].error = 0;   
   }
 
 
@@ -360,11 +382,15 @@
   void buttonStorePosPressed() {           
      log_system_message("button: store current position pressed");
      if (gcodeLineCount > maxGcodeStringLines - 1) return;      // no more space
+     if (!refreshCalipers(4)) {                                 // refresh current reading 
+        log_system_message("Error: failed to store current position (read error)");
+        return;
+     }
      if (gcodeLineCount < 0) gcodeLineCount = 0;                // just in case something odd has happened
-     gcodeLineCount++;
+     gcodeLineCount++;                                          // add a new line 
      gcodeStepPosition = gcodeLineCount;                        // move to this new position in gcode steps 
       for (int c=0; c < caliperCount; c++) {
-        inc[c] = 1;                                           // enable axis in stored data list
+        inc[c] = 1;                                             // enable this axis in stored data list
         gcode[c][gcodeStepPosition - 1] = calipers[c].reading - calipers[c].adj[currentCoord];       // store current position
       }
      drawScreen(4);      // redraw screen to clear previous text
