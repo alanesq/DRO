@@ -8,9 +8,9 @@
 As a result, building a three-axis DRO for your milling machine or lathe can set you back less than £25 (around $30). <br><br>
 
 <p align="center" width="100%">
-  <img height="200" src="/pics/pics.jpg" /><br><br>
-  <img height="200" src="/pics/screenGrabs.jpg" />
-  <img height="200" class="center" src="/pics/webpage.jpg" /><br><br>
+  <img height="200px" src="/pics/pics.jpg" /><br><br>
+  <img height="200px" src="/pics/screenGrabs.jpg" />
+  <img height="200px" class="center" src="/pics/webpage.jpg" /><br><br>
 </p>
 
 I wanted a Digital Readout (DRO) for both my lathe and milling machine. However, the cheapest options available was still going to cost me several hundred pounds, which I just couldn’t justify spending. I also suspected that the cheapest DRO on the market would probably fail after a short time anyway going on my past experience of cheap electronics.  Therefore, I decided to see if I can create my own as inexpensively as possible.  I think it safe to say that I have achieved this goal :-)<br>
@@ -123,3 +123,4 @@ I tried all sorts of things to try and improve this but after a lot of experimen
 
 If you use this sketch please let me know how you get on and if you have any suggestions for improvments etc.  - alanesq@disroot.org
 
+<br><img height="300px" src="/pics/lathe1.jpg" /><br>
