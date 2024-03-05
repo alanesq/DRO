@@ -48,6 +48,8 @@ The well known problem with these cheap calipers is the battery goes flat if you
 
 ## Misc info:
 
+I have recently given one of my DROs to the most excellent Youtuber Steamhead - You can see it [HERE](https://youtu.be/Z2Sz5ipYt7Y?si=eyIY_YAoHz-dP2uL&t=618)<br>
+
 Brian Lough's information on the [Cheap Yellow Display](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display)
   
 Communicating with the digital calipers
