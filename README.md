@@ -2,7 +2,7 @@
 
 <br>My homemade ESP32 based DRO which conists of:
  - [Cheap Yellow Display](https://github.com/witnessmenow/ESP32-Cheap-Yellow-Display) &ensp; (A.K.A. ESP32-2432S028R) which costs around £12 from Aliexpress
- - Digital calipers which cost under £5 each on eBay or Aliexpress (I have even bought some for £3.20 each)
+ - Digital calipers which cost under £2.50 each on Aliexpress 
  - Plus a few transistors, general wiring etc... 
 
 As a result, building a three-axis DRO for your milling machine or lathe can set you back less than £25 (around $30). <br><br>
@@ -39,7 +39,10 @@ The cheap calipers only have a range of 150mm although longer 200mm or even 300m
 
 These cheap calipers really are amazing for the price, in fact they are so cheap that it feels like they are almost being given away, also, I find the cheaper ones with a plastic slider are better than metal ones in this application as you do not get issues with the metal contacting the metal of your machine which can cause issues.  Big Clive has made a nice video showing what is inside them and how to take them apart etc.: &ensp; [Big Clive](https://www.youtube.com/watch?v=fKSSY1gzCEs) <br>
 I have read that because of interference issues this type caliper is not at all suitable to use as a DRO and I was starting to agree as I had a lot of trouble at first with this but I eventually found the solution (see bottom of page for more info.).<br>
-One good thing that I was not expecting is you still get two decimal places from these very cheap calipers even though they only display one on their LCD, as can be seen in the pictures above. <br><br>
+One good thing that I was not expecting is you still get two decimal places from these very cheap calipers even though they only display one on their LCD, as can be seen in the pictures above. <br>
+
+The most recent calipers i have purchased were:   [eBay £5.40 each](https://www.ebay.co.uk/sch/i.html?_dkr=1&iconV2Request=true&_blrs=recall_filtering&_ssn=bestsale-22&store_name=discountdeals111&_oac=1&_nkw=6%22%20vernier%20caliper%20internal%20%26%20external%20measure%20tool%20gauge%20rule%20slide%20gauge%20150m) , [Aliexpress £10 for 4](https://www.aliexpress.com/item/1005005699974701.html) <br><br>   
+
 
 ## Warnings!
 
