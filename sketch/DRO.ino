@@ -1,6 +1,6 @@
 /*******************************************************************************************************************
  *
- *                                              SuperLowBudget-DRO               17feb24
+ *                                              SuperLowBudget-DRO               03jun24
  *                                              ------------------
  *
  *          3 Channel DRO using cheap digital calipers and a ESP32-2432S028R (aka Cheap Yellow Display)
@@ -90,6 +90,7 @@
 String enteredGcode;                      // store for the entered gcode on web page
 #include "settings.h"                     // load in settings for the DRO from settings.h file
 
+// note: WATCHDOG TIMER IS NOT WORKING WITH ESP32 3.0.0 (disabled in setup)- jun24
 #include <esp_task_wdt.h>                 // watchdog timer   - see: https://iotassistant.io/esp32/enable-hardware-watchdog-timer-esp32-arduino-ide/     
 #include <WiFi.h>
 
@@ -448,10 +449,10 @@ void setup() {
         dro.updateNeedle(50, MeterSpeed);                      // move dial to 50
   }
 
-  // watchdog timer (esp32)
-    if (serialDebug) Serial.println("Configuring watchdog timer");
-    esp_task_wdt_init(WDT_TIMEOUT, true);                      //enable panic so ESP32 restarts
-    esp_task_wdt_add(NULL);                                    //add current thread to WDT watch        
+  // watchdog timer (esp32) - NOT WORKING WITH ESP32 3.0.0 - jun24
+  //  if (serialDebug) Serial.println("Configuring watchdog timer");
+  //  esp_task_wdt_init(WDT_TIMEOUT, true);                      //enable panic so ESP32 restarts
+  //  esp_task_wdt_add(NULL);                                    //add current thread to WDT watch        
 
   // Start the SPI for the touch screen and init the TS library
     mySpi.begin(XPT2046_CLK, XPT2046_MISO, XPT2046_MOSI, XPT2046_CS);
