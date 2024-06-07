@@ -90,7 +90,6 @@
 String enteredGcode;                      // store for the entered gcode on web page
 #include "settings.h"                     // load in settings for the DRO from settings.h file
 
-// note: WATCHDOG TIMER IS NOT WORKING WITH ESP32 3.0.0 (disabled in setup)- jun24
 #include <esp_task_wdt.h>                 // watchdog timer   - see: https://iotassistant.io/esp32/enable-hardware-watchdog-timer-esp32-arduino-ide/     
 #include <WiFi.h>
 
@@ -449,10 +448,30 @@ void setup() {
         dro.updateNeedle(50, MeterSpeed);                      // move dial to 50
   }
 
-  // watchdog timer (esp32) - NOT WORKING WITH ESP32 3.0.0 - jun24
-  //  if (serialDebug) Serial.println("Configuring watchdog timer");
-  //  esp_task_wdt_init(WDT_TIMEOUT, true);                      //enable panic so ESP32 restarts
-  //  esp_task_wdt_add(NULL);                                    //add current thread to WDT watch        
+  // ESP32 Watchdog timer -    Note: esp32 board manager v3.x.x requires different code
+    #if defined ESP32
+      esp_task_wdt_deinit();                  // ensure a watchdog is not already configured
+      #if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR == 3  
+        // v3 board manager detected
+        // Create and initialize the watchdog timer(WDT) configuration structure
+          if (serialDebug) Serial.println("v3 esp32 board manager detected");
+          esp_task_wdt_config_t wdt_config = {
+              .timeout_ms = WDT_TIMEOUT * 1000, // Convert seconds to milliseconds
+              .idle_core_mask = 1 << 1,         // Monitor core 1 only
+              .trigger_panic = true             // Enable panic
+          };
+        // Initialize the WDT with the configuration structure
+          esp_task_wdt_init(&wdt_config);       // Pass the pointer to the configuration structure
+          esp_task_wdt_add(NULL);               // Add current thread to WDT watch    
+          esp_task_wdt_reset();                 // reset timer
+          if (serialDebug) Serial.println("Watchdog Timer initialized at WDT_TIMEOUT seconds");
+      #else
+        // pre v3 board manager assumed
+          if (serialDebug) Serial.println("older esp32 board manager assumed");
+          esp_task_wdt_init(WDT_TIMEOUT, true);                      //enable panic so ESP32 restarts
+          esp_task_wdt_add(NULL);                                    //add current thread to WDT watch   
+      #endif
+    #endif    
 
   // Start the SPI for the touch screen and init the TS library
     mySpi.begin(XPT2046_CLK, XPT2046_MISO, XPT2046_MOSI, XPT2046_CS);
