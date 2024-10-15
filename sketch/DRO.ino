@@ -1,6 +1,6 @@
 /*******************************************************************************************************************
  *
- *                                              SuperLowBudget-DRO               03jun24
+ *                                              SuperLowBudget-DRO               15Oct24
  *                                              ------------------
  *
  *          3 Channel DRO using cheap digital calipers and a ESP32-2432S028R (aka Cheap Yellow Display)
@@ -11,10 +11,10 @@
  *
  *                         Tested in Arduino IDE 2.3.0 with Espressif board manager ESP32 2.0.14
  *
- *                 Included files: settings.h, standard.h, ota.h, sevenSeg.h, Free_Fonts.h, buttons.h & wifi.h
+ *                 Included files: settings.h, standard.h, ota.h, sevenSeg.h, Free_Fonts.h, buttons.h & wifi_dro.h
  *
  *   If using WifiManager the first time the ESP starts it will create an access point "ESPDRO" which you need to connect to 
- *    in order to enter your wifi details.  Default password = "password"   (change this in wifi.h)
+ *    in order to enter your wifi details.  Default password = "password"   (change this in wifi_dro.h)
  *    for more info. see: https://www.youtube.com/watch?v=Errh7LEEug0
  *
  *
@@ -91,7 +91,7 @@ String enteredGcode;                      // store for the entered gcode on web 
 #include "settings.h"                     // load in settings for the DRO from settings.h file
 
 #include <esp_task_wdt.h>                 // watchdog timer   - see: https://iotassistant.io/esp32/enable-hardware-watchdog-timer-esp32-arduino-ide/     
-#include <WiFi.h>
+#include <WiFi_dro.h>
 
 // forward declarations
   void log_system_message(String smes);   // in standard.h
