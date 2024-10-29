@@ -1,6 +1,6 @@
 /*******************************************************************************************************************
  *
- *                                              SuperLowBudget-DRO               15Oct24
+ *                                              SuperLowBudget-DRO               29Oct24
  *                                              ------------------
  *
  *          3 Channel DRO using cheap digital calipers and a ESP32-2432S028R (aka Cheap Yellow Display)
@@ -91,10 +91,14 @@ String enteredGcode;                      // store for the entered gcode on web 
 #include "settings.h"                     // load in settings for the DRO from settings.h file
 
 #include <esp_task_wdt.h>                 // watchdog timer   - see: https://iotassistant.io/esp32/enable-hardware-watchdog-timer-esp32-arduino-ide/     
-#include <WiFi_dro.h>
+
+// wifi
+  void log_system_message(String smes);   // in standard.h
+  int wifiok = 0;                         // flag if wifi connection is ok 
+  #include <wifi_dro.h>
 
 // forward declarations
-  void log_system_message(String smes);   // in standard.h
+  //void log_system_message(String smes);   // in standard.h
   void handleRoot();
   void handleData();
   void handlePing();
